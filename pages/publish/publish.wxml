@@ -1,0 +1,35 @@
+<view class="page stack">
+  <view class="page-head">
+    <view class="head-mark">DZ</view>
+    <view class="title">发布街区任务</view>
+    <view class="muted">发布时自动使用你的当前位置</view>
+  </view>
+
+  <view class="panel form-card stack">
+    <view>
+      <view class="label">标题</view>
+      <input class="input" maxlength="32" placeholder="例如：捡到蓝色门禁卡" value="{{form.title}}" data-field="title" bindinput="onInput" />
+    </view>
+
+    <view>
+      <view class="label">详情</view>
+      <textarea class="textarea" maxlength="180" placeholder="补充识别信息、方向或联系方式线索" value="{{form.body}}" data-field="body" bindinput="onInput" />
+    </view>
+
+    <view>
+      <view class="label">类型</view>
+      <picker mode="selector" range="{{categories}}" range-key="label" value="{{categoryIndex}}" bindchange="onCategoryChange">
+        <view class="picker">{{categories[categoryIndex].label}}</view>
+      </picker>
+    </view>
+
+    <view>
+      <view class="label">有效期</view>
+      <picker mode="selector" range="{{expiryOptions}}" range-key="label" value="{{expiryIndex}}" bindchange="onExpiryChange">
+        <view class="picker">{{expiryOptions[expiryIndex].label}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <button class="primary-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">{{submitting ? '定位中' : '发布'}}</button>
+</view>

@@ -1,0 +1,16 @@
+node_modules/
+miniprogram_npm/
+.DS_Store
+aaa
+
+# Local WeChat DevTools settings
+project.private.config.json
+
+# Local agent/tooling state
+.agents/
+.claude/
+skills-lock.json
+
+# Runtime logs
+log/
+*.log

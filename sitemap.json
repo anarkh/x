@@ -1,0 +1,9 @@
+{
+  "desc": "Street task mini program sitemap",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

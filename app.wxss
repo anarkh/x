@@ -1,0 +1,133 @@
+page {
+  min-height: 100%;
+  background: #eef2ef;
+  color: #17201d;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-size: 28rpx;
+}
+
+button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 0;
+  box-sizing: border-box;
+  line-height: 1;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+
+button::after {
+  border: 0;
+}
+
+.page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 28rpx;
+  background:
+    linear-gradient(180deg, rgba(39, 96, 85, 0.1), rgba(238, 242, 239, 0) 260rpx),
+    #eef2ef;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.between {
+  justify-content: space-between;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1rpx solid rgba(26, 46, 41, 0.1);
+  border-radius: 8rpx;
+  box-shadow: 0 16rpx 42rpx rgba(23, 32, 29, 0.09);
+}
+
+.muted {
+  color: #66736d;
+  font-size: 24rpx;
+  line-height: 1.45;
+}
+
+.title {
+  color: #13201c;
+  font-size: 46rpx;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.section-title {
+  color: #16231f;
+  font-size: 32rpx;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44rpx;
+  padding: 0 16rpx;
+  border: 1rpx solid rgba(36, 97, 85, 0.18);
+  border-radius: 6rpx;
+  background: #e4f1ed;
+  color: #1f6658;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.tag.warn {
+  border-color: rgba(177, 112, 24, 0.2);
+  background: #fff1d7;
+  color: #915709;
+}
+
+.tag.danger {
+  border-color: rgba(178, 54, 39, 0.18);
+  background: #ffe8e2;
+  color: #a73527;
+}
+
+.primary-button,
+.secondary-button {
+  height: 92rpx;
+  border-radius: 8rpx;
+  font-weight: 900;
+  font-size: 30rpx;
+}
+
+.primary-button {
+  color: #ffffff;
+  background: linear-gradient(135deg, #18483f, #2f7d68);
+  box-shadow: 0 16rpx 34rpx rgba(31, 102, 88, 0.24);
+}
+
+.secondary-button {
+  border: 1rpx solid rgba(31, 102, 88, 0.18);
+  color: #1f6658;
+  background: #e2f0ec;
+}
+
+.ghost-button {
+  height: 66rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid rgba(31, 102, 88, 0.22);
+  border-radius: 8rpx;
+  background: rgba(255, 255, 255, 0.72);
+  color: #1f6658;
+  font-size: 26rpx;
+  font-weight: 800;
+}

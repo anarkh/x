@@ -1,0 +1,55 @@
+.admin-head {
+  position: relative;
+  padding-top: 12rpx;
+}
+
+.head-rule {
+  width: 96rpx;
+  height: 8rpx;
+  margin-bottom: 18rpx;
+  border-radius: 999rpx;
+  background: #e56d3f;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 30rpx 0;
+  text-align: center;
+}
+
+.summary-item + .summary-item {
+  border-left: 1rpx solid rgba(26, 46, 41, 0.1);
+}
+
+.metric {
+  color: #1f6658;
+  font-size: 46rpx;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.admin-card {
+  padding: 24rpx;
+}
+
+.admin-card .section-title {
+  margin-top: 14rpx;
+  margin-bottom: 8rpx;
+}
+
+.admin-actions {
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.hide-button {
+  height: 66rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid rgba(167, 53, 39, 0.14);
+  border-radius: 8rpx;
+  background: #ffe8e2;
+  color: #a73527;
+  font-size: 26rpx;
+  font-weight: 800;
+}

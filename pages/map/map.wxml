@@ -1,0 +1,59 @@
+<view class="map-page">
+  <map
+    id="taskMap"
+    class="task-map"
+    latitude="{{center.latitude}}"
+    longitude="{{center.longitude}}"
+    scale="15"
+    markers="{{markers}}"
+    show-location
+    bindmarkertap="onMarkerTap"
+  />
+
+  <button class="refresh-fab" aria-label="刷新列表" bindtap="refresh">
+    <view class="refresh-icon"></view>
+  </button>
+  <button class="locate-fab" aria-label="返回当前位置" bindtap="locateCurrent">
+    <view class="locate-icon">
+      <view class="locate-dot"></view>
+    </view>
+  </button>
+  <button class="list-fab" bindtap="showList">列表 {{posts.length}}</button>
+
+  <view wx:if="{{showList}}" class="drawer-mask" bindtap="hideList"></view>
+  <view class="list-drawer {{showList ? 'open' : ''}}">
+    <view class="drawer-grip"></view>
+    <view class="row between drawer-head">
+      <view>
+        <view class="section-title">信息列表</view>
+        <view class="muted">按发布时间排序</view>
+      </view>
+      <button class="ghost-button" bindtap="hideList">收起</button>
+    </view>
+
+    <scroll-view class="post-list" scroll-y>
+      <view wx:for="{{posts}}" wx:key="id" class="post-card panel" data-id="{{item.id}}" bindtap="focusPost">
+        <view class="post-content">
+          <view class="post-main">
+            <view class="post-text">
+              <view class="post-title">{{item.title}}</view>
+              <view class="post-meta">{{item.placeName}} · {{item.createdText}}</view>
+            </view>
+            <button class="mark-button" aria-label="查看详情" data-id="{{item.id}}" catchtap="openDetail">
+              <view class="mark-arrow"></view>
+            </button>
+          </view>
+          <view class="row between card-top">
+            <text class="tag {{item.status === 'stale' ? 'warn' : ''}}">{{item.categoryText}}</text>
+            <text class="muted">{{item.distanceText}}</text>
+          </view>
+          <view class="row between signals">
+            <text>确认 {{item.confirmations}}</text>
+            <text>过时 {{item.staleCount}}</text>
+            <text>{{item.expiryText}}</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

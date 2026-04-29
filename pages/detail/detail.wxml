@@ -1,0 +1,46 @@
+<view wx:if="{{post}}" class="page stack">
+  <view class="panel hero stack">
+    <view class="hero-grid"></view>
+    <view class="row between">
+      <text class="tag {{post.status === 'stale' ? 'warn' : ''}}">{{post.categoryText}}</text>
+      <text class="muted">{{post.expiryText}}</text>
+    </view>
+    <view class="title">{{post.title}}</view>
+    <view class="body">{{post.body}}</view>
+    <view class="muted">{{post.placeName}} · {{post.distanceText}} · {{post.createdText}}</view>
+  </view>
+
+  <map
+    class="mini-map"
+    latitude="{{post.latitude}}"
+    longitude="{{post.longitude}}"
+    scale="16"
+    markers="{{markers}}"
+  />
+
+  <view class="panel metrics">
+    <view class="metric-item">
+      <view class="metric">{{post.confirmations}}</view>
+      <view class="muted">确认</view>
+    </view>
+    <view class="metric-item">
+      <view class="metric">{{post.staleCount}}</view>
+      <view class="muted">过时</view>
+    </view>
+    <view class="metric-item">
+      <view class="metric">{{post.reportCount}}</view>
+      <view class="muted">举报</view>
+    </view>
+  </view>
+
+  <view class="actions">
+    <button class="primary-button" data-action="confirm" bindtap="react">确认有效</button>
+    <button class="secondary-button" data-action="stale" bindtap="react">标记过时</button>
+    <button class="danger-button" data-action="report" bindtap="react">举报</button>
+  </view>
+</view>
+
+<view wx:else class="page empty">
+  <view class="title">任务不存在</view>
+  <button class="primary-button" bindtap="goHome">返回地图</button>
+</view>

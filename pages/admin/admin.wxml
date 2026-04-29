@@ -1,0 +1,35 @@
+<view class="page stack">
+  <view class="admin-head">
+    <view class="head-rule"></view>
+    <view class="title">轻量管理</view>
+    <view class="muted">Pilot v1 只处理举报隐藏和过期巡检</view>
+  </view>
+
+  <view class="panel summary">
+    <view class="summary-item">
+      <view class="metric">{{stats.active}}</view>
+      <view class="muted">有效</view>
+    </view>
+    <view class="summary-item">
+      <view class="metric">{{stats.stale}}</view>
+      <view class="muted">疑似过时</view>
+    </view>
+    <view class="summary-item">
+      <view class="metric">{{stats.reported}}</view>
+      <view class="muted">有举报</view>
+    </view>
+  </view>
+
+  <view wx:for="{{posts}}" wx:key="id" class="panel admin-card">
+    <view class="row between">
+      <text class="tag {{item.reportCount > 0 ? 'danger' : ''}}">{{item.categoryText}}</text>
+      <text class="muted">举报 {{item.reportCount}}</text>
+    </view>
+    <view class="section-title">{{item.title}}</view>
+    <view class="muted">{{item.placeName}} · {{item.expiryText}}</view>
+    <view class="row admin-actions">
+      <button class="ghost-button" data-id="{{item.id}}" bindtap="openDetail">查看</button>
+      <button class="hide-button" data-id="{{item.id}}" bindtap="hide">隐藏</button>
+    </view>
+  </view>
+</view>

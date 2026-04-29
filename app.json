@@ -1,0 +1,50 @@
+{
+  "pages": [
+    "pages/map/map",
+    "pages/publish/publish",
+    "pages/detail/detail",
+    "pages/admin/admin"
+  ],
+  "window": {
+    "navigationBarTitleText": "街区任务",
+    "navigationBarBackgroundColor": "#17231F",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#EEF2EF"
+  },
+  "tabBar": {
+    "color": "#66736D",
+    "selectedColor": "#1F6658",
+    "backgroundColor": "#F8FAF7",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/map/map",
+        "text": "地图",
+        "iconPath": "assets/icons/tab-map.png",
+        "selectedIconPath": "assets/icons/tab-map-active.png"
+      },
+      {
+        "pagePath": "pages/publish/publish",
+        "text": "发布",
+        "iconPath": "assets/icons/tab-publish.png",
+        "selectedIconPath": "assets/icons/tab-publish-active.png"
+      },
+      {
+        "pagePath": "pages/admin/admin",
+        "text": "管理",
+        "iconPath": "assets/icons/tab-admin.png",
+        "selectedIconPath": "assets/icons/tab-admin-active.png"
+      }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于显示附近任务并发布当前位置"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation"
+  ],
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
