@@ -3,7 +3,8 @@
     "pages/map/map",
     "pages/publish/publish",
     "pages/detail/detail",
-    "pages/admin/admin"
+    "pages/admin/admin",
+    "pages/me/me"
   ],
   "window": {
     "navigationBarTitleText": "街区任务",
@@ -12,6 +13,7 @@
     "backgroundColor": "#EEF2EF"
   },
   "tabBar": {
+    "custom": true,
     "color": "#66736D",
     "selectedColor": "#1F6658",
     "backgroundColor": "#F8FAF7",
@@ -34,6 +36,12 @@
         "text": "管理",
         "iconPath": "assets/icons/tab-admin.png",
         "selectedIconPath": "assets/icons/tab-admin-active.png"
+      },
+      {
+        "pagePath": "pages/me/me",
+        "text": "我的",
+        "iconPath": "assets/icons/tab-me.png",
+        "selectedIconPath": "assets/icons/tab-me-active.png"
       }
     ]
   },

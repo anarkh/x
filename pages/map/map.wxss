@@ -10,46 +10,10 @@
   height: 100vh;
 }
 
-.area-card {
-  position: absolute;
-  left: 24rpx;
-  top: 24rpx;
-  z-index: 3;
-  max-width: 450rpx;
-  padding: 20rpx 22rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
-  border-radius: 8rpx;
-  background: rgba(248, 250, 247, 0.92);
-  box-shadow: 0 16rpx 38rpx rgba(18, 31, 27, 0.18);
-  box-sizing: border-box;
-}
-
-.area-kicker {
-  color: #c84c30;
-  font-size: 20rpx;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
-.area-name {
-  margin-top: 8rpx;
-  color: #16231f;
-  font-size: 32rpx;
-  font-weight: 900;
-  line-height: 1.18;
-}
-
-.area-meta {
-  margin-top: 8rpx;
-  color: #53625c;
-  font-size: 22rpx;
-  line-height: 1.35;
-}
-
 .map-tool-row {
   position: absolute;
   right: 24rpx;
-  bottom: calc(40rpx + env(safe-area-inset-bottom));
+  bottom: calc(150rpx + env(safe-area-inset-bottom));
   z-index: 3;
   display: grid;
   grid-template-columns: repeat(3, 80rpx);
@@ -253,7 +217,7 @@
   position: absolute;
   left: 24rpx;
   right: 24rpx;
-  bottom: calc(136rpx + env(safe-area-inset-bottom));
+  bottom: calc(246rpx + env(safe-area-inset-bottom));
   z-index: 4;
   padding: 24rpx;
   background: rgba(248, 250, 247, 0.96);
@@ -335,7 +299,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: calc(112rpx + env(safe-area-inset-bottom));
   z-index: 5;
   height: 62vh;
   padding: 18rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));

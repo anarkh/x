@@ -2,7 +2,7 @@
   <view class="page-head">
     <view class="head-mark">DZ</view>
     <view class="title">发布街区任务</view>
-    <view class="muted">发布到{{pilotArea.shortName}}，自动使用你的当前位置</view>
+    <view class="muted">发布到{{appInfo.shortName}}，自动使用你的当前位置</view>
   </view>
 
   <view class="panel form-card stack">

@@ -1,13 +1,18 @@
 const config = {
-  pilotCenter: {
+  defaultCenter: {
     latitude: 39.96685,
-    longitude: 116.34329
+    longitude: 116.34329,
+    name: 'fallback'
   },
-  pilotArea: {
-    name: '中关村东路试点区',
-    shortName: '中关村东路',
-    description: '确认、更新、关闭附近短时信息',
-    shareTitle: '中关村东路附近任务'
+  appInfo: {
+    name: '街区任务',
+    shortName: '附近',
+    description: '确认、更新、关闭身边短时信息',
+    shareTitle: '附近任务'
+  },
+  admin: {
+    displayName: '管理员',
+    localLoginCode: 'street-admin'
   },
   maxVisiblePosts: 100,
   categories: [
@@ -27,9 +32,9 @@ const config = {
       placePlaceholder: '例如：地铁站 A 口外侧'
     },
     street_update: {
-      titlePlaceholder: '例如：北三环辅路施工占道',
+      titlePlaceholder: '例如：小区门口施工占道',
       bodyPlaceholder: '说明影响范围、方向、是否需要绕行',
-      placePlaceholder: '例如：中鼎大厦南侧'
+      placePlaceholder: '例如：商场南侧人行道'
     },
     help_needed: {
       titlePlaceholder: '例如：有人看到黑色电脑包吗',
@@ -37,7 +42,7 @@ const config = {
       placePlaceholder: '例如：社区广场到公交站之间'
     },
     check_in: {
-      titlePlaceholder: '例如：银杏路口今天很适合拍照',
+      titlePlaceholder: '例如：社区花园今天很适合拍照',
       bodyPlaceholder: '补充时间、角度、人流或其他附近状态',
       placePlaceholder: '例如：社区广场东侧'
     }

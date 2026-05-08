@@ -23,10 +23,10 @@ const mockPosts = [
   {
     id: 'post_002',
     markerId: 2,
-    title: '北三环辅路施工占道',
-    body: '靠近中鼎大厦一侧，骑行需要提前并到外侧。',
+    title: '小区门口施工占道',
+    body: '靠近主入口一侧，骑行需要提前并到外侧。',
     category: 'street_update',
-    placeName: '中鼎大厦南侧',
+    placeName: '商场南侧人行道',
     latitude: 39.96853,
     longitude: 116.34096,
     status: 'active',

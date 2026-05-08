@@ -9,6 +9,7 @@ import {
   statusLabel
 } from '../../utils/format.js';
 import config from '../../utils/config.js';
+import { syncTabBar } from '../../utils/tab-bar.js';
 
 const app = getApp();
 const categoryOptions = [
@@ -45,7 +46,6 @@ function isOpenPost(post) {
 Page({
   data: {
     center: app.globalData.center,
-    pilotArea: config.pilotArea,
     categoryFilters: categoryOptions.map((item) => ({ ...item, count: 0 })),
     activeCategory: 'all',
     activeCategoryText: '全部',
@@ -76,6 +76,7 @@ Page({
   },
 
   onShow() {
+    syncTabBar(this, '/pages/map/map');
     this.refresh();
   },
 
@@ -316,7 +317,7 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: config.pilotArea.shareTitle,
+      title: config.appInfo.shareTitle,
       path: '/pages/map/map'
     };
   }

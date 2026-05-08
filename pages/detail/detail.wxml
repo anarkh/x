@@ -16,7 +16,7 @@
 
   <view wx:if="{{showPublishSuccess}}" class="panel publish-success">
     <view>
-      <view class="success-title">已进入{{pilotArea.shortName}}</view>
+      <view class="success-title">已发布到{{appInfo.shortName}}</view>
       <view class="muted">转发给附近的人，能更快获得确认、更新或关闭。</view>
     </view>
     <view class="row success-actions">
@@ -49,7 +49,7 @@
   </view>
 
   <view wx:if="{{post.canReact}}" class="actions">
-    <button class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
+    <button wx:if="{{post.canResolve}}" class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
     <button class="primary-button {{post.confirmedByMe ? 'disabled-action' : ''}}" disabled="{{post.confirmedByMe}}" data-action="confirm" bindtap="react">{{post.confirmedByMe ? '已确认' : '确认有效'}}</button>
     <button class="secondary-button {{post.staledByMe ? 'disabled-action' : ''}}" disabled="{{post.staledByMe}}" data-action="stale" bindtap="react">{{post.staledByMe ? '已标记过时' : '标记过时'}}</button>
     <button class="danger-button {{post.reportedByMe ? 'disabled-action' : ''}}" disabled="{{post.reportedByMe}}" data-action="report" bindtap="react">{{post.reportedByMe ? '已举报' : '举报'}}</button>

@@ -1,0 +1,257 @@
+.me-page {
+  padding-bottom: calc(146rpx + env(safe-area-inset-bottom));
+}
+
+.profile-panel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 104rpx 1fr;
+  gap: 22rpx;
+  align-items: center;
+  min-height: 190rpx;
+  padding: 32rpx;
+  border-radius: 8rpx;
+  overflow: hidden;
+  background: #17231f;
+  box-shadow: 0 18rpx 52rpx rgba(23, 32, 29, 0.18);
+  box-sizing: border-box;
+}
+
+.profile-grid {
+  position: absolute;
+  right: -72rpx;
+  top: -78rpx;
+  width: 280rpx;
+  height: 280rpx;
+  border: 1rpx solid rgba(229, 109, 63, 0.22);
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1rpx, transparent 1rpx),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.06) 1rpx, transparent 1rpx);
+  background-size: 28rpx 28rpx;
+}
+
+.avatar {
+  position: relative;
+  z-index: 1;
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 8rpx;
+  background: #f7fbf7;
+  color: #1f6658;
+  font-size: 48rpx;
+  font-weight: 900;
+  line-height: 104rpx;
+  text-align: center;
+}
+
+.profile-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.profile-kicker {
+  color: #e56d3f;
+  font-size: 22rpx;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.profile-name {
+  margin-top: 8rpx;
+  color: #f7fbf7;
+  font-size: 44rpx;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.profile-meta {
+  margin-top: 10rpx;
+  color: rgba(247, 251, 247, 0.68);
+  font-size: 24rpx;
+  line-height: 1.4;
+}
+
+.auth-card,
+.admin-login-card,
+.admin-ready-card {
+  padding: 26rpx;
+}
+
+.auth-card,
+.admin-ready-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22rpx;
+  align-items: center;
+}
+
+.login-button {
+  max-width: 180rpx;
+  height: 68rpx;
+  padding: 0 28rpx;
+  border-radius: 8rpx;
+  background: #1f6658;
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 900;
+}
+
+.admin-login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  border-color: rgba(229, 109, 63, 0.18);
+}
+
+.admin-login-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132rpx;
+  gap: 14rpx;
+  align-items: center;
+}
+
+.admin-code-input {
+  min-width: 0;
+  height: 72rpx;
+  padding: 0 22rpx;
+  border: 1rpx solid rgba(26, 46, 41, 0.12);
+  border-radius: 8rpx;
+  background: #f8faf7;
+  color: #17201d;
+  font-size: 26rpx;
+  box-sizing: border-box;
+}
+
+.admin-login-button {
+  width: 132rpx;
+  height: 72rpx;
+  border-radius: 8rpx;
+  background: #e56d3f;
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 900;
+}
+
+.admin-ready-card {
+  border-color: rgba(31, 102, 88, 0.18);
+  background: #f7fbf8;
+}
+
+.admin-ready-card:active {
+  opacity: 0.76;
+}
+
+.admin-ready-arrow {
+  width: 24rpx;
+  height: 24rpx;
+  border-top: 6rpx solid #1f6658;
+  border-right: 6rpx solid #1f6658;
+  transform: rotate(45deg);
+}
+
+.stat-panel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 28rpx 0;
+  text-align: center;
+}
+
+.stat-item + .stat-item {
+  border-left: 1rpx solid rgba(26, 46, 41, 0.1);
+}
+
+.compact-post:active,
+.activity-card:active {
+  opacity: 0.76;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 8rpx;
+}
+
+.section-head > view {
+  min-width: 0;
+}
+
+.empty-panel {
+  padding: 30rpx;
+}
+
+.empty-title {
+  margin-bottom: 8rpx;
+  color: #16231f;
+  font-size: 30rpx;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.compact-post {
+  padding: 24rpx;
+}
+
+.post-tags {
+  flex-wrap: wrap;
+  gap: 10rpx;
+  min-width: 0;
+}
+
+.compact-title {
+  margin-top: 14rpx;
+  margin-bottom: 8rpx;
+  color: #16231f;
+  font-size: 30rpx;
+  font-weight: 900;
+  line-height: 1.28;
+}
+
+.activity-card {
+  display: grid;
+  grid-template-columns: 144rpx 1fr;
+  gap: 18rpx;
+  align-items: center;
+  padding: 22rpx;
+}
+
+.activity-main {
+  min-width: 0;
+}
+
+.activity-main .compact-title {
+  margin-top: 0;
+}
+
+.activity-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 62rpx;
+  padding: 0 14rpx;
+  border-radius: 8rpx;
+  background: #edf0ee;
+  color: #66736d;
+  font-size: 24rpx;
+  font-weight: 900;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.activity-mark.done {
+  background: #dcebe5;
+  color: #28584e;
+}
+
+.activity-mark.warn {
+  background: #fff1d7;
+  color: #915709;
+}
+
+.activity-mark.danger {
+  background: #ffe8e2;
+  color: #a73527;
+}

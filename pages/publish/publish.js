@@ -1,25 +1,30 @@
 import config from '../../utils/config.js';
 import { createPost } from '../../utils/store.js';
+import { syncTabBar } from '../../utils/tab-bar.js';
 
 Page({
   data: {
-    pilotArea: config.pilotArea,
+    appInfo: config.appInfo,
     categories: config.categories,
     expiryOptions: config.expiryOptions,
     lostFoundIntents: config.lostFoundIntents,
     activeGuide: config.publishGuides[config.categories[0].value],
     categoryIndex: 0,
     expiryIndex: 1,
-    intentIndex: 1,
+    intentIndex: -1,
     submitting: false,
     form: {
       title: '',
       body: '',
       category: config.categories[0].value,
-      intent: config.lostFoundIntents[1].value,
+      intent: '',
       placeName: '',
       expiryHours: config.expiryOptions[1].value
     }
+  },
+
+  onShow() {
+    syncTabBar(this, '/pages/publish/publish');
   },
 
   onInput(event) {
@@ -35,7 +40,9 @@ Page({
     this.setData({
       categoryIndex: index,
       activeGuide: config.publishGuides[category],
-      'form.category': category
+      intentIndex: -1,
+      'form.category': category,
+      'form.intent': ''
     });
   },
 
@@ -62,6 +69,10 @@ Page({
     }
     if (!form.title.trim() || !form.body.trim()) {
       wx.showToast({ title: '请补全标题和详情', icon: 'none' });
+      return;
+    }
+    if (form.category === 'lost_found' && !form.intent) {
+      wx.showToast({ title: '请选择丢失或捡到', icon: 'none' });
       return;
     }
 

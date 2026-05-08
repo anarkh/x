@@ -1,6 +1,7 @@
 import mockPosts from './mock-posts.js';
 import config from './config.js';
 import { distanceMeters } from './geo.js';
+import { getCurrentUser, isAdmin } from './auth.js';
 
 const STORAGE_KEY = 'posts';
 const REACTIONS_STORAGE_KEY = 'post_reactions';
@@ -29,8 +30,7 @@ function saveReactionMap(reactions) {
 }
 
 function currentUserId() {
-  const user = wx.getStorageSync('user');
-  return user && user.id ? user.id : 'local_guest';
+  return getCurrentUser().id;
 }
 
 function reactionKey(id, action) {
@@ -67,23 +67,32 @@ function statusRank(status) {
   return ranks[status] ?? 3;
 }
 
-export function listPosts(center = config.pilotCenter) {
+function sortedDerivedPosts(center) {
   const now = Date.now();
   return seedPosts()
     .map((post) => derivePost(post, now, center))
+    .sort((a, b) => statusRank(a.status) - statusRank(b.status) || b.createdAt - a.createdAt);
+}
+
+export function listAllPosts(center = config.defaultCenter) {
+  return sortedDerivedPosts(center).slice(0, config.maxVisiblePosts);
+}
+
+export function listPosts(center = config.defaultCenter) {
+  return sortedDerivedPosts(center)
     .filter((post) => post.status !== 'hidden')
-    .sort((a, b) => statusRank(a.status) - statusRank(b.status) || b.createdAt - a.createdAt)
     .slice(0, config.maxVisiblePosts);
 }
 
 export function getPost(id) {
-  return listPosts().find((post) => post.id === id);
+  return (isAdmin(getCurrentUser()) ? listAllPosts() : listPosts()).find((post) => post.id === id);
 }
 
 export function createPost(input) {
   const posts = seedPosts();
   const markerId = posts.reduce((max, post) => Math.max(max, Number(post.markerId) || 0), 0) + 1;
   const now = Date.now();
+  const user = getCurrentUser();
   const post = {
     id: `post_${now}`,
     markerId,
@@ -101,10 +110,30 @@ export function createPost(input) {
     reportCount: 0,
     createdAt: now,
     expiresAt: now + Number(input.expiryHours) * 60 * 60 * 1000,
-    publisher: input.publisher || '匿名用户'
+    publisherId: user.id,
+    publisher: String(input.publisher || user.nickname || '匿名用户').trim()
   };
   savePosts([post, ...posts]);
   return post;
+}
+
+export function listMyReactions() {
+  const reactions = loadReactionMap();
+  const prefix = `${currentUserId()}:`;
+  return Object.keys(reactions)
+    .filter((key) => key.startsWith(prefix))
+    .map((key) => {
+      const value = key.slice(prefix.length);
+      const segments = value.split(':');
+      const action = segments.pop();
+      return {
+        id: segments.join(':'),
+        action,
+        reactedAt: reactions[key]
+      };
+    })
+    .filter((item) => item.id && item.action)
+    .sort((a, b) => b.reactedAt - a.reactedAt);
 }
 
 export function hasReactedToPost(id, action) {

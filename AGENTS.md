@@ -4,7 +4,7 @@ Guidance for AI coding agents working on this repository.
 
 ## Project Overview
 
-Street Tasks is a native WeChat mini program for short-lived neighborhood tasks. The current product is intentionally small: a map-first feed, a publish flow, a task detail page, structured trust actions, and lightweight admin moderation.
+Street Tasks is a native WeChat mini program for short-lived neighborhood tasks. The current product is intentionally small: a map-first feed, a publish flow, a task detail page, structured trust actions, and lightweight admin moderation. There is no fixed service area; users can browse and publish from any current location.
 
 The app currently runs without a backend. Data is seeded from mock posts and persisted through `wx` local storage. Treat `utils/store.js` as the persistence boundary that can later be replaced by cloud functions or HTTP APIs.
 
@@ -122,10 +122,10 @@ When changing categories:
 - Check formatting behavior in `utils/format.js`.
 - Verify publish picker and map/detail/admin labels.
 
-When changing the pilot area:
+When changing location or app identity copy:
 
-- Update `pilotCenter` and `pilotArea` in `utils/config.js`.
-- Verify the map area card, publish header, admin header, and share titles.
+- Update `defaultCenter` and `appInfo` in `utils/config.js`.
+- Verify the map info card, publish header, profile header, admin header, and share titles.
 
 When changing post storage:
 

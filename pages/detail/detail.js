@@ -1,4 +1,5 @@
 import config from '../../utils/config.js';
+import { getCurrentUser, isAdmin } from '../../utils/auth.js';
 import { getPost, hasReactedToPost, reactToPost, resolvePost } from '../../utils/store.js';
 import { markerFromPost } from '../../utils/geo.js';
 import {
@@ -14,7 +15,7 @@ import {
 Page({
   data: {
     id: '',
-    pilotArea: config.pilotArea,
+    appInfo: config.appInfo,
     post: null,
     markers: [],
     showPublishSuccess: false
@@ -43,6 +44,9 @@ Page({
       this.setData({ post: null, markers: [] });
       return;
     }
+    const user = getCurrentUser();
+    const canReact = raw.status === 'active' || raw.status === 'stale';
+    const canResolve = canReact && (isAdmin(user) || raw.publisherId === user.id);
     const post = {
       ...raw,
       categoryText: categoryLabel(raw.category),
@@ -54,7 +58,8 @@ Page({
       expiryText: raw.status === 'resolved' ? '已关闭' : formatTimeLeft(raw.expiresAt),
       distanceText: `${raw.distance}m`,
       resolveText: resolveActionLabel(raw.category),
-      canReact: raw.status === 'active' || raw.status === 'stale',
+      canReact,
+      canResolve,
       confirmedByMe: hasReactedToPost(raw.id, 'confirm'),
       staledByMe: hasReactedToPost(raw.id, 'stale'),
       reportedByMe: hasReactedToPost(raw.id, 'report')
@@ -83,6 +88,13 @@ Page({
   },
 
   resolve() {
+    if (!this.data.post || !this.data.post.canResolve) {
+      wx.showToast({
+        title: '只有发布者或管理员可关闭',
+        icon: 'none'
+      });
+      return;
+    }
     wx.showModal({
       title: this.data.post.resolveText,
       content: '关闭后仍会保留在列表里，方便附近用户知道这件事已经处理完。',
@@ -109,7 +121,7 @@ Page({
     const post = this.data.post;
     if (!post) {
       return {
-        title: config.pilotArea.shareTitle,
+        title: config.appInfo.shareTitle,
         path: '/pages/map/map'
       };
     }
