@@ -20,8 +20,16 @@ export function formatDistance(meters) {
 }
 
 function markerSummary(post) {
-  const body = post.body.length > 18 ? `${post.body.slice(0, 18)}...` : post.body;
-  return `${post.title}\n${body}`;
+  return post.title.length > 12 ? `${post.title.slice(0, 12)}...` : post.title;
+}
+
+function markerBorderColor(status) {
+  const colors = {
+    stale: '#D99028',
+    resolved: '#6F817A',
+    expired: '#98A39E'
+  };
+  return colors[status] || '#255F54';
 }
 
 export function markerFromPost(post) {
@@ -42,11 +50,11 @@ export function markerFromPost(post) {
       fontSize: 12,
       borderRadius: 8,
       bgColor: '#FFFFFF',
-      padding: 8,
-      borderColor: post.status === 'stale' ? '#D99028' : '#255F54',
+      padding: 7,
+      borderColor: markerBorderColor(post.status),
       borderWidth: 1,
       display: 'ALWAYS',
-      textAlign: 'left'
+      textAlign: 'center'
     }
   };
 }

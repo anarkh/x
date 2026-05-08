@@ -2,7 +2,7 @@
   <view class="admin-head">
     <view class="head-rule"></view>
     <view class="title">轻量管理</view>
-    <view class="muted">Pilot v1 只处理举报隐藏和过期巡检</view>
+    <view class="muted">{{pilotArea.name}} · 围绕确认、关闭、举报做轻量巡检</view>
   </view>
 
   <view class="panel summary">
@@ -15,6 +15,10 @@
       <view class="muted">疑似过时</view>
     </view>
     <view class="summary-item">
+      <view class="metric">{{stats.resolved}}</view>
+      <view class="muted">已解决</view>
+    </view>
+    <view class="summary-item">
       <view class="metric">{{stats.reported}}</view>
       <view class="muted">有举报</view>
     </view>
@@ -22,13 +26,18 @@
 
   <view wx:for="{{posts}}" wx:key="id" class="panel admin-card">
     <view class="row between">
-      <text class="tag {{item.reportCount > 0 ? 'danger' : ''}}">{{item.categoryText}}</text>
+      <view class="row admin-tags">
+        <text class="tag {{item.reportCount > 0 ? 'danger' : ''}}">{{item.categoryText}}</text>
+        <text wx:if="{{item.intentText}}" class="tag neutral">{{item.intentText}}</text>
+        <text wx:if="{{item.status !== 'active'}}" class="tag {{item.status === 'stale' ? 'warn' : ''}} {{item.status === 'resolved' ? 'done' : ''}} {{item.status === 'expired' ? 'neutral' : ''}}">{{item.statusText}}</text>
+      </view>
       <text class="muted">举报 {{item.reportCount}}</text>
     </view>
     <view class="section-title">{{item.title}}</view>
     <view class="muted">{{item.placeName}} · {{item.expiryText}}</view>
     <view class="row admin-actions">
       <button class="ghost-button" data-id="{{item.id}}" bindtap="openDetail">查看</button>
+      <button wx:if="{{item.status === 'active' || item.status === 'stale'}}" class="resolve-button" data-id="{{item.id}}" bindtap="resolve">关闭</button>
       <button class="hide-button" data-id="{{item.id}}" bindtap="hide">隐藏</button>
     </view>
   </view>

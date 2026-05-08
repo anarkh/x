@@ -2,12 +2,22 @@
 
 WeChat mini program for short-lived neighborhood tasks.
 
+## North Star
+
+Nearby short-lived information should be easy to confirm, update, and close.
+
+Current pilot area: `中关村东路试点区`.
+
 ## What Is Included
 
 - Map-first task browsing within a configurable nearby radius.
-- Publish flow with category, place, coordinate, and expiry controls.
-- Task detail page with confirm, stale, and report actions.
-- Lightweight admin page for reported or stale posts.
+- Pilot-area identity on the map, publish, and admin surfaces.
+- "Find one" discovery action for sparse maps, jumping to a random nearby post.
+- Publish flow with category-specific guidance, lost/found direction, place, coordinate, and expiry controls.
+- Publish-success sharing prompt and detail-page share metadata.
+- Task detail page with confirm, stale, resolve, and report actions.
+- Local duplicate prevention for repeated trust actions on the same post.
+- Lightweight admin page for reported, stale, resolved, or expired posts, with hide and close actions.
 - Local mock storage through `utils/store.js`, so the mini program can run before a backend exists.
 
 ## Run Locally

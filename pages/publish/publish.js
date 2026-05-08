@@ -3,15 +3,21 @@ import { createPost } from '../../utils/store.js';
 
 Page({
   data: {
+    pilotArea: config.pilotArea,
     categories: config.categories,
     expiryOptions: config.expiryOptions,
+    lostFoundIntents: config.lostFoundIntents,
+    activeGuide: config.publishGuides[config.categories[0].value],
     categoryIndex: 0,
     expiryIndex: 1,
+    intentIndex: 1,
     submitting: false,
     form: {
       title: '',
       body: '',
       category: config.categories[0].value,
+      intent: config.lostFoundIntents[1].value,
+      placeName: '',
       expiryHours: config.expiryOptions[1].value
     }
   },
@@ -25,9 +31,19 @@ Page({
 
   onCategoryChange(event) {
     const index = Number(event.detail.value);
+    const category = this.data.categories[index].value;
     this.setData({
       categoryIndex: index,
-      'form.category': this.data.categories[index].value
+      activeGuide: config.publishGuides[category],
+      'form.category': category
+    });
+  },
+
+  onIntentChange(event) {
+    const index = Number(event.currentTarget.dataset.index);
+    this.setData({
+      intentIndex: index,
+      'form.intent': this.data.lostFoundIntents[index].value
     });
   },
 
@@ -60,12 +76,11 @@ Page({
 
         const post = createPost({
           ...form,
-          placeName: '当前位置',
           ...currentLocation
         });
         wx.showToast({ title: '已发布', icon: 'success' });
         setTimeout(() => {
-          wx.navigateTo({ url: `/pages/detail/detail?id=${post.id}` });
+          wx.navigateTo({ url: `/pages/detail/detail?id=${post.id}&from=publish` });
         }, 400);
       },
       fail: () => {

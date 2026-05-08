@@ -2,12 +2,27 @@
   <view class="panel hero stack">
     <view class="hero-grid"></view>
     <view class="row between">
-      <text class="tag {{post.status === 'stale' ? 'warn' : ''}}">{{post.categoryText}}</text>
+      <view class="row hero-tags">
+        <text class="tag">{{post.categoryText}}</text>
+        <text wx:if="{{post.intentText}}" class="tag neutral">{{post.intentText}}</text>
+        <text wx:if="{{post.status !== 'active'}}" class="tag {{post.status === 'stale' ? 'warn' : ''}} {{post.status === 'resolved' ? 'done' : ''}} {{post.status === 'expired' ? 'neutral' : ''}}">{{post.statusText}}</text>
+      </view>
       <text class="muted">{{post.expiryText}}</text>
     </view>
     <view class="title">{{post.title}}</view>
     <view class="body">{{post.body}}</view>
     <view class="muted">{{post.placeName}} · {{post.distanceText}} · {{post.createdText}}</view>
+  </view>
+
+  <view wx:if="{{showPublishSuccess}}" class="panel publish-success">
+    <view>
+      <view class="success-title">已进入{{pilotArea.shortName}}</view>
+      <view class="muted">转发给附近的人，能更快获得确认、更新或关闭。</view>
+    </view>
+    <view class="row success-actions">
+      <button class="share-button" open-type="share">转发</button>
+      <button class="ghost-button" bindtap="dismissSharePrompt">稍后</button>
+    </view>
   </view>
 
   <map
@@ -21,7 +36,7 @@
   <view class="panel metrics">
     <view class="metric-item">
       <view class="metric">{{post.confirmations}}</view>
-      <view class="muted">确认</view>
+      <view class="muted">{{post.confirmationHint}}</view>
     </view>
     <view class="metric-item">
       <view class="metric">{{post.staleCount}}</view>
@@ -33,10 +48,16 @@
     </view>
   </view>
 
-  <view class="actions">
-    <button class="primary-button" data-action="confirm" bindtap="react">确认有效</button>
-    <button class="secondary-button" data-action="stale" bindtap="react">标记过时</button>
-    <button class="danger-button" data-action="report" bindtap="react">举报</button>
+  <view wx:if="{{post.canReact}}" class="actions">
+    <button class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
+    <button class="primary-button {{post.confirmedByMe ? 'disabled-action' : ''}}" disabled="{{post.confirmedByMe}}" data-action="confirm" bindtap="react">{{post.confirmedByMe ? '已确认' : '确认有效'}}</button>
+    <button class="secondary-button {{post.staledByMe ? 'disabled-action' : ''}}" disabled="{{post.staledByMe}}" data-action="stale" bindtap="react">{{post.staledByMe ? '已标记过时' : '标记过时'}}</button>
+    <button class="danger-button {{post.reportedByMe ? 'disabled-action' : ''}}" disabled="{{post.reportedByMe}}" data-action="report" bindtap="react">{{post.reportedByMe ? '已举报' : '举报'}}</button>
+  </view>
+
+  <view wx:else class="panel closed-note">
+    <view class="section-title">{{post.statusText}}</view>
+    <view class="muted">这条任务已结束，保留在附近列表中作为状态参考。</view>
   </view>
 </view>
 

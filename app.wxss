@@ -101,6 +101,18 @@ button::after {
   color: #a73527;
 }
 
+.tag.done {
+  border-color: rgba(31, 102, 88, 0.18);
+  background: #dcebe5;
+  color: #28584e;
+}
+
+.tag.neutral {
+  border-color: rgba(102, 115, 109, 0.18);
+  background: #edf0ee;
+  color: #66736d;
+}
+
 .primary-button,
 .secondary-button {
   height: 92rpx;

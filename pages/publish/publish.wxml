@@ -2,18 +2,18 @@
   <view class="page-head">
     <view class="head-mark">DZ</view>
     <view class="title">发布街区任务</view>
-    <view class="muted">发布时自动使用你的当前位置</view>
+    <view class="muted">发布到{{pilotArea.shortName}}，自动使用你的当前位置</view>
   </view>
 
   <view class="panel form-card stack">
     <view>
       <view class="label">标题</view>
-      <input class="input" maxlength="32" placeholder="例如：捡到蓝色门禁卡" value="{{form.title}}" data-field="title" bindinput="onInput" />
+      <input class="input" maxlength="32" placeholder="{{activeGuide.titlePlaceholder}}" value="{{form.title}}" data-field="title" bindinput="onInput" />
     </view>
 
     <view>
       <view class="label">详情</view>
-      <textarea class="textarea" maxlength="180" placeholder="补充识别信息、方向或联系方式线索" value="{{form.body}}" data-field="body" bindinput="onInput" />
+      <textarea class="textarea" maxlength="180" placeholder="{{activeGuide.bodyPlaceholder}}" value="{{form.body}}" data-field="body" bindinput="onInput" />
     </view>
 
     <view>
@@ -21,6 +21,26 @@
       <picker mode="selector" range="{{categories}}" range-key="label" value="{{categoryIndex}}" bindchange="onCategoryChange">
         <view class="picker">{{categories[categoryIndex].label}}</view>
       </picker>
+    </view>
+
+    <view wx:if="{{form.category === 'lost_found'}}">
+      <view class="label">方向</view>
+      <view class="intent-tabs">
+        <button
+          wx:for="{{lostFoundIntents}}"
+          wx:key="value"
+          class="intent-tab {{intentIndex === index ? 'active' : ''}}"
+          data-index="{{index}}"
+          bindtap="onIntentChange"
+        >
+          {{item.label}}
+        </button>
+      </view>
+    </view>
+
+    <view>
+      <view class="label">地点补充</view>
+      <input class="input" maxlength="40" placeholder="{{activeGuide.placePlaceholder}}" value="{{form.placeName}}" data-field="placeName" bindinput="onInput" />
     </view>
 
     <view>

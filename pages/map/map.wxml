@@ -8,17 +8,50 @@
     markers="{{markers}}"
     show-location
     bindmarkertap="onMarkerTap"
+    bindcallouttap="onMarkerTap"
+    bindregionchange="onRegionChange"
   />
 
-  <button class="refresh-fab" aria-label="刷新列表" bindtap="refresh">
-    <view class="refresh-icon"></view>
-  </button>
-  <button class="locate-fab" aria-label="返回当前位置" bindtap="locateCurrent">
-    <view class="locate-icon">
-      <view class="locate-dot"></view>
+  <view class="area-card">
+    <view class="area-kicker">北极星信息台</view>
+    <view class="area-name">{{pilotArea.name}}</view>
+    <view class="area-meta">{{pilotArea.description}} · {{openPostCount}} 条处理中</view>
+  </view>
+
+  <view class="map-tool-row">
+    <button class="map-tool-button clear-tool-button" aria-label="刷新列表" bindtap="refreshWithSpin">
+      <text class="tool-symbol refresh-symbol {{refreshing ? 'spinning' : ''}}">↻</text>
+    </button>
+    <button class="map-tool-button clear-tool-button" aria-label="返回当前位置" bindtap="locateCurrent">
+      <view class="tool-icon target-tool">
+        <view class="target-dot"></view>
+      </view>
+    </button>
+    <button class="map-tool-button discover-tool-button" aria-label="找一找附近内容" bindtap="discoverNearby">
+      <view class="tool-icon search-tool">
+        <view class="search-spark"></view>
+      </view>
+    </button>
+  </view>
+  <button class="list-fab" bindtap="showList">列表 {{visiblePosts.length}}</button>
+
+  <view wx:if="{{selectedPost && !showList}}" class="selected-card panel">
+    <view class="selected-head">
+      <view class="selected-main">
+        <view class="row selected-tags">
+          <text class="tag">{{selectedPost.categoryText}}</text>
+          <text wx:if="{{selectedPost.intentText}}" class="tag neutral">{{selectedPost.intentText}}</text>
+          <text wx:if="{{selectedPost.status !== 'active'}}" class="tag {{selectedPost.status === 'stale' ? 'warn' : ''}} {{selectedPost.status === 'resolved' ? 'done' : ''}} {{selectedPost.status === 'expired' ? 'neutral' : ''}}">{{selectedPost.statusText}}</text>
+        </view>
+        <view class="selected-title">{{selectedPost.title}}</view>
+        <view class="selected-meta">{{selectedPost.placeName}} · {{selectedPost.distanceText}} · {{selectedPost.confirmationText}}</view>
+      </view>
+      <button class="selected-close" aria-label="收起" bindtap="clearSelectedPost">×</button>
     </view>
-  </button>
-  <button class="list-fab" bindtap="showList">列表 {{posts.length}}</button>
+    <view class="selected-actions">
+      <button class="selected-detail" data-id="{{selectedPost.id}}" bindtap="openDetail">详情</button>
+    </view>
+  </view>
 
   <view wx:if="{{showList}}" class="drawer-mask" bindtap="hideList"></view>
   <view class="list-drawer {{showList ? 'open' : ''}}">
@@ -26,13 +59,30 @@
     <view class="row between drawer-head">
       <view>
         <view class="section-title">信息列表</view>
-        <view class="muted">按发布时间排序</view>
+        <view class="muted">当前屏幕 {{viewportPostCount}} 条 · {{activeCategoryText}}</view>
       </view>
       <button class="ghost-button" bindtap="hideList">收起</button>
     </view>
 
+    <scroll-view class="filter-bar" scroll-x enable-flex>
+      <button
+        wx:for="{{categoryFilters}}"
+        wx:key="value"
+        class="filter-chip {{activeCategory === item.value ? 'active' : ''}}"
+        data-category="{{item.value}}"
+        bindtap="changeCategory"
+      >
+        {{item.label}} {{item.count}}
+      </button>
+    </scroll-view>
+
     <scroll-view class="post-list" scroll-y>
-      <view wx:for="{{posts}}" wx:key="id" class="post-card panel" data-id="{{item.id}}" bindtap="focusPost">
+      <view wx:if="{{!visiblePosts.length}}" class="empty-panel panel">
+        <view class="empty-title">当前屏幕没有这类信息</view>
+        <view class="muted">移动地图、缩小比例，或点“找一找”跳到附近内容。</view>
+      </view>
+
+      <view wx:for="{{visiblePosts}}" wx:key="id" class="post-card panel" data-id="{{item.id}}" bindtap="focusPost">
         <view class="post-content">
           <view class="post-main">
             <view class="post-text">
@@ -44,11 +94,15 @@
             </button>
           </view>
           <view class="row between card-top">
-            <text class="tag {{item.status === 'stale' ? 'warn' : ''}}">{{item.categoryText}}</text>
+            <view class="row card-tags">
+              <text class="tag">{{item.categoryText}}</text>
+              <text wx:if="{{item.intentText}}" class="tag neutral">{{item.intentText}}</text>
+              <text wx:if="{{item.status !== 'active'}}" class="tag {{item.status === 'stale' ? 'warn' : ''}} {{item.status === 'resolved' ? 'done' : ''}} {{item.status === 'expired' ? 'neutral' : ''}}">{{item.statusText}}</text>
+            </view>
             <text class="muted">{{item.distanceText}}</text>
           </view>
           <view class="row between signals">
-            <text>确认 {{item.confirmations}}</text>
+            <text>{{item.confirmationText}}</text>
             <text>过时 {{item.staleCount}}</text>
             <text>{{item.expiryText}}</text>
           </view>

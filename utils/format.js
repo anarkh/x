@@ -11,6 +11,42 @@ export function categoryLabel(value) {
   return item ? item.label : '街区任务';
 }
 
+export function statusLabel(status) {
+  const labels = {
+    active: '有效',
+    stale: '疑似过时',
+    expired: '已过期',
+    hidden: '已隐藏',
+    resolved: '已解决'
+  };
+  return labels[status] || '有效';
+}
+
+export function resolveActionLabel(category) {
+  const labels = {
+    lost_found: '已找回',
+    street_update: '已恢复',
+    help_needed: '已解决',
+    check_in: '已结束'
+  };
+  return labels[category] || '关闭任务';
+}
+
+export function intentLabel(intent) {
+  const labels = {
+    lost: '我丢了',
+    found: '我捡到'
+  };
+  return labels[intent] || '';
+}
+
+export function formatConfirmationText(confirmations, lastConfirmedAt) {
+  if (!lastConfirmedAt) {
+    return `确认 ${confirmations}`;
+  }
+  return `确认 ${confirmations} · ${formatCreatedAt(lastConfirmedAt)}确认`;
+}
+
 export function formatTimeLeft(expiresAt) {
   const ms = expiresAt - Date.now();
   if (ms <= 0) {

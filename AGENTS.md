@@ -58,9 +58,10 @@ Posts are plain objects with these important fields:
 - `id`: string post id such as `post_001` or `post_${Date.now()}`.
 - `markerId`: numeric map marker id.
 - `title`, `body`, `category`, `placeName`.
+- `intent`: optional subtype, currently used by `lost_found` as `lost` or `found`.
 - `latitude`, `longitude`.
-- `status`: `active`, `stale`, `expired`, or `hidden`.
-- `confirmations`, `staleCount`, `reportCount`.
+- `status`: `active`, `stale`, `resolved`, `expired`, or `hidden`.
+- `confirmations`, `lastConfirmedAt`, `staleCount`, `reportCount`.
 - `createdAt`, `expiresAt`: timestamps in milliseconds.
 - `publisher`: display name.
 
@@ -69,8 +70,10 @@ Posts are plain objects with these important fields:
 ## Behavior Rules
 
 - Confirming a post increments `confirmations`.
+- Confirming also stores `lastConfirmedAt` and one local user cannot repeat the same trust action on the same post.
 - Marking a post stale increments `staleCount`; after 3 stale reports, status becomes `stale`.
 - Reporting a post increments `reportCount`; after 2 reports, status becomes `hidden`.
+- Resolving a post sets status to `resolved`.
 - Expired posts are marked as `expired` when listed.
 - Hidden posts should not appear in normal list results.
 
@@ -118,6 +121,11 @@ When changing categories:
 - Update `utils/config.js`.
 - Check formatting behavior in `utils/format.js`.
 - Verify publish picker and map/detail/admin labels.
+
+When changing the pilot area:
+
+- Update `pilotCenter` and `pilotArea` in `utils/config.js`.
+- Verify the map area card, publish header, admin header, and share titles.
 
 When changing post storage:
 
