@@ -11,8 +11,15 @@ const config = {
     shareTitle: '附近任务'
   },
   admin: {
-    displayName: '管理员',
-    localLoginCode: 'street-admin'
+    displayName: '管理员'
+  },
+  cloud: {
+    enabled: true,
+    envId: 'cloud1-d4ga42hl16934fbdf',
+    collections: {
+      posts: 'posts',
+      admins: 'admins'
+    }
   },
   maxVisiblePosts: 100,
   categories: [
@@ -24,6 +31,12 @@ const config = {
   lostFoundIntents: [
     { value: 'lost', label: '我丢了' },
     { value: 'found', label: '我捡到' }
+  ],
+  feedbackTypes: [
+    { value: 'suggestion', label: '功能建议' },
+    { value: 'bug', label: '问题反馈' },
+    { value: 'content', label: '内容体验' },
+    { value: 'other', label: '其他' }
   ],
   publishGuides: {
     lost_found: {

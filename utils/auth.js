@@ -27,6 +27,7 @@ function normalizeUser(user) {
     nickname: user.nickname || (role === 'admin' ? config.admin.displayName : '街区用户'),
     avatarUrl: user.avatarUrl || '',
     role,
+    authSource: user.authSource || '',
     isGuest: Boolean(user.isGuest) || isLegacyGuest,
     loggedInAt: user.loggedInAt || 0
   };
@@ -55,31 +56,63 @@ export function loginAsUser(profile = {}) {
     nickname: profile.nickName || profile.nickname || (previous.isGuest ? '街区用户' : previous.nickname) || '街区用户',
     avatarUrl: profile.avatarUrl || previous.avatarUrl || '',
     role: 'user',
+    authSource: '',
     isGuest: false,
     loggedInAt: Date.now()
   });
 }
 
-export function loginAsAdmin(code) {
-  const passcode = String(code || '').trim();
-  if (passcode !== config.admin.localLoginCode) {
+function canUseCloudRole() {
+  return Boolean(config.cloud && config.cloud.enabled && config.cloud.envId && wx.cloud);
+}
+
+function saveCloudUser(previous, role, openid) {
+  return saveUser({
+    id: openid || previous.id || `user_${Date.now()}`,
+    nickname: role === 'admin' ? config.admin.displayName : previous.nickname,
+    avatarUrl: previous.avatarUrl || '',
+    role,
+    authSource: role === 'admin' ? 'cloud' : '',
+    isGuest: false,
+    loggedInAt: Date.now()
+  });
+}
+
+export async function refreshAdminRole() {
+  const previous = getCurrentUser();
+  if (!canUseCloudRole()) {
+    const user = saveCloudUser(previous, 'user');
     return {
       ok: false,
-      message: '管理口令不正确'
+      message: '请先配置云开发环境',
+      user
     };
   }
-  const previous = getCurrentUser();
+  let result = null;
+  try {
+    result = await wx.cloud.callFunction({
+      name: 'getMyRole'
+    });
+  } catch (error) {
+    const user = saveCloudUser(previous, 'user');
+    return {
+      ok: false,
+      message: '管理员校验失败',
+      user
+    };
+  }
+  const data = result.result || {};
+  const nextRole = data.role === 'admin' ? 'admin' : 'user';
+  const user = saveCloudUser(previous, nextRole, data.openid);
   return {
-    ok: true,
-    user: saveUser({
-      id: 'local_admin',
-      nickname: config.admin.displayName,
-      avatarUrl: previous.avatarUrl || '',
-      role: 'admin',
-      isGuest: false,
-      loggedInAt: Date.now()
-    })
+    ok: nextRole === 'admin',
+    message: nextRole === 'admin' ? '' : '当前微信不是管理员',
+    user
   };
+}
+
+export function loginAsAdmin() {
+  return refreshAdminRole();
 }
 
 export function logout() {
@@ -87,5 +120,5 @@ export function logout() {
 }
 
 export function isAdmin(user = getCurrentUser()) {
-  return user.role === 'admin' && !user.isGuest;
+  return user.role === 'admin' && user.authSource === 'cloud' && !user.isGuest;
 }

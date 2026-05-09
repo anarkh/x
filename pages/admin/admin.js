@@ -1,4 +1,5 @@
-import { getCurrentUser, isAdmin } from '../../utils/auth.js';
+import { getCurrentUser, isAdmin, refreshAdminRole } from '../../utils/auth.js';
+import { feedbackTypeLabel, listFeedback } from '../../utils/feedback.js';
 import { hidePost, listAllPosts, resolvePost } from '../../utils/store.js';
 import { syncTabBar } from '../../utils/tab-bar.js';
 import {
@@ -132,6 +133,16 @@ function countForFilter(posts, filter) {
   return posts.filter((post) => filterPost(post, filter)).length;
 }
 
+function decorateFeedback(item) {
+  return {
+    ...item,
+    typeText: feedbackTypeLabel(item.type),
+    createdText: formatCreatedAt(item.createdAt),
+    contactText: item.contact || '未留联系方式',
+    nickname: item.nickname || '匿名用户'
+  };
+}
+
 Page({
   data: {
     authorized: false,
@@ -140,6 +151,7 @@ Page({
     filterOptions: filterOptions.map((item) => ({ ...item, count: 0 })),
     posts: [],
     visiblePosts: [],
+    feedbacks: [],
     stats: {
       total: 0,
       needsReview: 0,
@@ -147,12 +159,14 @@ Page({
       stale: 0,
       resolved: 0,
       reported: 0,
-      hidden: 0
+      hidden: 0,
+      feedback: 0
     }
   },
 
-  onShow() {
+  async onShow() {
     syncTabBar(this, '/pages/admin/admin');
+    await refreshAdminRole().catch(() => null);
     const user = getCurrentUser();
     app.globalData.user = user;
     if (!isAdmin(user)) {
@@ -167,12 +181,14 @@ Page({
     this.refresh();
   },
 
-  refresh() {
-    const posts = listAllPosts()
+  async refresh() {
+    const posts = (await listAllPosts())
       .map(decoratePost)
       .sort((a, b) => riskScore(b) - riskScore(a) || b.createdAt - a.createdAt);
+    const feedbacks = listFeedback().map(decorateFeedback);
     this.setData({
       posts,
+      feedbacks,
       stats: {
         total: posts.length,
         needsReview: posts.filter(needsReview).length,
@@ -180,7 +196,8 @@ Page({
         stale: posts.filter((post) => post.status === 'stale').length,
         resolved: posts.filter((post) => post.status === 'resolved').length,
         reported: posts.filter((post) => post.reportCount > 0).length,
-        hidden: posts.filter((post) => post.status === 'hidden').length
+        hidden: posts.filter((post) => post.status === 'hidden').length,
+        feedback: feedbacks.length
       },
       filterOptions: filterOptions.map((item) => ({
         ...item,
@@ -233,11 +250,11 @@ Page({
     wx.showModal({
       title: '隐藏任务',
       content: '隐藏后普通用户不会再看到这条任务。',
-      success: (result) => {
+      success: async (result) => {
         if (!result.confirm) {
           return;
         }
-        hidePost(event.currentTarget.dataset.id);
+        await hidePost(event.currentTarget.dataset.id);
         this.refresh();
       }
     });
@@ -248,11 +265,11 @@ Page({
       title: '关闭任务',
       content: '确认这条附近信息已经处理完？关闭后普通用户仍可看到结果状态。',
       confirmText: '关闭',
-      success: (result) => {
+      success: async (result) => {
         if (!result.confirm) {
           return;
         }
-        resolvePost(event.currentTarget.dataset.id);
+        await resolvePost(event.currentTarget.dataset.id);
         this.refresh();
       }
     });

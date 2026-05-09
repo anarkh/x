@@ -21,7 +21,7 @@
       <image class="map-tool-icon search-icon" src="/assets/icons/map-search.png" mode="aspectFit" />
     </button>
   </view>
-  <button class="list-fab" bindtap="showList">列表 {{visiblePosts.length}}</button>
+  <button class="list-fab" aria-label="打开列表" bindtap="showList">{{visiblePosts.length}}</button>
 
   <view wx:if="{{selectedPost && !showList}}" class="selected-card panel">
     <view class="selected-head">

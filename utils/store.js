@@ -7,6 +7,14 @@ const STORAGE_KEY = 'posts';
 const REACTIONS_STORAGE_KEY = 'post_reactions';
 const CLOSED_STATUSES = ['hidden', 'resolved'];
 
+function shouldUseCloud() {
+  return Boolean(config.cloud && config.cloud.enabled && config.cloud.envId && wx.cloud);
+}
+
+function postsCollection() {
+  return wx.cloud.database().collection(config.cloud.collections.posts);
+}
+
 function seedPosts() {
   const stored = wx.getStorageSync(STORAGE_KEY);
   if (Array.isArray(stored) && stored.length) {
@@ -18,6 +26,43 @@ function seedPosts() {
 
 function savePosts(posts) {
   wx.setStorageSync(STORAGE_KEY, posts);
+}
+
+function normalizePost(post) {
+  return {
+    ...post,
+    id: post.id || post._id
+  };
+}
+
+async function loadPosts() {
+  if (!shouldUseCloud()) {
+    return seedPosts();
+  }
+  const result = await postsCollection()
+    .orderBy('createdAt', 'desc')
+    .limit(config.maxVisiblePosts)
+    .get();
+  return (result.data || []).map(normalizePost);
+}
+
+async function findPost(id) {
+  if (!shouldUseCloud()) {
+    return seedPosts().find((post) => post.id === id);
+  }
+  const result = await postsCollection().where({ id }).limit(1).get();
+  return result.data && result.data[0] ? normalizePost(result.data[0]) : null;
+}
+
+async function updatePost(id, data) {
+  if (!shouldUseCloud()) {
+    const posts = seedPosts().map((post) => (
+      post.id === id ? { ...post, ...data } : post
+    ));
+    savePosts(posts);
+    return;
+  }
+  await postsCollection().where({ id }).update({ data });
 }
 
 function loadReactionMap() {
@@ -67,29 +112,37 @@ function statusRank(status) {
   return ranks[status] ?? 3;
 }
 
-function sortedDerivedPosts(center) {
+async function sortedDerivedPosts(center) {
   const now = Date.now();
-  return seedPosts()
+  const posts = await loadPosts();
+  return posts
     .map((post) => derivePost(post, now, center))
     .sort((a, b) => statusRank(a.status) - statusRank(b.status) || b.createdAt - a.createdAt);
 }
 
-export function listAllPosts(center = config.defaultCenter) {
-  return sortedDerivedPosts(center).slice(0, config.maxVisiblePosts);
+export async function listAllPosts(center = config.defaultCenter) {
+  const posts = await sortedDerivedPosts(center);
+  return posts.slice(0, config.maxVisiblePosts);
 }
 
-export function listPosts(center = config.defaultCenter) {
-  return sortedDerivedPosts(center)
+export async function listPosts(center = config.defaultCenter) {
+  const posts = await sortedDerivedPosts(center);
+  return posts
     .filter((post) => post.status !== 'hidden')
     .slice(0, config.maxVisiblePosts);
 }
 
-export function getPost(id) {
-  return (isAdmin(getCurrentUser()) ? listAllPosts() : listPosts()).find((post) => post.id === id);
+export async function getPost(id) {
+  const post = await findPost(id);
+  if (!post) {
+    return null;
+  }
+  const derived = derivePost(post, Date.now(), config.defaultCenter);
+  return isAdmin(getCurrentUser()) || derived.status !== 'hidden' ? derived : null;
 }
 
-export function createPost(input) {
-  const posts = seedPosts();
+export async function createPost(input) {
+  const posts = await loadPosts();
   const markerId = posts.reduce((max, post) => Math.max(max, Number(post.markerId) || 0), 0) + 1;
   const now = Date.now();
   const user = getCurrentUser();
@@ -113,7 +166,11 @@ export function createPost(input) {
     publisherId: user.id,
     publisher: String(input.publisher || user.nickname || '匿名用户').trim()
   };
-  savePosts([post, ...posts]);
+  if (shouldUseCloud()) {
+    await postsCollection().add({ data: post });
+  } else {
+    savePosts([post, ...posts]);
+  }
   return post;
 }
 
@@ -141,57 +198,41 @@ export function hasReactedToPost(id, action) {
   return Boolean(reactions[reactionKey(id, action)]);
 }
 
-export function reactToPost(id, action) {
-  const posts = seedPosts();
+export async function reactToPost(id, action) {
   const now = Date.now();
   if (hasReactedToPost(id, action)) {
     return getPost(id);
   }
-  let didReact = false;
-  const next = posts.map((post) => {
-    if (post.id !== id) {
-      return post;
-    }
-    if (!canTrustReact(post, now)) {
-      return post;
-    }
-    didReact = true;
-    if (action === 'confirm') {
-      return { ...post, confirmations: post.confirmations + 1, lastConfirmedAt: now };
-    }
-    if (action === 'stale') {
-      const staleCount = post.staleCount + 1;
-      return { ...post, staleCount, status: staleCount >= 3 ? 'stale' : post.status };
-    }
-    if (action === 'report') {
-      const reportCount = post.reportCount + 1;
-      return { ...post, reportCount, status: reportCount >= 2 ? 'hidden' : post.status };
-    }
-    return post;
-  });
-  savePosts(next);
-  if (didReact) {
-    rememberReaction(id, action, now);
+  const post = await findPost(id);
+  if (!post || !canTrustReact(post, now)) {
+    return getPost(id);
+  }
+  let patch = {};
+  if (action === 'confirm') {
+    patch = { confirmations: post.confirmations + 1, lastConfirmedAt: now };
+  } else if (action === 'stale') {
+    const staleCount = post.staleCount + 1;
+    patch = { staleCount, status: staleCount >= 3 ? 'stale' : post.status };
+  } else if (action === 'report') {
+    const reportCount = post.reportCount + 1;
+    patch = { reportCount, status: reportCount >= 2 ? 'hidden' : post.status };
+  } else {
+    return getPost(id);
+  }
+  await updatePost(id, patch);
+  rememberReaction(id, action, now);
+  return getPost(id);
+}
+
+export async function resolvePost(id) {
+  const now = Date.now();
+  const post = await findPost(id);
+  if (post && canTrustReact(post, now)) {
+    await updatePost(id, { status: 'resolved' });
   }
   return getPost(id);
 }
 
-export function resolvePost(id) {
-  const posts = seedPosts();
-  const now = Date.now();
-  const next = posts.map((post) => {
-    if (post.id !== id || !canTrustReact(post, now)) {
-      return post;
-    }
-    return { ...post, status: 'resolved' };
-  });
-  savePosts(next);
-  return getPost(id);
-}
-
-export function hidePost(id) {
-  const posts = seedPosts().map((post) => (
-    post.id === id ? { ...post, status: 'hidden' } : post
-  ));
-  savePosts(posts);
+export async function hidePost(id) {
+  await updatePost(id, { status: 'hidden' });
 }

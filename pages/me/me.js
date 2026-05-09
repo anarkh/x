@@ -2,47 +2,9 @@ import config from '../../utils/config.js';
 import { getCurrentUser, isAdmin, loginAsAdmin, loginAsUser, logout } from '../../utils/auth.js';
 import { listMyReactions, listPosts } from '../../utils/store.js';
 import { syncTabBar } from '../../utils/tab-bar.js';
-import {
-  categoryLabel,
-  formatConfirmationText,
-  formatCreatedAt,
-  formatTimeLeft,
-  intentLabel,
-  statusLabel
-} from '../../utils/format.js';
+import { buildActivities, decoratePost, isOpenPost } from '../../utils/post-presenter.js';
 
 const app = getApp();
-
-const actionMeta = {
-  confirm: {
-    label: '确认有效',
-    tone: 'done'
-  },
-  stale: {
-    label: '标记过时',
-    tone: 'warn'
-  },
-  report: {
-    label: '举报',
-    tone: 'danger'
-  }
-};
-
-function isOpenPost(post) {
-  return post.status === 'active' || post.status === 'stale';
-}
-
-function decoratePost(post) {
-  return {
-    ...post,
-    categoryText: categoryLabel(post.category),
-    intentText: intentLabel(post.intent),
-    statusText: statusLabel(post.status),
-    confirmationText: formatConfirmationText(post.confirmations, post.lastConfirmedAt),
-    createdText: formatCreatedAt(post.createdAt),
-    expiryText: post.status === 'resolved' ? '已关闭' : formatTimeLeft(post.expiresAt)
-  };
-}
 
 function avatarText(user) {
   return (user.nickname || '街区用户').slice(0, 1);
@@ -63,12 +25,19 @@ Page({
     isGuest: true,
     identityText: '游客模式',
     loggingIn: false,
-    adminCode: '',
+    checkingAdmin: false,
     showAdminLogin: false,
     avatarText: '街',
-    stats: [],
-    myPosts: [],
-    activities: []
+    stats: [
+      { label: '我发布', value: 0 },
+      { label: '处理中', value: 0 },
+      { label: '已关闭', value: 0 },
+      { label: '参与', value: 0 }
+    ],
+    myPostCount: 0,
+    activityCount: 0,
+    myPostsText: '还没有发布过任务',
+    activitiesText: '还没有参与记录'
   },
 
   onShow() {
@@ -76,32 +45,13 @@ Page({
     this.refresh();
   },
 
-  refresh() {
+  async refresh() {
     const user = getCurrentUser();
     app.globalData.user = user;
-    const posts = listPosts().map(decoratePost);
+    const posts = (await listPosts()).map(decoratePost);
     const myPosts = posts.filter((post) => post.publisherId === user.id);
     const reactions = listMyReactions();
-    const postById = posts.reduce((map, post) => ({
-      ...map,
-      [post.id]: post
-    }), {});
-    const activities = reactions
-      .map((item) => {
-        const post = postById[item.id];
-        const meta = actionMeta[item.action] || { label: '参与', tone: 'neutral' };
-        return post
-          ? {
-            ...item,
-            ...meta,
-            activityKey: `${item.id}:${item.action}`,
-            reactedText: formatCreatedAt(item.reactedAt),
-            post
-          }
-          : null;
-      })
-      .filter(Boolean)
-      .slice(0, 5);
+    const activities = buildActivities(posts, reactions);
     const openMyPosts = myPosts.filter(isOpenPost);
     const isCurrentUserAdmin = isAdmin(user);
 
@@ -112,8 +62,10 @@ Page({
       identityText: identityText(user),
       avatarText: avatarText(user),
       showAdminLogin: this.data.showAdminLogin && !isCurrentUserAdmin,
-      myPosts: myPosts.slice(0, 5),
-      activities,
+      myPostCount: myPosts.length,
+      activityCount: activities.length,
+      myPostsText: myPosts.length ? `${myPosts.length} 条本机身份发布的内容` : '还没有发布过任务',
+      activitiesText: activities.length ? `${activities.length} 条确认、过时或举报记录` : '还没有参与记录',
       stats: [
         { label: '我发布', value: myPosts.length },
         { label: '处理中', value: openMyPosts.length },
@@ -187,34 +139,50 @@ Page({
         }
         const user = logout();
         app.globalData.user = user;
-        this.setData({ adminCode: '', showAdminLogin: false });
+        this.setData({ showAdminLogin: false });
         this.refresh();
         syncTabBar(this, '/pages/me/me');
       }
     });
   },
 
-  onAdminCodeInput(event) {
-    this.setData({
-      adminCode: event.detail.value
-    });
-  },
-
-  loginAdmin() {
-    const result = loginAsAdmin(this.data.adminCode);
-    if (!result.ok) {
-      wx.showToast({ title: result.message, icon: 'none' });
+  async loginAdmin() {
+    if (this.data.checkingAdmin) {
       return;
     }
-    app.globalData.user = result.user;
-    this.setData({ adminCode: '', showAdminLogin: false });
-    wx.showToast({ title: '管理员已登录', icon: 'success' });
-    this.refresh();
-    syncTabBar(this, '/pages/me/me');
+    this.setData({ checkingAdmin: true });
+    try {
+      const result = await loginAsAdmin();
+      if (!result.ok) {
+        wx.showToast({ title: result.message, icon: 'none' });
+        return;
+      }
+      app.globalData.user = result.user;
+      this.setData({ showAdminLogin: false });
+      wx.showToast({ title: '管理员已登录', icon: 'success' });
+      this.refresh();
+      syncTabBar(this, '/pages/me/me');
+    } catch (error) {
+      wx.showToast({ title: '管理员校验失败', icon: 'none' });
+    } finally {
+      this.setData({ checkingAdmin: false });
+    }
   },
 
   goAdmin() {
     wx.switchTab({ url: '/pages/admin/admin' });
+  },
+
+  goFeedback() {
+    wx.navigateTo({ url: '/pages/feedback/feedback' });
+  },
+
+  goMyPosts() {
+    wx.navigateTo({ url: '/pages/my-posts/my-posts' });
+  },
+
+  goActivities() {
+    wx.navigateTo({ url: '/pages/activities/activities' });
   },
 
   openDetail(event) {

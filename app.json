@@ -4,7 +4,10 @@
     "pages/publish/publish",
     "pages/detail/detail",
     "pages/admin/admin",
-    "pages/me/me"
+    "pages/me/me",
+    "pages/my-posts/my-posts",
+    "pages/activities/activities",
+    "pages/feedback/feedback"
   ],
   "window": {
     "navigationBarTitleText": "街区任务",

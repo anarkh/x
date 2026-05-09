@@ -1,0 +1,28 @@
+<view class="page list-page stack">
+  <view class="page-head">
+    <view class="head-mark">参</view>
+    <view class="title">参与记录</view>
+    <view class="muted">你确认、标记过时或举报过的附近任务。</view>
+  </view>
+
+  <view class="panel stat-panel">
+    <view wx:for="{{stats}}" wx:key="label" class="stat-item">
+      <view class="metric">{{item.value}}</view>
+      <view class="muted">{{item.label}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{!activities.length}}" class="panel empty-panel">
+    <view class="empty-title">还没有参与记录</view>
+    <view class="muted">在详情页确认有效、标记过时或举报后会出现在这里。</view>
+    <button class="secondary-button empty-action" bindtap="goHome">去地图看看</button>
+  </view>
+
+  <view wx:for="{{activities}}" wx:key="activityKey" class="panel activity-card" data-id="{{item.post.id}}" bindtap="openDetail">
+    <view class="activity-mark {{item.tone}}">{{item.label}}</view>
+    <view class="activity-main">
+      <view class="compact-title">{{item.post.title}}</view>
+      <view class="muted">{{item.post.placeName}} · {{item.reactedText}}</view>
+    </view>
+  </view>
+</view>

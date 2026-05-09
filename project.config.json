@@ -2,6 +2,7 @@
   "appid": "touristappid",
   "projectname": "street-tasks",
   "miniprogramRoot": "./",
+  "cloudfunctionRoot": "cloudfunctions/",
   "compileType": "miniprogram",
   "setting": {
     "es6": true,

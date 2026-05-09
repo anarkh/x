@@ -79,20 +79,24 @@ Page({
     this.setData({ submitting: true });
     wx.getLocation({
       type: 'gcj02',
-      success: (location) => {
+      success: async (location) => {
         const currentLocation = {
           latitude: Number(location.latitude.toFixed(6)),
           longitude: Number(location.longitude.toFixed(6))
         };
 
-        const post = createPost({
-          ...form,
-          ...currentLocation
-        });
-        wx.showToast({ title: '已发布', icon: 'success' });
-        setTimeout(() => {
-          wx.navigateTo({ url: `/pages/detail/detail?id=${post.id}&from=publish` });
-        }, 400);
+        try {
+          const post = await createPost({
+            ...form,
+            ...currentLocation
+          });
+          wx.showToast({ title: '已发布', icon: 'success' });
+          setTimeout(() => {
+            wx.navigateTo({ url: `/pages/detail/detail?id=${post.id}&from=publish` });
+          }, 400);
+        } catch (error) {
+          wx.showToast({ title: '发布失败，请稍后再试', icon: 'none' });
+        }
       },
       fail: () => {
         wx.showToast({ title: '无法获取当前位置', icon: 'none' });

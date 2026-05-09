@@ -21,11 +21,10 @@
   <view wx:if="{{showAdminLogin && !isAdmin}}" class="panel admin-login-card">
     <view>
       <view class="section-title">管理员入口</view>
-      <view class="muted">输入管理口令后，底部才会显示“管理”tab。</view>
+      <view class="muted">校验当前微信身份后，底部才会显示“管理”tab。</view>
     </view>
     <view class="admin-login-row">
-      <input class="admin-code-input" password="{{true}}" placeholder="管理口令" value="{{adminCode}}" bindinput="onAdminCodeInput" />
-      <button class="admin-login-button" bindtap="loginAdmin">登录</button>
+      <button class="admin-login-button" loading="{{checkingAdmin}}" disabled="{{checkingAdmin}}" bindtap="loginAdmin">{{checkingAdmin ? '校验中' : '校验身份'}}</button>
     </view>
   </view>
 
@@ -37,6 +36,11 @@
     <view class="admin-ready-arrow"></view>
   </view>
 
+  <view class="panel feedback-entry" bindtap="goFeedback">
+    <view class="feedback-entry-title">反馈建议</view>
+    <view class="feedback-entry-arrow"></view>
+  </view>
+
   <view class="panel stat-panel">
     <view wx:for="{{stats}}" wx:key="label" class="stat-item">
       <view class="metric">{{item.value}}</view>
@@ -44,48 +48,19 @@
     </view>
   </view>
 
-  <view class="section-head">
+  <view class="panel profile-link-card" bindtap="goMyPosts">
     <view>
-      <view class="section-title">我的发布</view>
-      <view class="muted">只显示当前本机身份发布的内容</view>
+      <view class="profile-link-title">我的发布</view>
+      <view class="muted">{{myPostsText}}</view>
     </view>
+    <view class="profile-link-arrow"></view>
   </view>
 
-  <view wx:if="{{!myPosts.length}}" class="panel empty-panel">
-    <view class="empty-title">还没有发布过任务</view>
-    <view class="muted">可以从身边的失物、路况、求助或打卡开始。</view>
-  </view>
-
-  <view wx:for="{{myPosts}}" wx:key="id" class="panel compact-post" data-id="{{item.id}}" bindtap="openDetail">
-    <view class="row between">
-      <view class="row post-tags">
-        <text class="tag">{{item.categoryText}}</text>
-        <text wx:if="{{item.intentText}}" class="tag neutral">{{item.intentText}}</text>
-        <text wx:if="{{item.status !== 'active'}}" class="tag {{item.status === 'stale' ? 'warn' : ''}} {{item.status === 'resolved' ? 'done' : ''}} {{item.status === 'expired' ? 'neutral' : ''}}">{{item.statusText}}</text>
-      </view>
-      <text class="muted">{{item.createdText}}</text>
-    </view>
-    <view class="compact-title">{{item.title}}</view>
-    <view class="muted">{{item.placeName}} · {{item.confirmationText}} · {{item.expiryText}}</view>
-  </view>
-
-  <view class="section-head">
+  <view class="panel profile-link-card" bindtap="goActivities">
     <view>
-      <view class="section-title">参与记录</view>
-      <view class="muted">你确认、标记过时或举报过的任务</view>
+      <view class="profile-link-title">参与记录</view>
+      <view class="muted">{{activitiesText}}</view>
     </view>
-  </view>
-
-  <view wx:if="{{!activities.length}}" class="panel empty-panel">
-    <view class="empty-title">还没有参与记录</view>
-    <view class="muted">在详情页确认有效、标记过时或举报后会出现在这里。</view>
-  </view>
-
-  <view wx:for="{{activities}}" wx:key="activityKey" class="panel activity-card" data-id="{{item.post.id}}" bindtap="openDetail">
-    <view class="activity-mark {{item.tone}}">{{item.label}}</view>
-    <view class="activity-main">
-      <view class="compact-title">{{item.post.title}}</view>
-      <view class="muted">{{item.post.placeName}} · {{item.reactedText}}</view>
-    </view>
+    <view class="profile-link-arrow"></view>
   </view>
 </view>

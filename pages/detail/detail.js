@@ -38,8 +38,8 @@ Page({
     this.loadPost();
   },
 
-  loadPost() {
-    const raw = getPost(this.data.id);
+  async loadPost() {
+    const raw = await getPost(this.data.id);
     if (!raw) {
       this.setData({ post: null, markers: [] });
       return;
@@ -70,7 +70,7 @@ Page({
     });
   },
 
-  react(event) {
+  async react(event) {
     const action = event.currentTarget.dataset.action;
     if (hasReactedToPost(this.data.id, action)) {
       wx.showToast({
@@ -79,7 +79,7 @@ Page({
       });
       return;
     }
-    reactToPost(this.data.id, action);
+    await reactToPost(this.data.id, action);
     wx.showToast({
       title: action === 'report' ? '已收到举报' : '已记录',
       icon: 'success'
@@ -99,11 +99,11 @@ Page({
       title: this.data.post.resolveText,
       content: '关闭后仍会保留在列表里，方便附近用户知道这件事已经处理完。',
       confirmText: '关闭',
-      success: (result) => {
+      success: async (result) => {
         if (!result.confirm) {
           return;
         }
-        resolvePost(this.data.id);
+        await resolvePost(this.data.id);
         wx.showToast({
           title: '已关闭',
           icon: 'success'

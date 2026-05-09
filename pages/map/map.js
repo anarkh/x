@@ -106,13 +106,14 @@ Page({
     });
   },
 
-  refresh() {
-    const posts = this.buildPosts(this.data.center);
+  async refresh() {
+    const posts = await this.buildPosts(this.data.center);
     this.applyPostFilters(posts, this.data.activeCategory, this.data.mapRegion);
   },
 
-  buildPosts(center) {
-    return listPosts(center).map((post) => ({
+  async buildPosts(center) {
+    const posts = await listPosts(center);
+    return posts.map((post) => ({
       ...post,
       categoryText: categoryLabel(post.category),
       intentText: intentLabel(post.intent),
@@ -170,9 +171,9 @@ Page({
     }
     this.mapContext = mapContext;
     mapContext.getRegion({
-      success: (region) => {
+      success: async (region) => {
         const center = centerFromRegion(region) || this.data.center;
-        const posts = this.buildPosts(center);
+        const posts = await this.buildPosts(center);
         if (options.selectPostId) {
           this.pendingSelectedPost = posts.find((post) => post.id === options.selectPostId) || null;
         }
@@ -222,8 +223,8 @@ Page({
     wx.navigateTo({ url: `/pages/detail/detail?id=${event.currentTarget.dataset.id}` });
   },
 
-  discoveryCandidates(activeCategory) {
-    const posts = this.data.posts.length ? this.data.posts : this.buildPosts(this.data.center);
+  async discoveryCandidates(activeCategory) {
+    const posts = this.data.posts.length ? this.data.posts : await this.buildPosts(this.data.center);
     const scopedPosts = activeCategory === 'all'
       ? posts
       : posts.filter((post) => post.category === activeCategory);
@@ -241,8 +242,8 @@ Page({
     };
   },
 
-  discoverNearby() {
-    const { candidates, activeCategory } = this.discoveryCandidates(this.data.activeCategory);
+  async discoverNearby() {
+    const { candidates, activeCategory } = await this.discoveryCandidates(this.data.activeCategory);
     if (!candidates.length) {
       wx.showToast({
         title: '附近暂时没有内容',

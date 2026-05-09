@@ -109,10 +109,7 @@
 }
 
 .admin-login-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 132rpx;
-  gap: 14rpx;
-  align-items: center;
+  display: flex;
 }
 
 .admin-code-input {
@@ -128,7 +125,7 @@
 }
 
 .admin-login-button {
-  width: 132rpx;
+  width: 196rpx;
   height: 72rpx;
   border-radius: 8rpx;
   background: #e56d3f;
@@ -154,6 +151,39 @@
   transform: rotate(45deg);
 }
 
+.feedback-entry,
+.profile-link-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44rpx;
+  gap: 18rpx;
+  align-items: center;
+  min-height: 92rpx;
+  padding: 0 28rpx;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.feedback-entry:active,
+.profile-link-card:active {
+  opacity: 0.76;
+}
+
+.feedback-entry-title,
+.profile-link-title {
+  color: #14231f;
+  font-size: 30rpx;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.feedback-entry-arrow,
+.profile-link-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  border-top: 6rpx solid #1b5f52;
+  border-right: 6rpx solid #1b5f52;
+  transform: rotate(45deg);
+}
+
 .stat-panel {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -171,11 +201,6 @@
 
 .stat-item + .stat-item {
   border-left: 1rpx solid rgba(26, 46, 41, 0.1);
-}
-
-.compact-post:active,
-.activity-card:active {
-  opacity: 0.76;
 }
 
 .section-head {

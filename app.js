@@ -8,6 +8,12 @@ App({
   },
 
   onLaunch() {
+    if (config.cloud.enabled && config.cloud.envId && wx.cloud) {
+      wx.cloud.init({
+        env: config.cloud.envId,
+        traceUser: true
+      });
+    }
     this.globalData.user = ensureUser();
   }
 });

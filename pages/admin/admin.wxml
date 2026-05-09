@@ -2,7 +2,7 @@
   <view class="admin-head">
     <view class="head-rule"></view>
     <view class="title">管理控制台</view>
-    <view class="muted">仅管理员可见 · {{stats.needsReview}} 条待处理 · 共 {{stats.total}} 条</view>
+    <view class="muted">仅管理员可见 · {{stats.needsReview}} 条待处理 · {{stats.feedback}} 条反馈</view>
   </view>
 
   <view class="summary-grid">
@@ -21,6 +21,33 @@
     <view class="panel summary-card">
       <view class="metric">{{stats.hidden}}</view>
       <view class="muted">已隐藏</view>
+    </view>
+  </view>
+
+  <view class="feedback-section">
+    <view class="section-head row between">
+      <view>
+        <view class="section-title">用户反馈</view>
+        <view class="muted">来自“我的”页反馈入口</view>
+      </view>
+      <text class="feedback-count">{{feedbacks.length}}</text>
+    </view>
+
+    <view wx:if="{{!feedbacks.length}}" class="panel empty-panel">
+      <view class="empty-title">还没有用户反馈</view>
+      <view class="muted">用户提交后会显示在这里。</view>
+    </view>
+
+    <view wx:for="{{feedbacks}}" wx:key="id" class="panel feedback-admin-card">
+      <view class="row between feedback-card-head">
+        <view class="row admin-tags">
+          <text class="tag">{{item.typeText}}</text>
+          <text class="tag neutral">{{item.createdText}}</text>
+        </view>
+        <text class="post-id">{{item.id}}</text>
+      </view>
+      <view class="feedback-body">{{item.body}}</view>
+      <view class="feedback-meta">{{item.nickname}} · {{item.contactText}}</view>
     </view>
   </view>
 
@@ -120,6 +147,6 @@
 <view wx:else class="page admin-page stack">
   <view class="panel empty-panel">
     <view class="empty-title">需要管理员登录</view>
-    <view class="muted">请先到“我的”页面输入管理口令。</view>
+    <view class="muted">请先到“我的”页面校验管理员身份。</view>
   </view>
 </view>

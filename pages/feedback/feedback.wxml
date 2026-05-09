@@ -1,0 +1,28 @@
+<view class="page feedback-page stack">
+  <view class="page-head">
+    <view class="head-mark">馈</view>
+    <view class="title">反馈建议</view>
+    <view class="muted">问题、建议、想要的功能，都可以在这里告诉我们。</view>
+  </view>
+
+  <view class="panel form-card stack">
+    <view>
+      <view class="label">类型</view>
+      <picker mode="selector" range="{{typeOptions}}" range-key="label" value="{{typeIndex}}" bindchange="onTypeChange">
+        <view class="picker">{{typeOptions[typeIndex].label}}</view>
+      </picker>
+    </view>
+
+    <view>
+      <view class="label">内容</view>
+      <textarea class="textarea" maxlength="240" placeholder="写下你遇到的问题、建议或想要的功能" value="{{form.body}}" data-field="body" bindinput="onInput" />
+    </view>
+
+    <view>
+      <view class="label">联系方式（选填）</view>
+      <input class="input" maxlength="40" placeholder="微信号、手机号或其他联系方式" value="{{form.contact}}" data-field="contact" bindinput="onInput" />
+    </view>
+  </view>
+
+  <button class="primary-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitFeedback">{{submitting ? '提交中' : '提交反馈'}}</button>
+</view>
