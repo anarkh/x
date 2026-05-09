@@ -12,23 +12,25 @@
   padding: 32rpx;
   border-radius: 8rpx;
   overflow: hidden;
-  background: #17231f;
+  background:
+    linear-gradient(135deg, rgba(229, 109, 63, 0.16), rgba(229, 109, 63, 0) 44%),
+    linear-gradient(160deg, #17231f, #12372f);
   box-shadow: 0 18rpx 52rpx rgba(23, 32, 29, 0.18);
   box-sizing: border-box;
 }
 
 .profile-grid {
   position: absolute;
-  right: -72rpx;
-  top: -78rpx;
-  width: 280rpx;
-  height: 280rpx;
-  border: 1rpx solid rgba(229, 109, 63, 0.22);
-  border-radius: 50%;
+  right: -58rpx;
+  top: -48rpx;
+  width: 320rpx;
+  height: 230rpx;
+  border: 1rpx solid rgba(229, 109, 63, 0.2);
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1rpx, transparent 1rpx),
     linear-gradient(0deg, rgba(255, 255, 255, 0.06) 1rpx, transparent 1rpx);
   background-size: 28rpx 28rpx;
+  transform: rotate(-8deg);
 }
 
 .avatar {
@@ -38,11 +40,12 @@
   height: 104rpx;
   border-radius: 8rpx;
   background: #f7fbf7;
-  color: #1f6658;
+  color: #1b5f52;
   font-size: 48rpx;
   font-weight: 900;
   line-height: 104rpx;
   text-align: center;
+  box-shadow: 0 14rpx 28rpx rgba(0, 0, 0, 0.14);
 }
 
 .profile-copy {
@@ -76,7 +79,7 @@
 .auth-card,
 .admin-login-card,
 .admin-ready-card {
-  padding: 26rpx;
+  padding: 28rpx;
 }
 
 .auth-card,
@@ -92,7 +95,7 @@
   height: 68rpx;
   padding: 0 28rpx;
   border-radius: 8rpx;
-  background: #1f6658;
+  background: linear-gradient(135deg, #143e37, #25705f);
   color: #ffffff;
   font-size: 26rpx;
   font-weight: 900;
@@ -118,7 +121,7 @@
   padding: 0 22rpx;
   border: 1rpx solid rgba(26, 46, 41, 0.12);
   border-radius: 8rpx;
-  background: #f8faf7;
+  background: #fbfcfa;
   color: #17201d;
   font-size: 26rpx;
   box-sizing: border-box;
@@ -136,7 +139,7 @@
 
 .admin-ready-card {
   border-color: rgba(31, 102, 88, 0.18);
-  background: #f7fbf8;
+  background: linear-gradient(135deg, #f7fbf8, #ffffff);
 }
 
 .admin-ready-card:active {
@@ -146,8 +149,8 @@
 .admin-ready-arrow {
   width: 24rpx;
   height: 24rpx;
-  border-top: 6rpx solid #1f6658;
-  border-right: 6rpx solid #1f6658;
+  border-top: 6rpx solid #1b5f52;
+  border-right: 6rpx solid #1b5f52;
   transform: rotate(45deg);
 }
 
@@ -155,7 +158,15 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   padding: 28rpx 0;
+  background: rgba(255, 255, 255, 0.98);
   text-align: center;
+}
+
+.metric {
+  color: #1b5f52;
+  font-size: 44rpx;
+  font-weight: 900;
+  line-height: 1.08;
 }
 
 .stat-item + .stat-item {
@@ -192,7 +203,8 @@
 }
 
 .compact-post {
-  padding: 24rpx;
+  padding: 26rpx;
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .post-tags {
@@ -215,7 +227,8 @@
   grid-template-columns: 144rpx 1fr;
   gap: 18rpx;
   align-items: center;
-  padding: 22rpx;
+  padding: 24rpx;
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .activity-main {
@@ -233,8 +246,8 @@
   min-height: 62rpx;
   padding: 0 14rpx;
   border-radius: 8rpx;
-  background: #edf0ee;
-  color: #66736d;
+  background: #eef1ef;
+  color: #5f6f68;
   font-size: 24rpx;
   font-weight: 900;
   text-align: center;

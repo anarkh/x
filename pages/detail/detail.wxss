@@ -1,8 +1,10 @@
 .hero {
   position: relative;
-  padding: 32rpx;
+  padding: 34rpx 32rpx;
   overflow: hidden;
-  background: #17231f;
+  background:
+    linear-gradient(135deg, rgba(229, 109, 63, 0.16), rgba(229, 109, 63, 0) 42%),
+    linear-gradient(160deg, #17231f, #12372f);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 18rpx 52rpx rgba(23, 32, 29, 0.18);
 }
@@ -18,21 +20,21 @@
 
 .hero-grid {
   position: absolute;
-  right: -80rpx;
-  top: -60rpx;
-  width: 280rpx;
-  height: 280rpx;
-  border: 1rpx solid rgba(229, 109, 63, 0.22);
-  border-radius: 50%;
+  right: -58rpx;
+  top: -48rpx;
+  width: 320rpx;
+  height: 230rpx;
+  border: 1rpx solid rgba(229, 109, 63, 0.2);
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1rpx, transparent 1rpx),
     linear-gradient(0deg, rgba(255, 255, 255, 0.06) 1rpx, transparent 1rpx);
   background-size: 28rpx 28rpx;
+  transform: rotate(-8deg);
 }
 
 .body {
   font-size: 30rpx;
-  line-height: 1.55;
+  line-height: 1.58;
 }
 
 .hero-tags {
@@ -48,7 +50,7 @@
   align-items: center;
   padding: 26rpx;
   border-color: rgba(229, 109, 63, 0.2);
-  background: #fff8f3;
+  background: linear-gradient(135deg, #fff8f3, #ffffff);
 }
 
 .success-title {
@@ -68,7 +70,7 @@
   height: 66rpx;
   padding: 0 24rpx;
   border-radius: 8rpx;
-  background: #c84c30;
+  background: linear-gradient(135deg, #e56d3f, #c84c30);
   color: #ffffff;
   font-size: 26rpx;
   font-weight: 900;
@@ -79,13 +81,15 @@
   height: 340rpx;
   border-radius: 8rpx;
   overflow: hidden;
-  box-shadow: 0 12rpx 36rpx rgba(23, 32, 29, 0.12);
+  border: 1rpx solid rgba(22, 49, 42, 0.1);
+  box-shadow: 0 14rpx 36rpx rgba(23, 32, 29, 0.1);
 }
 
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   padding: 28rpx 0;
+  background: rgba(255, 255, 255, 0.98);
   text-align: center;
 }
 
@@ -100,7 +104,7 @@
 .metric {
   font-size: 46rpx;
   font-weight: 800;
-  color: #1f6658;
+  color: #1b5f52;
   line-height: 1.1;
 }
 
@@ -121,7 +125,7 @@
   border: 1rpx solid rgba(167, 53, 39, 0.14);
   border-radius: 8rpx;
   color: #a73527;
-  background: #ffe8e2;
+  background: linear-gradient(135deg, #ffe8e2, #fff3ef);
   font-weight: 900;
   font-size: 30rpx;
 }

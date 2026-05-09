@@ -16,6 +16,7 @@ const categoryOptions = [
   { value: 'all', label: '全部' },
   ...config.categories
 ];
+const DOUBLE_TAP_REFRESH_MS = 320;
 
 function isPostInRegion(post, region) {
   if (!region || !region.southwest || !region.northeast) {
@@ -56,8 +57,7 @@ Page({
     posts: [],
     visiblePosts: [],
     markers: [],
-    showList: false,
-    refreshing: false
+    showList: false
   },
 
   onLoad() {
@@ -109,19 +109,6 @@ Page({
   refresh() {
     const posts = this.buildPosts(this.data.center);
     this.applyPostFilters(posts, this.data.activeCategory, this.data.mapRegion);
-  },
-
-  refreshWithSpin() {
-    if (this.refreshTimer) {
-      clearTimeout(this.refreshTimer);
-    }
-    this.setData({ refreshing: true });
-    this.refresh();
-    this.updateMapRegion();
-    this.refreshTimer = setTimeout(() => {
-      this.setData({ refreshing: false });
-      this.refreshTimer = null;
-    }, 520);
   },
 
   buildPosts(center) {
@@ -207,6 +194,17 @@ Page({
     this.updateMapRegion({
       clearSelection: true
     });
+  },
+
+  onMapTap() {
+    const now = Date.now();
+    if (this.lastMapTapAt && now - this.lastMapTapAt <= DOUBLE_TAP_REFRESH_MS) {
+      this.lastMapTapAt = 0;
+      this.refresh();
+      this.updateMapRegion();
+      return;
+    }
+    this.lastMapTapAt = now;
   },
 
   onMarkerTap(event) {

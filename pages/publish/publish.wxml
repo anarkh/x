@@ -1,6 +1,6 @@
 <view class="page stack">
   <view class="page-head">
-    <view class="head-mark">DZ</view>
+    <view class="head-mark">发</view>
     <view class="title">发布街区任务</view>
     <view class="muted">发布到{{appInfo.shortName}}，自动使用你的当前位置</view>
   </view>
