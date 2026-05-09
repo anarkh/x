@@ -6,15 +6,27 @@ cloud.init({
 
 const db = cloud.database();
 
+function isMissingCollectionError(error) {
+  return error
+    && (error.errCode === -502005 || String(error.errMsg || error.message || '').includes('ResourceNotFound'));
+}
+
 exports.main = async () => {
   const { OPENID } = cloud.getWXContext();
-  const result = await db.collection('admins')
-    .where({
-      openid: OPENID,
-      enabled: true
-    })
-    .limit(1)
-    .get();
+  let result = { data: [] };
+  try {
+    result = await db.collection('admins')
+      .where({
+        openid: OPENID,
+        enabled: true
+      })
+      .limit(1)
+      .get();
+  } catch (error) {
+    if (!isMissingCollectionError(error)) {
+      throw error;
+    }
+  }
   const admin = result.data && result.data[0];
   return {
     openid: OPENID,

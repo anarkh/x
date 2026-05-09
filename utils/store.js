@@ -15,6 +15,11 @@ function postsCollection() {
   return wx.cloud.database().collection(config.cloud.collections.posts);
 }
 
+function isMissingCollectionError(error) {
+  return error
+    && (error.errCode === -502005 || String(error.errMsg || error.message || '').includes('ResourceNotFound'));
+}
+
 function seedPosts() {
   const stored = wx.getStorageSync(STORAGE_KEY);
   if (Array.isArray(stored) && stored.length) {
@@ -39,19 +44,33 @@ async function loadPosts() {
   if (!shouldUseCloud()) {
     return seedPosts();
   }
-  const result = await postsCollection()
-    .orderBy('createdAt', 'desc')
-    .limit(config.maxVisiblePosts)
-    .get();
-  return (result.data || []).map(normalizePost);
+  try {
+    const result = await postsCollection()
+      .orderBy('createdAt', 'desc')
+      .limit(config.maxVisiblePosts)
+      .get();
+    return (result.data || []).map(normalizePost);
+  } catch (error) {
+    if (isMissingCollectionError(error)) {
+      return [];
+    }
+    throw error;
+  }
 }
 
 async function findPost(id) {
   if (!shouldUseCloud()) {
     return seedPosts().find((post) => post.id === id);
   }
-  const result = await postsCollection().where({ id }).limit(1).get();
-  return result.data && result.data[0] ? normalizePost(result.data[0]) : null;
+  try {
+    const result = await postsCollection().where({ id }).limit(1).get();
+    return result.data && result.data[0] ? normalizePost(result.data[0]) : null;
+  } catch (error) {
+    if (isMissingCollectionError(error)) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 async function updatePost(id, data) {
@@ -62,7 +81,13 @@ async function updatePost(id, data) {
     savePosts(posts);
     return;
   }
-  await postsCollection().where({ id }).update({ data });
+  try {
+    await postsCollection().where({ id }).update({ data });
+  } catch (error) {
+    if (!isMissingCollectionError(error)) {
+      throw error;
+    }
+  }
 }
 
 function loadReactionMap() {
