@@ -1,4 +1,10 @@
-<view wx:if="{{post}}" class="page stack">
+<view wx:if="{{loading}}" class="page empty">
+  <view class="loading-mark"></view>
+  <view class="title">正在加载</view>
+  <view class="muted">正在读取任务详情</view>
+</view>
+
+<view wx:elif="{{post}}" class="page stack">
   <view class="panel hero stack">
     <view class="hero-grid"></view>
     <view class="row between">
@@ -11,6 +17,18 @@
     </view>
     <view class="title">{{post.title}}</view>
     <view class="body">{{post.body}}</view>
+    <view wx:if="{{post.imageUrls.length}}" class="detail-images {{post.imageUrls.length === 1 ? 'single' : ''}}">
+      <image
+        wx:for="{{post.imageUrls}}"
+        wx:key="*this"
+        class="detail-image"
+        src="{{item}}"
+        mode="aspectFill"
+        lazy-load="{{true}}"
+        data-index="{{index}}"
+        bindtap="previewImage"
+      />
+    </view>
     <view class="muted">{{post.placeName}} · {{post.distanceText}} · {{post.createdText}}</view>
   </view>
 
@@ -21,7 +39,6 @@
     </view>
     <view class="row success-actions">
       <button class="share-button" open-type="share">转发</button>
-      <button class="ghost-button" bindtap="dismissSharePrompt">稍后</button>
     </view>
   </view>
 
@@ -48,16 +65,11 @@
     </view>
   </view>
 
-  <view wx:if="{{post.canReact}}" class="actions">
-    <button wx:if="{{post.canResolve}}" class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
+  <view wx:if="{{post.canReact}}" class="actions {{post.canShowResolve ? 'with-resolve' : 'without-resolve'}}">
+    <button wx:if="{{post.canShowResolve}}" class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
     <button class="primary-button {{post.confirmedByMe ? 'disabled-action' : ''}}" disabled="{{post.confirmedByMe}}" data-action="confirm" bindtap="react">{{post.confirmedByMe ? '已确认' : '确认有效'}}</button>
     <button class="secondary-button {{post.staledByMe ? 'disabled-action' : ''}}" disabled="{{post.staledByMe}}" data-action="stale" bindtap="react">{{post.staledByMe ? '已标记过时' : '标记过时'}}</button>
     <button class="danger-button {{post.reportedByMe ? 'disabled-action' : ''}}" disabled="{{post.reportedByMe}}" data-action="report" bindtap="react">{{post.reportedByMe ? '已举报' : '举报'}}</button>
-  </view>
-
-  <view wx:else class="panel closed-note">
-    <view class="section-title">{{post.statusText}}</view>
-    <view class="muted">这条任务已结束，保留在附近列表中作为状态参考。</view>
   </view>
 </view>
 

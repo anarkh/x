@@ -23,26 +23,29 @@
   </view>
   <button class="list-fab" aria-label="打开列表" bindtap="showList">{{visiblePosts.length}}</button>
 
-  <view wx:if="{{selectedPost && !showList}}" class="selected-card panel">
-    <view class="selected-head">
-      <view class="selected-main">
-        <view class="row selected-tags">
-          <text class="tag">{{selectedPost.categoryText}}</text>
-          <text wx:if="{{selectedPost.intentText}}" class="tag neutral">{{selectedPost.intentText}}</text>
-          <text wx:if="{{selectedPost.status !== 'active'}}" class="tag {{selectedPost.status === 'stale' ? 'warn' : ''}} {{selectedPost.status === 'resolved' ? 'done' : ''}} {{selectedPost.status === 'expired' ? 'neutral' : ''}}">{{selectedPost.statusText}}</text>
+  <block wx:if="{{selectedPost}}">
+    <view wx:if="{{!showList}}" class="selected-card panel">
+      <view class="selected-head {{selectedPost.coverImage ? 'with-thumb' : ''}}">
+        <view class="selected-main">
+          <view class="row selected-tags">
+            <text class="tag">{{selectedPost.categoryText}}</text>
+            <text wx:if="{{selectedPost.intentText}}" class="tag neutral">{{selectedPost.intentText}}</text>
+            <text wx:if="{{selectedPost.status !== 'active'}}" class="tag {{selectedPost.status === 'stale' ? 'warn' : ''}} {{selectedPost.status === 'resolved' ? 'done' : ''}} {{selectedPost.status === 'expired' ? 'neutral' : ''}}">{{selectedPost.statusText}}</text>
+          </view>
+          <view class="selected-title">{{selectedPost.title}}</view>
+          <view class="selected-meta">{{selectedPost.placeName}} · {{selectedPost.distanceText}} · {{selectedPost.confirmationText}}</view>
         </view>
-        <view class="selected-title">{{selectedPost.title}}</view>
-        <view class="selected-meta">{{selectedPost.placeName}} · {{selectedPost.distanceText}} · {{selectedPost.confirmationText}}</view>
+        <image wx:if="{{selectedPost.coverImage}}" class="selected-thumb" src="{{selectedPost.coverImage}}" mode="aspectFill" lazy-load="{{true}}" />
+        <button class="selected-close" aria-label="收起" bindtap="clearSelectedPost">×</button>
       </view>
-      <button class="selected-close" aria-label="收起" bindtap="clearSelectedPost">×</button>
+      <view class="selected-actions">
+        <button class="selected-detail" data-id="{{selectedPost.id}}" bindtap="openDetail">详情</button>
+      </view>
     </view>
-    <view class="selected-actions">
-      <button class="selected-detail" data-id="{{selectedPost.id}}" bindtap="openDetail">详情</button>
-    </view>
-  </view>
+  </block>
 
   <view wx:if="{{showList}}" class="drawer-mask" bindtap="hideList"></view>
-  <view class="list-drawer {{showList ? 'open' : ''}}">
+  <view wx:if="{{showList}}" class="list-drawer open">
     <view class="drawer-grip"></view>
     <view class="row between drawer-head">
       <view>
@@ -72,7 +75,8 @@
 
       <view wx:for="{{visiblePosts}}" wx:key="id" class="post-card panel" data-id="{{item.id}}" bindtap="focusPost">
         <view class="post-content">
-          <view class="post-main">
+          <view class="post-main {{item.coverImage ? 'with-thumb' : ''}}">
+            <image wx:if="{{item.coverImage}}" class="post-thumb" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" />
             <view class="post-text">
               <view class="post-title">{{item.title}}</view>
               <view class="post-meta">{{item.placeName}} · {{item.createdText}}</view>

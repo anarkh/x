@@ -1,6 +1,5 @@
 <view class="page list-page stack">
   <view class="page-head">
-    <view class="head-mark">参</view>
     <view class="title">参与记录</view>
     <view class="muted">你确认、标记过时或举报过的附近任务。</view>
   </view>

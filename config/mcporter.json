@@ -2,7 +2,7 @@
   "mcpServers": {
     "cloudbase": {
       "command": "npx",
-      "args": ["@cloudbase/cloudbase-mcp@latest"],
+      "args": ["@cloudbase/cloudbase-mcp@2.18.0"],
       "description": "CloudBase MCP",
       "lifecycle": "keep-alive",
       "env": {

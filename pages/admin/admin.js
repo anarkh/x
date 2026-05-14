@@ -212,7 +212,7 @@ Page({
     const query = this.data.query.trim().toLowerCase();
     const visiblePosts = this.data.posts
       .filter((post) => filterPost(post, this.data.activeFilter))
-      .filter((post) => !query || post.searchText.includes(query));
+      .filter((post) => !query || post.searchText.indexOf(query) >= 0);
     this.setData({
       visiblePosts
     });

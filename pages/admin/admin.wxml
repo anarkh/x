@@ -62,7 +62,7 @@
       />
       <button wx:if="{{query}}" class="clear-search" bindtap="clearSearch">清空</button>
     </view>
-    <scroll-view class="admin-filter-bar" scroll-x enable-flex>
+    <view class="admin-filter-bar">
       <button
         wx:for="{{filterOptions}}"
         wx:key="value"
@@ -72,7 +72,7 @@
       >
         {{item.label}} {{item.count}}
       </button>
-    </scroll-view>
+    </view>
   </view>
 
   <view class="queue-head row between">
@@ -136,7 +136,7 @@
       </view>
     </view>
 
-    <view class="row admin-actions">
+    <view class="admin-actions">
       <button class="ghost-button" data-id="{{item.id}}" bindtap="openDetail">查看详情</button>
       <button wx:if="{{item.canResolve}}" class="resolve-button" data-id="{{item.id}}" bindtap="resolve">关闭</button>
       <button wx:if="{{item.canHide}}" class="hide-button" data-id="{{item.id}}" bindtap="hide">隐藏</button>

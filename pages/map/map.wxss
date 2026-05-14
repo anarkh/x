@@ -116,8 +116,19 @@
   align-items: start;
 }
 
+.selected-head.with-thumb {
+  grid-template-columns: 1fr 108rpx 52rpx;
+}
+
 .selected-main {
   min-width: 0;
+}
+
+.selected-thumb {
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 8rpx;
+  background: #eef1ef;
 }
 
 .selected-tags {
@@ -256,6 +267,17 @@
   grid-template-columns: 1fr 52rpx;
   gap: 14rpx;
   align-items: center;
+}
+
+.post-main.with-thumb {
+  grid-template-columns: 104rpx 1fr 52rpx;
+}
+
+.post-thumb {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 8rpx;
+  background: #eef1ef;
 }
 
 .post-text {

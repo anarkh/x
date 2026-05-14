@@ -1,32 +1,41 @@
 <view class="page me-page stack">
   <view class="profile-panel">
     <view class="profile-grid"></view>
-    <view class="avatar" bindtap="revealAdminLogin">{{avatarText}}</view>
+    <block wx:if="{{!isGuest}}">
+      <button wx:if="{{profileNeedsSetup}}" class="avatar-button" open-type="chooseAvatar" bindtap="revealAdminLogin" bindchooseavatar="onChooseAvatar" bindlongpress="revealAdminLogin">
+        <image wx:if="{{user.avatarUrl}}" class="avatar avatar-image" src="{{user.avatarUrl}}" mode="aspectFill" />
+        <view wx:else class="avatar avatar-add">添加</view>
+      </button>
+      <view wx:else class="avatar-button" bindtap="revealAdminLogin" bindlongpress="revealAdminLogin">
+        <image wx:if="{{user.avatarUrl}}" class="avatar avatar-image" src="{{user.avatarUrl}}" mode="aspectFill" />
+        <view wx:else class="avatar">{{avatarText}}</view>
+      </view>
+    </block>
+    <image wx:else class="avatar guest-avatar-image" src="/assets/icons/big-dipper.png" mode="aspectFill" bindtap="revealAdminLogin" />
     <view class="profile-copy">
-      <view class="profile-kicker">本机身份</view>
-      <view class="profile-name">{{user.nickname}}</view>
-      <view class="profile-meta">{{identityText}} · 数据保存在本机</view>
+      <block wx:if="{{!isGuest}}">
+        <input wx:if="{{profileNeedsSetup}}" class="profile-name profile-name-input" type="nickname" value="{{profileNicknameValue}}" placeholder="点击添加名称" bindblur="onNicknameBlur" />
+        <view wx:else class="profile-name">{{user.nickname}}</view>
+      </block>
+      <view wx:else class="profile-name">{{displayName}}</view>
+      <view wx:if="{{profileNeedsSetup}}" class="profile-guide">点击头像和名称添加微信资料</view>
     </view>
+    <button wx:if="{{isGuest}}" class="login-button profile-action" loading="{{loggingIn}}" disabled="{{loggingIn}}" bindtap="loginUser">{{loggingIn ? '登录中' : '微信登录'}}</button>
+    <view wx:else class="profile-feedback-button profile-action" bindtap="goFeedback">反馈</view>
   </view>
 
-  <view class="panel auth-card">
-    <view>
-      <view class="section-title">{{isGuest ? '登录后记录你的发布' : '当前身份'}}</view>
-      <view class="muted">{{isGuest ? '游客可以浏览和发布；登录后会用你的昵称标记本机发布。' : appInfo.name}}</view>
+  <block wx:if="{{showAdminLogin}}">
+    <view wx:if="{{!isAdmin}}" class="panel admin-login-card">
+      <view>
+        <view class="section-title">管理员入口</view>
+        <view class="muted">校验当前微信身份后，底部才会显示“管理”tab。</view>
+      </view>
+      <view class="admin-login-row">
+        <button class="admin-login-button" loading="{{checkingAdmin}}" disabled="{{checkingAdmin}}" bindtap="loginAdmin">{{checkingAdmin ? '校验中' : '校验身份'}}</button>
+      </view>
+      <view wx:if="{{adminCheckText}}" class="admin-check-debug">{{adminCheckText}}</view>
     </view>
-    <button wx:if="{{isGuest}}" class="login-button" loading="{{loggingIn}}" disabled="{{loggingIn}}" bindtap="loginUser">{{loggingIn ? '登录中' : '微信登录'}}</button>
-    <button wx:else class="ghost-button" bindtap="logoutUser">退出</button>
-  </view>
-
-  <view wx:if="{{showAdminLogin && !isAdmin}}" class="panel admin-login-card">
-    <view>
-      <view class="section-title">管理员入口</view>
-      <view class="muted">校验当前微信身份后，底部才会显示“管理”tab。</view>
-    </view>
-    <view class="admin-login-row">
-      <button class="admin-login-button" loading="{{checkingAdmin}}" disabled="{{checkingAdmin}}" bindtap="loginAdmin">{{checkingAdmin ? '校验中' : '校验身份'}}</button>
-    </view>
-  </view>
+  </block>
 
   <view wx:if="{{isAdmin}}" class="panel admin-ready-card" bindtap="goAdmin">
     <view>
@@ -34,11 +43,6 @@
       <view class="muted">可以巡检举报、过时、隐藏和已关闭内容。</view>
     </view>
     <view class="admin-ready-arrow"></view>
-  </view>
-
-  <view class="panel feedback-entry" bindtap="goFeedback">
-    <view class="feedback-entry-title">反馈建议</view>
-    <view class="feedback-entry-arrow"></view>
   </view>
 
   <view class="panel stat-panel">

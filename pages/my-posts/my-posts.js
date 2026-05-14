@@ -20,7 +20,7 @@ Page({
     const user = getCurrentUser();
     const posts = (await listPosts())
       .map(decoratePost)
-      .filter((post) => post.publisherId === user.id);
+      .filter((post) => post.isMine || post.publisherId === user.id);
     this.setData({
       posts,
       stats: [

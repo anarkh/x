@@ -23,10 +23,10 @@ const config = {
   },
   maxVisiblePosts: 100,
   categories: [
+    { value: 'check_in', label: '打卡' },
     { value: 'lost_found', label: '失物招领' },
     { value: 'street_update', label: '地点动态' },
-    { value: 'help_needed', label: '求助问答' },
-    { value: 'check_in', label: '打卡' }
+    { value: 'help_needed', label: '求助问答' }
   ],
   lostFoundIntents: [
     { value: 'lost', label: '我丢了' },

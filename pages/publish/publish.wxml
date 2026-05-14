@@ -6,6 +6,11 @@
   </view>
 
   <view class="panel form-card stack">
+    <view wx:if="{{isGuest}}" class="login-notice">
+      <view class="notice-title">登录后才能发布</view>
+      <view class="muted">发布时会记录你的用户身份，方便在“我的发布”里管理任务。</view>
+    </view>
+
     <view>
       <view class="label">标题</view>
       <input class="input" maxlength="32" placeholder="{{activeGuide.titlePlaceholder}}" value="{{form.title}}" data-field="title" bindinput="onInput" />
@@ -14,6 +19,21 @@
     <view>
       <view class="label">详情</view>
       <textarea class="textarea" maxlength="180" placeholder="{{activeGuide.bodyPlaceholder}}" value="{{form.body}}" data-field="body" bindinput="onInput" />
+    </view>
+
+    <view>
+      <view class="label">图片</view>
+      <view class="image-grid">
+        <view wx:for="{{imageItems}}" wx:key="path" class="image-cell">
+          <image class="image-preview" src="{{item.path}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" bindtap="previewImage" />
+          <button class="image-remove" aria-label="删除图片" data-index="{{index}}" catchtap="removeImage">×</button>
+        </view>
+        <button wx:if="{{canAddImage}}" class="image-add" bindtap="chooseImages">
+          <view class="add-icon">+</view>
+          <view class="add-text">上传图片</view>
+        </button>
+      </view>
+      <view class="image-hint muted">最多{{maxImageCount}}张，建议上传现场或物品特征图。</view>
     </view>
 
     <view>
@@ -51,5 +71,5 @@
     </view>
   </view>
 
-  <button class="primary-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">{{submitting ? '定位中' : '发布'}}</button>
+  <button class="primary-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">{{isGuest ? '登录后发布' : submitting ? '发布中' : '发布'}}</button>
 </view>

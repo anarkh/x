@@ -4,24 +4,7 @@
 
 .page-head {
   position: relative;
-  min-height: 92rpx;
-  padding: 22rpx 0 12rpx 106rpx;
-}
-
-.head-mark {
-  position: absolute;
-  left: 0;
-  top: 18rpx;
-  width: 76rpx;
-  height: 76rpx;
-  border-radius: 8rpx;
-  background: linear-gradient(135deg, #17231f, #1f6658);
-  color: #f7fbf7;
-  font-size: 36rpx;
-  font-weight: 900;
-  line-height: 76rpx;
-  text-align: center;
-  box-shadow: 0 14rpx 28rpx rgba(23, 32, 29, 0.16);
+  padding: 22rpx 0 12rpx;
 }
 
 .stat-panel {
@@ -66,6 +49,24 @@
 
 .compact-post:active {
   opacity: 0.76;
+}
+
+.compact-layout.with-thumb {
+  display: grid;
+  grid-template-columns: 116rpx minmax(0, 1fr);
+  gap: 18rpx;
+  align-items: start;
+}
+
+.compact-main {
+  min-width: 0;
+}
+
+.compact-thumb {
+  width: 116rpx;
+  height: 116rpx;
+  border-radius: 8rpx;
+  background: #eef1ef;
 }
 
 .post-tags {

@@ -12,12 +12,39 @@ import {
   statusLabel
 } from '../../utils/format.js';
 
+function decorateDetailPost(raw) {
+  const user = getCurrentUser();
+  const canReact = raw.status === 'active' || raw.status === 'stale';
+  const canResolve = canReact && (isAdmin(user) || raw.isMine || raw.publisherId === user.id);
+  const canShowResolve = canResolve && raw.category !== 'check_in';
+  return {
+    ...raw,
+    imageUrls: Array.isArray(raw.imageUrls) ? raw.imageUrls : [],
+    categoryText: categoryLabel(raw.category),
+    intentText: intentLabel(raw.intent),
+    statusText: statusLabel(raw.status),
+    confirmationText: formatConfirmationText(raw.confirmations, raw.lastConfirmedAt),
+    confirmationHint: raw.lastConfirmedAt ? `${formatCreatedAt(raw.lastConfirmedAt)}确认` : '确认',
+    createdText: formatCreatedAt(raw.createdAt),
+    expiryText: raw.status === 'resolved' ? '已关闭' : formatTimeLeft(raw.expiresAt),
+    distanceText: `${raw.distance}m`,
+    resolveText: resolveActionLabel(raw.category),
+    canReact,
+    canResolve,
+    canShowResolve,
+    confirmedByMe: hasReactedToPost(raw.id, 'confirm'),
+    staledByMe: hasReactedToPost(raw.id, 'stale'),
+    reportedByMe: hasReactedToPost(raw.id, 'report')
+  };
+}
+
 Page({
   data: {
     id: '',
     appInfo: config.appInfo,
     post: null,
     markers: [],
+    loading: true,
     showPublishSuccess: false
   },
 
@@ -38,35 +65,45 @@ Page({
     this.loadPost();
   },
 
+  onUnload() {
+    if (this.data.showPublishSuccess) {
+      wx.switchTab({ url: '/pages/map/map' });
+    }
+  },
+
   async loadPost() {
-    const raw = await getPost(this.data.id);
+    this.setData({ loading: true });
+    let raw = null;
+    try {
+      raw = await getPost(this.data.id);
+    } catch (error) {
+      console.warn('[detail] failed to load post', error);
+    }
+    this.renderPost(raw);
+  },
+
+  renderPost(raw) {
     if (!raw) {
-      this.setData({ post: null, markers: [] });
+      this.setData({ post: null, markers: [], loading: false });
       return;
     }
-    const user = getCurrentUser();
-    const canReact = raw.status === 'active' || raw.status === 'stale';
-    const canResolve = canReact && (isAdmin(user) || raw.publisherId === user.id);
-    const post = {
-      ...raw,
-      categoryText: categoryLabel(raw.category),
-      intentText: intentLabel(raw.intent),
-      statusText: statusLabel(raw.status),
-      confirmationText: formatConfirmationText(raw.confirmations, raw.lastConfirmedAt),
-      confirmationHint: raw.lastConfirmedAt ? `${formatCreatedAt(raw.lastConfirmedAt)}确认` : '确认',
-      createdText: formatCreatedAt(raw.createdAt),
-      expiryText: raw.status === 'resolved' ? '已关闭' : formatTimeLeft(raw.expiresAt),
-      distanceText: `${raw.distance}m`,
-      resolveText: resolveActionLabel(raw.category),
-      canReact,
-      canResolve,
-      confirmedByMe: hasReactedToPost(raw.id, 'confirm'),
-      staledByMe: hasReactedToPost(raw.id, 'stale'),
-      reportedByMe: hasReactedToPost(raw.id, 'report')
-    };
+    const post = decorateDetailPost(raw);
     this.setData({
       post,
-      markers: [markerFromPost(post)]
+      markers: [markerFromPost(post)],
+      loading: false
+    });
+  },
+
+  previewImage(event) {
+    const index = Number(event.currentTarget.dataset.index);
+    const urls = this.data.post && this.data.post.imageUrls ? this.data.post.imageUrls : [];
+    if (!urls.length) {
+      return;
+    }
+    wx.previewImage({
+      current: urls[index],
+      urls
     });
   },
 
@@ -79,12 +116,12 @@ Page({
       });
       return;
     }
-    await reactToPost(this.data.id, action);
+    const post = await reactToPost(this.data.id, action);
     wx.showToast({
       title: action === 'report' ? '已收到举报' : '已记录',
       icon: 'success'
     });
-    this.loadPost();
+    this.renderPost(post);
   },
 
   resolve() {
@@ -103,18 +140,14 @@ Page({
         if (!result.confirm) {
           return;
         }
-        await resolvePost(this.data.id);
+        const post = await resolvePost(this.data.id);
         wx.showToast({
           title: '已关闭',
           icon: 'success'
         });
-        this.loadPost();
+        this.renderPost(post);
       }
     });
-  },
-
-  dismissSharePrompt() {
-    this.setData({ showPublishSuccess: false });
   },
 
   onShareAppMessage() {

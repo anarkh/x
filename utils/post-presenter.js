@@ -27,8 +27,12 @@ export function isOpenPost(post) {
 }
 
 export function decoratePost(post) {
+  const imageUrls = Array.isArray(post.imageUrls) ? post.imageUrls : [];
   return {
     ...post,
+    imageUrls,
+    coverImage: imageUrls[0] || '',
+    imageCount: imageUrls.length,
     categoryText: categoryLabel(post.category),
     intentText: intentLabel(post.intent),
     statusText: statusLabel(post.status),
@@ -39,10 +43,10 @@ export function decoratePost(post) {
 }
 
 export function buildActivities(posts, reactions) {
-  const postById = posts.reduce((map, post) => ({
-    ...map,
-    [post.id]: post
-  }), {});
+  const postById = {};
+  posts.forEach((post) => {
+    postById[post.id] = post;
+  });
   return reactions
     .map((item) => {
       const post = postById[item.id];

@@ -1,8 +1,7 @@
 <view class="page list-page stack">
   <view class="page-head">
-    <view class="head-mark">发</view>
     <view class="title">我的发布</view>
-    <view class="muted">当前本机身份发布过的附近任务。</view>
+    <view class="muted">当前账号发布过的附近任务。</view>
   </view>
 
   <view class="panel stat-panel">
@@ -19,15 +18,20 @@
   </view>
 
   <view wx:for="{{posts}}" wx:key="id" class="panel compact-post" data-id="{{item.id}}" bindtap="openDetail">
-    <view class="row between">
-      <view class="row post-tags">
-        <text class="tag">{{item.categoryText}}</text>
-        <text wx:if="{{item.intentText}}" class="tag neutral">{{item.intentText}}</text>
-        <text wx:if="{{item.status !== 'active'}}" class="tag {{item.status === 'stale' ? 'warn' : ''}} {{item.status === 'resolved' ? 'done' : ''}} {{item.status === 'expired' ? 'neutral' : ''}}">{{item.statusText}}</text>
+    <view class="compact-layout {{item.coverImage ? 'with-thumb' : ''}}">
+      <image wx:if="{{item.coverImage}}" class="compact-thumb" src="{{item.coverImage}}" mode="aspectFill" />
+      <view class="compact-main">
+        <view class="row between">
+          <view class="row post-tags">
+            <text class="tag">{{item.categoryText}}</text>
+            <text wx:if="{{item.intentText}}" class="tag neutral">{{item.intentText}}</text>
+            <text wx:if="{{item.status !== 'active'}}" class="tag {{item.status === 'stale' ? 'warn' : ''}} {{item.status === 'resolved' ? 'done' : ''}} {{item.status === 'expired' ? 'neutral' : ''}}">{{item.statusText}}</text>
+          </view>
+          <text class="muted">{{item.createdText}}</text>
+        </view>
+        <view class="compact-title">{{item.title}}</view>
+        <view class="muted">{{item.placeName}} · {{item.confirmationText}} · {{item.expiryText}}</view>
       </view>
-      <text class="muted">{{item.createdText}}</text>
     </view>
-    <view class="compact-title">{{item.title}}</view>
-    <view class="muted">{{item.placeName}} · {{item.confirmationText}} · {{item.expiryText}}</view>
   </view>
 </view>

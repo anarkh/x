@@ -17,6 +17,7 @@ const categoryOptions = [
   ...config.categories
 ];
 const DOUBLE_TAP_REFRESH_MS = 320;
+const REGION_UPDATE_DEBOUNCE_MS = 140;
 
 function isPostInRegion(post, region) {
   if (!region || !region.southwest || !region.northeast) {
@@ -61,6 +62,7 @@ Page({
   },
 
   onLoad() {
+    this.initialLocationPending = true;
     if (wx.showShareMenu) {
       wx.showShareMenu({
         withShareTicket: true,
@@ -72,11 +74,16 @@ Page({
 
   onReady() {
     this.mapContext = wx.createMapContext('taskMap', this);
-    this.updateMapRegion();
+    if (!this.initialLocationPending) {
+      this.updateMapRegion();
+    }
   },
 
   onShow() {
     syncTabBar(this, '/pages/map/map');
+    if (this.initialLocationPending) {
+      return;
+    }
     this.refresh();
   },
 
@@ -91,6 +98,7 @@ Page({
         };
         app.globalData.center = center;
         this.setData({ center }, () => {
+          this.initialLocationPending = false;
           this.refresh();
           setTimeout(() => {
             this.updateMapRegion();
@@ -98,6 +106,7 @@ Page({
         });
       },
       fail: () => {
+        this.initialLocationPending = false;
         this.refresh();
         setTimeout(() => {
           this.updateMapRegion();
@@ -107,7 +116,11 @@ Page({
   },
 
   async refresh() {
+    const requestId = this.nextPostsRequestId();
     const posts = await this.buildPosts(this.data.center);
+    if (requestId !== this.postsRequestId) {
+      return;
+    }
     this.applyPostFilters(posts, this.data.activeCategory, this.data.mapRegion);
   },
 
@@ -115,6 +128,9 @@ Page({
     const posts = await listPosts(center);
     return posts.map((post) => ({
       ...post,
+      imageUrls: Array.isArray(post.imageUrls) ? post.imageUrls : [],
+      coverImage: Array.isArray(post.imageUrls) && post.imageUrls[0] ? post.imageUrls[0] : '',
+      imageCount: Array.isArray(post.imageUrls) ? post.imageUrls.length : 0,
       categoryText: categoryLabel(post.category),
       intentText: intentLabel(post.intent),
       statusText: statusLabel(post.status),
@@ -125,28 +141,29 @@ Page({
     }));
   },
 
-  applyPostFilters(posts, activeCategory, mapRegion) {
+  applyPostFilters(posts, activeCategory, mapRegion, options = {}) {
     const viewportPosts = posts.filter((post) => isPostInRegion(post, mapRegion));
     const visiblePosts = activeCategory === 'all'
       ? viewportPosts
       : viewportPosts.filter((post) => post.category === activeCategory);
-    const categoryCounts = viewportPosts.reduce((counts, post) => ({
-      ...counts,
-      [post.category]: (counts[post.category] || 0) + 1
-    }), {});
+    const categoryCounts = {};
+    viewportPosts.forEach((post) => {
+      categoryCounts[post.category] = (categoryCounts[post.category] || 0) + 1;
+    });
     const categoryFilters = categoryOptions.map((item) => ({
       ...item,
       count: item.value === 'all' ? viewportPosts.length : categoryCounts[item.value] || 0
     }));
     const activeFilter = categoryFilters.find((item) => item.value === activeCategory);
-    const selectedPost = this.pendingSelectedPost
+    const selectedPost = options.clearSelection
+      ? null
+      : this.pendingSelectedPost
       ? visiblePosts.find((post) => post.id === this.pendingSelectedPost.id) || this.pendingSelectedPost
       : this.data.selectedPost
       ? visiblePosts.find((post) => post.id === this.data.selectedPost.id) || null
       : null;
     this.pendingSelectedPost = null;
-    this.setData({
-      posts,
+    const nextData = {
       visiblePosts,
       categoryFilters,
       activeCategory,
@@ -156,7 +173,11 @@ Page({
       mapRegion,
       selectedPost,
       markers: visiblePosts.map(markerFromPost)
-    });
+    };
+    if (posts !== this.data.posts) {
+      nextData.posts = posts;
+    }
+    this.setData(nextData);
   },
 
   changeCategory(event) {
@@ -170,19 +191,34 @@ Page({
       return;
     }
     this.mapContext = mapContext;
+    const requestId = this.nextPostsRequestId();
     mapContext.getRegion({
       success: async (region) => {
         const center = centerFromRegion(region) || this.data.center;
         const posts = await this.buildPosts(center);
+        if (requestId !== this.postsRequestId) {
+          return;
+        }
         if (options.selectPostId) {
           this.pendingSelectedPost = posts.find((post) => post.id === options.selectPostId) || null;
         }
-        this.applyPostFilters(posts, this.data.activeCategory, region);
-        if (options.clearSelection) {
-          this.setData({ selectedPost: null });
-        }
+        this.applyPostFilters(posts, this.data.activeCategory, region, {
+          clearSelection: options.clearSelection
+        });
       }
     });
+  },
+
+  nextPostsRequestId() {
+    this.postsRequestId = (this.postsRequestId || 0) + 1;
+    return this.postsRequestId;
+  },
+
+  scheduleMapRegionUpdate(options = {}) {
+    clearTimeout(this.regionUpdateTimer);
+    this.regionUpdateTimer = setTimeout(() => {
+      this.updateMapRegion(options);
+    }, REGION_UPDATE_DEBOUNCE_MS);
   },
 
   onRegionChange(event) {
@@ -192,7 +228,7 @@ Page({
     if (event.detail && event.detail.causedBy === 'update') {
       return;
     }
-    this.updateMapRegion({
+    this.scheduleMapRegionUpdate({
       clearSelection: true
     });
   },
