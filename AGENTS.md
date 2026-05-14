@@ -8,6 +8,44 @@ Street Tasks is a native WeChat mini program for short-lived neighborhood tasks.
 
 The app currently runs without a backend. Data is seeded from mock posts and persisted through `wx` local storage. Treat `utils/store.js` as the persistence boundary that can later be replaced by cloud functions or HTTP APIs.
 
+## Harness Operating Loop
+
+This repository keeps agent state, verification, and handoff files under `harness/`. Treat those files as the durable source of truth for long-running AI-assisted work.
+
+Before changing code:
+
+1. Run `pwd` and confirm the repo root is `/Users/bytedance/git/x`.
+2. Read `harness/claude-progress.md` for the latest verified state, blocker, and next action.
+3. Read `harness/feature_list.json` and pick the highest-priority unfinished feature. Keep at most one feature `in_progress`.
+4. Check recent history with `git log --oneline -5`.
+5. Run `bash harness/init.sh`. If it fails, fix the base state before adding feature work.
+
+Required harness files:
+
+- `harness/feature_list.json`: machine-readable feature status and verification evidence.
+- `harness/claude-progress.md`: session log and current verified state.
+- `harness/init.sh`: single bootstrap and baseline verification entrypoint.
+- `harness/session-handoff.md`: short handoff summary for longer sessions.
+- `harness/clean-state-checklist.md`: closeout checklist before handing work back.
+- `harness/evaluator-rubric.md`: acceptance rubric for completed work.
+- `harness/quality-document.md`: project quality snapshot by product area and architecture layer.
+
+Completion definition:
+
+- The target behavior is implemented.
+- Required verification actually ran.
+- Evidence is recorded in `harness/feature_list.json` or `harness/claude-progress.md`.
+- The repo can still be restarted from `bash harness/init.sh`.
+- Any skipped manual WeChat DevTools checks are called out as unverified, not implied passing.
+
+Session closeout:
+
+1. Update `harness/claude-progress.md`.
+2. Update `harness/feature_list.json` when feature status or evidence changes.
+3. Note unresolved risks or blockers.
+4. Run the relevant verification commands.
+5. Leave the next session able to continue from repo files alone.
+
 ## Tech Stack
 
 - Native WeChat mini program files: `.js`, `.json`, `.wxml`, `.wxss`
@@ -27,6 +65,7 @@ The app currently runs without a backend. Data is seeded from mock posts and per
 - `utils/geo.js`: distance calculation and map marker conversion.
 - `utils/format.js`: category and time display helpers.
 - `utils/mock-posts.js`: seed data used when local storage is empty.
+- `harness/*`: agent harness state, verification, closeout, and quality tracking files.
 - `pages/map/*`: map feed, marker interactions, and list overlay.
 - `pages/publish/*`: task creation flow.
 - `pages/detail/*`: detail view and confirm/stale/report actions.

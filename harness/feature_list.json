@@ -1,0 +1,135 @@
+{
+  "project": "Street Tasks / 街区任务",
+  "last_updated": "2026-05-13",
+  "rules": {
+    "single_active_feature": true,
+    "passing_requires_evidence": true,
+    "do_not_skip_verification": true,
+    "manual_wechat_devtools_required_for_user_visible_passing": true
+  },
+  "status_legend": {
+    "not_started": "还没有按 harness 验证流程开始推进。代码里可能已有实现，但不能因此视为 passing。",
+    "in_progress": "这个功能是当前唯一正在进行的任务。",
+    "blocked": "因为已记录的阻塞问题，当前无法继续推进。",
+    "passing": "要求的验证已经通过，并且证据已经记录。"
+  },
+  "verification_levels": {
+    "baseline": [
+      "npm run check:json",
+      "node harness/check-harness.mjs"
+    ],
+    "manual_product": [
+      "在 WeChat DevTools 中打开项目。",
+      "执行编译，确认无配置或运行时报错。",
+      "按目标功能逐步操作并记录结果。"
+    ]
+  },
+  "features": [
+    {
+      "id": "harness-001",
+      "priority": 0,
+      "area": "harness",
+      "title": "仓库 agent harness 初始化",
+      "user_visible_behavior": "后续 agent 可以从 AGENTS.md 和 harness/ 下的状态文件恢复上下文、运行基础验证并记录证据。",
+      "status": "passing",
+      "verification": [
+        "从根目录运行 npm run check:json。",
+        "从根目录运行 node harness/check-harness.mjs。",
+        "确认根 AGENTS.md 指向 harness/init.sh、feature_list.json 和 claude-progress.md。",
+        "确认除根 AGENTS.md 外，新增 harness 文件都位于 harness/。"
+      ],
+      "evidence": [
+        "2026-05-13: npm run check:json passed, output: Checked 11 JSON files.",
+        "2026-05-13: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
+        "2026-05-13: bash harness/init.sh passed; npm ci --ignore-scripts reported up to date, then check:json and check-harness both passed.",
+        "2026-05-13: chmod +x harness/init.sh completed; root AGENTS.md references harness/init.sh, harness/feature_list.json, and harness/claude-progress.md."
+      ],
+      "notes": "初始 harness 已建立。产品功能仍需 WeChat DevTools 手动验证后才能标记 passing。"
+    },
+    {
+      "id": "map-feed-001",
+      "priority": 1,
+      "area": "map",
+      "title": "地图首页附近任务浏览",
+      "user_visible_behavior": "用户进入地图页后可以看到地图、附近任务标记、底部列表，并可定位或查找一条附近任务。",
+      "status": "not_started",
+      "verification": [
+        "在 WeChat DevTools 中编译项目。",
+        "打开地图 tab。",
+        "允许或拒绝定位各验证一次，确认默认中心和定位回退正常。",
+        "点击任务标记，确认进入对应详情页。",
+        "点击查找附近任务，确认地图移动到有效任务。"
+      ],
+      "evidence": [],
+      "notes": "已有实现未等于 harness passing；需要手动小程序验证证据。"
+    },
+    {
+      "id": "publish-001",
+      "priority": 2,
+      "area": "publish",
+      "title": "发布短时附近任务",
+      "user_visible_behavior": "用户可以填写分类、标题、描述、地点、坐标、图片和过期时间，并发布一条新任务。",
+      "status": "not_started",
+      "verification": [
+        "在 WeChat DevTools 中打开发布 tab。",
+        "未登录状态尝试发布，确认出现登录或权限提示。",
+        "登录后填写每个分类的最小有效表单并提交。",
+        "确认成功提示、分享入口和地图/详情页可见新任务。",
+        "验证必填项、字数、图片数量和过期时间的错误提示。"
+      ],
+      "evidence": [],
+      "notes": "当前仓库有 CloudBase 相关未提交改动；验证时需要区分云端成功和本地 fallback。"
+    },
+    {
+      "id": "detail-trust-001",
+      "priority": 3,
+      "area": "detail",
+      "title": "任务详情与结构化信任动作",
+      "user_visible_behavior": "用户进入详情页后可以确认仍有效、标记过时、举报或关闭自己的任务，重复动作会被阻止。",
+      "status": "not_started",
+      "verification": [
+        "从地图或列表进入一条 active 任务详情。",
+        "点击确认，确认 confirmations 增加且同一用户不能重复确认。",
+        "连续触发过时动作，确认 staleCount 达到阈值后状态变为 stale。",
+        "触发举报，确认达到阈值后普通列表不再显示 hidden 任务。",
+        "用发布者身份关闭任务，确认状态变为 resolved。"
+      ],
+      "evidence": [],
+      "notes": "信任动作涉及本地 storage 和 CloudBase 两条路径，完成时需要分别记录。"
+    },
+    {
+      "id": "admin-001",
+      "priority": 4,
+      "area": "admin",
+      "title": "轻量管理与风险内容处理",
+      "user_visible_behavior": "管理员可以查看 reported/stale/hidden 等风险任务，执行隐藏或关闭操作；普通用户不应看到管理能力。",
+      "status": "not_started",
+      "verification": [
+        "以普通用户打开管理 tab，确认没有管理员能力或被引导。",
+        "以管理员身份打开管理 tab，确认列表、搜索和风险筛选可用。",
+        "对 reported 任务执行隐藏，确认普通地图列表不显示。",
+        "对任务执行关闭，确认详情状态同步为 resolved。",
+        "验证 admins 集合缺失时不会导致小程序崩溃。"
+      ],
+      "evidence": [],
+      "notes": "管理员身份依赖 getMyRole 云函数和本地 fallback。"
+    },
+    {
+      "id": "profile-activity-001",
+      "priority": 5,
+      "area": "me",
+      "title": "我的、我的发布、动态与反馈入口",
+      "user_visible_behavior": "用户可以查看个人状态、自己的发布、活动动态，并提交反馈。",
+      "status": "not_started",
+      "verification": [
+        "打开我的 tab，确认登录状态、管理员状态和入口展示正确。",
+        "进入我的发布，确认只展示当前用户相关任务。",
+        "进入动态页，确认活动列表与状态文案正确。",
+        "进入反馈页，提交各类型反馈并确认成功或失败提示。",
+        "重启小程序后确认本地状态没有异常丢失。"
+      ],
+      "evidence": [],
+      "notes": "这组页面是辅助面，优先级低于核心地图/发布/详情闭环。"
+    }
+  ]
+}
