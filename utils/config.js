@@ -18,7 +18,8 @@ const config = {
     envId: 'cloud1-d4ga42hl16934fbdf',
     collections: {
       posts: 'posts',
-      admins: 'admins'
+      admins: 'admins',
+      feedback: 'feedback_items'
     }
   },
   maxVisiblePosts: 100,

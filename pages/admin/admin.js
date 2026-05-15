@@ -152,6 +152,7 @@ Page({
     posts: [],
     visiblePosts: [],
     feedbacks: [],
+    feedbackError: '',
     stats: {
       total: 0,
       needsReview: 0,
@@ -185,10 +186,18 @@ Page({
     const posts = (await listAllPosts())
       .map(decoratePost)
       .sort((a, b) => riskScore(b) - riskScore(a) || b.createdAt - a.createdAt);
-    const feedbacks = listFeedback().map(decorateFeedback);
+    let feedbacks = [];
+    let feedbackError = '';
+    try {
+      feedbacks = (await listFeedback()).map(decorateFeedback);
+    } catch (error) {
+      console.error('[admin] feedback list failed', error);
+      feedbackError = '反馈通道异常，请检查云函数和 feedback_items 集合';
+    }
     this.setData({
       posts,
       feedbacks,
+      feedbackError,
       stats: {
         total: posts.length,
         needsReview: posts.filter(needsReview).length,

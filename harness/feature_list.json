@@ -1,6 +1,6 @@
 {
   "project": "Street Tasks / 街区任务",
-  "last_updated": "2026-05-13",
+  "last_updated": "2026-05-14",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -84,18 +84,37 @@
       "id": "detail-trust-001",
       "priority": 3,
       "area": "detail",
-      "title": "任务详情与结构化信任动作",
-      "user_visible_behavior": "用户进入详情页后可以确认仍有效、标记过时、举报或关闭自己的任务，重复动作会被阻止。",
-      "status": "not_started",
+      "title": "任务详情、评论与结构化信任动作",
+      "user_visible_behavior": "用户进入详情页后可以查看评论，登录后补充线索或提问，并可以确认仍有效、标记过时、举报或关闭自己的任务，重复动作会被阻止。",
+      "status": "in_progress",
       "verification": [
         "从地图或列表进入一条 active 任务详情。",
-        "点击确认，确认 confirmations 增加且同一用户不能重复确认。",
-        "连续触发过时动作，确认 staleCount 达到阈值后状态变为 stale。",
-        "触发举报，确认达到阈值后普通列表不再显示 hidden 任务。",
+        "确认详情页不再展示地图，评论区在信任动作下方直接可见。",
+        "确认评论列表默认不展示发布评论面板，右下方显示悬浮评论按钮。",
+        "游客状态点击悬浮评论按钮，确认显示登录评论引导。",
+        "登录后点击悬浮评论按钮，确认弹出评论框。",
+        "在弹窗里输入空评论，确认不会提交并出现提示。",
+        "在弹窗里发布一条有效评论，确认弹窗关闭且评论出现在列表顶部并显示昵称与时间。",
+        "重新进入详情页，确认评论仍然保留。",
+        "进入 resolved 或 expired 任务详情，确认评论区只读且不能继续发布。",
+        "确认、过时、举报展示为一行三列，并且按钮或只读统计中直接展示对应数量。",
+        "点击确认，确认按钮数量增加且同一用户不能重复确认。",
+        "连续触发过时动作，确认按钮数量增加且 staleCount 达到阈值后状态变为 stale。",
+        "触发举报，确认按钮数量增加且达到阈值后普通列表不再显示 hidden 任务。",
         "用发布者身份关闭任务，确认状态变为 resolved。"
       ],
-      "evidence": [],
-      "notes": "信任动作涉及本地 storage 和 CloudBase 两条路径，完成时需要分别记录。"
+      "evidence": [
+        "2026-05-14: Code implementation added detail comments UI, local post_comments storage, and CloudBase listComments/createComment actions.",
+        "2026-05-14: Detail page layout removed the inline map and separate metrics card; confirm/stale/report now render as one three-column row with counts on the controls.",
+        "2026-05-14: Comment composer moved out of the default list view; a lower-right floating comment button now opens a bottom comment dialog.",
+        "2026-05-14: node --check passed for utils/store.js, pages/detail/detail.js, and cloudfunctions/posts/index.js.",
+        "2026-05-14: npm run check:json passed, output: Checked 11 JSON files.",
+        "2026-05-14: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
+        "2026-05-14: bash harness/init.sh passed after the comment changes; npm ci reported up to date, then check:json and check-harness both passed.",
+        "2026-05-14: Re-ran node --check for detail/store/cloud function, npm run check:json, node harness/check-harness.mjs, and bash harness/init.sh after compacting the detail layout; all passed.",
+        "2026-05-14: Re-ran the same syntax, JSON, harness, and init checks after moving comment publishing into the floating-button dialog; all passed."
+      ],
+      "notes": "评论与信任动作都涉及本地 storage 和 CloudBase 两条路径；当前代码实现已推进，仍需要 WeChat DevTools 手动验证后才能标记 passing。"
     },
     {
       "id": "admin-001",

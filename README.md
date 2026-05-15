@@ -15,11 +15,11 @@ The app has no fixed service area. Users can browse and publish tasks from any c
 - "Find one" discovery action for sparse maps, jumping to a random nearby post.
 - Publish flow with category-specific guidance, lost/found direction, place, coordinate, and expiry controls.
 - Publish-success sharing prompt and detail-page share metadata.
-- Task detail page with confirm, stale, resolve, and report actions.
+- Task detail page with comments, confirm, stale, resolve, and report actions.
 - Local duplicate prevention for repeated trust actions on the same post.
 - Local login, with an admin-only management tab controlled by the local admin code in `utils/config.js`.
-- Management console for search, risk filtering, reported/stale/hidden review, and hide/close actions.
-- Local mock storage through `utils/store.js`, so the mini program can run before a backend exists.
+- Management console for search, risk filtering, reported/stale/hidden review, user feedback, and hide/close actions.
+- CloudBase-backed posts, reactions, comments, and feedback when `utils/config.js` cloud settings are enabled, with local mock storage fallback for development.
 
 ## Run Locally
 
@@ -27,7 +27,7 @@ The app has no fixed service area. Users can browse and publish tasks from any c
 2. Use `project.config.json`; the placeholder appid is `touristappid`.
 3. Run `npm run check:json` for a basic config sanity check.
 
-The current implementation stores data in `wx` local storage. Replace `utils/store.js` with cloud functions or HTTP requests when the backend contract is ready.
+For local-only development, the app falls back to `wx` local storage. For shared user data, deploy the `posts` cloud function and create the `posts`, `post_reactions`, `post_comments`, `feedback_items`, and `admins` collections in CloudBase.
 
 ## Product Scope
 

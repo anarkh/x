@@ -5,8 +5,11 @@ import { getCurrentUser, isAdmin } from './auth.js';
 
 const STORAGE_KEY = 'posts';
 const REACTIONS_STORAGE_KEY = 'post_reactions';
+const COMMENTS_STORAGE_KEY = 'post_comments';
 const CLOSED_STATUSES = ['hidden', 'resolved'];
 const POSTS_CACHE_TTL_MS = 8000;
+const MAX_COMMENTS_PER_POST = 50;
+const MAX_COMMENT_LENGTH = 120;
 let postsLoadPromise = null;
 let postsCache = {
   data: null,
@@ -78,6 +81,10 @@ function isCloudFallbackError(error) {
       || message.indexOf('ResourceNotFound') >= 0);
 }
 
+function isCommentFallbackError(error) {
+  return isCloudFallbackError(error) || (error && error.code === 'UNKNOWN_ACTION');
+}
+
 function cloudError(code, message) {
   const error = new Error(message || 'Cloud post operation failed');
   error.code = code || 'CLOUD_POSTS_FAILED';
@@ -125,6 +132,28 @@ function normalizePost(post) {
     ...post,
     id: post.id || post._id
   } : null;
+}
+
+function normalizeComment(comment) {
+  if (!comment) {
+    return null;
+  }
+  const normalized = {
+    ...comment,
+    id: comment.id || comment._id,
+    body: String(comment.body || '').trim(),
+    author: String(comment.author || '附近用户').trim() || '附近用户',
+    authorAvatarUrl: comment.authorAvatarUrl || '',
+    authorRole: comment.authorRole || 'user',
+    createdAt: Number(comment.createdAt) || 0
+  };
+  if (!normalized.id || !normalized.postId || !normalized.body) {
+    return null;
+  }
+  return {
+    ...normalized,
+    isMine: Boolean(normalized.isMine || normalized.authorId === currentUserId())
+  };
 }
 
 async function fetchPosts(options = {}) {
@@ -208,9 +237,32 @@ function rememberReaction(id, action, now) {
 }
 
 function authRequiredError() {
-  const error = new Error('Login is required to publish a post.');
+  const error = new Error('Login is required.');
   error.code = 'AUTH_REQUIRED';
   return error;
+}
+
+function validationError(message) {
+  const error = new Error(message);
+  error.code = 'VALIDATION_FAILED';
+  return error;
+}
+
+function postClosedError() {
+  const error = new Error('当前任务已关闭，暂不能评论');
+  error.code = 'POST_CLOSED';
+  return error;
+}
+
+function cleanCommentBody(body) {
+  const text = String(body || '').trim();
+  if (!text) {
+    throw validationError('评论不能为空');
+  }
+  if (text.length > MAX_COMMENT_LENGTH) {
+    throw validationError(`评论不能超过${MAX_COMMENT_LENGTH}字`);
+  }
+  return text;
 }
 
 function derivePost(post, now, center) {
@@ -225,6 +277,10 @@ function derivePost(post, now, center) {
 
 function canTrustReact(post, now) {
   return CLOSED_STATUSES.indexOf(post.status) < 0 && post.expiresAt > now;
+}
+
+function canCommentOnPost(post, now) {
+  return post && CLOSED_STATUSES.indexOf(post.status) < 0 && post.expiresAt > now;
 }
 
 function statusRank(status) {
@@ -350,6 +406,92 @@ export function listMyReactions() {
 export function hasReactedToPost(id, action) {
   const reactions = loadReactionMap();
   return Boolean(reactions[reactionKey(id, action)]);
+}
+
+function loadLocalComments() {
+  const stored = wx.getStorageSync(COMMENTS_STORAGE_KEY);
+  return Array.isArray(stored) ? stored : [];
+}
+
+function saveLocalComments(comments) {
+  wx.setStorageSync(COMMENTS_STORAGE_KEY, comments);
+}
+
+export async function listPostComments(id) {
+  const postId = String(id || '').trim();
+  if (!postId) {
+    return [];
+  }
+
+  if (shouldUseCloud()) {
+    try {
+      const data = await callPostsFunction('listComments', { id: postId });
+      return (data.comments || [])
+        .map(normalizeComment)
+        .filter(Boolean)
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, MAX_COMMENTS_PER_POST);
+    } catch (error) {
+      if (!isCommentFallbackError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  return loadLocalComments()
+    .filter((comment) => comment.postId === postId)
+    .map(normalizeComment)
+    .filter(Boolean)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, MAX_COMMENTS_PER_POST);
+}
+
+export async function createPostComment(id, body) {
+  const user = getCurrentUser();
+  if (user.isGuest) {
+    throw authRequiredError();
+  }
+  const postId = String(id || '').trim();
+  const text = cleanCommentBody(body);
+
+  if (shouldUseCloud()) {
+    try {
+      const data = await callPostsFunction('createComment', {
+        id: postId,
+        body: text,
+        author: user.nickname,
+        authorAvatarUrl: user.avatarUrl || '',
+        authorLoggedInAt: user.loggedInAt || 0
+      });
+      const comment = normalizeComment(data.comment);
+      if (comment) {
+        return comment;
+      }
+    } catch (error) {
+      if (!isCommentFallbackError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  const now = Date.now();
+  const post = await findPost(postId);
+  if (!canCommentOnPost(post, now)) {
+    throw postClosedError();
+  }
+  const comment = {
+    id: `comment_${now}`,
+    postId,
+    body: text,
+    authorId: user.id,
+    author: user.nickname || '附近用户',
+    authorAvatarUrl: user.avatarUrl || '',
+    authorRole: user.role || 'user',
+    authorLoggedInAt: user.loggedInAt || 0,
+    createdAt: now
+  };
+  saveLocalComments([comment, ...loadLocalComments()]);
+  return normalizeComment(comment);
 }
 
 export async function reactToPost(id, action) {

@@ -42,34 +42,82 @@
     </view>
   </view>
 
-  <map
-    class="mini-map"
-    latitude="{{post.latitude}}"
-    longitude="{{post.longitude}}"
-    scale="16"
-    markers="{{markers}}"
-  />
+  <view wx:if="{{post.canReact}}" class="trust-actions">
+    <button class="trust-button trust-confirm {{post.confirmedByMe ? 'disabled-action' : ''}}" disabled="{{post.confirmedByMe}}" data-action="confirm" bindtap="react">
+      <text>{{post.confirmedByMe ? '已确认' : '确认'}}</text>
+      <text class="action-count">{{post.confirmations}}</text>
+    </button>
+    <button class="trust-button trust-stale {{post.staledByMe ? 'disabled-action' : ''}}" disabled="{{post.staledByMe}}" data-action="stale" bindtap="react">
+      <text>{{post.staledByMe ? '已过时' : '过时'}}</text>
+      <text class="action-count">{{post.staleCount}}</text>
+    </button>
+    <button class="trust-button trust-report {{post.reportedByMe ? 'disabled-action' : ''}}" disabled="{{post.reportedByMe}}" data-action="report" bindtap="react">
+      <text>{{post.reportedByMe ? '已举报' : '举报'}}</text>
+      <text class="action-count">{{post.reportCount}}</text>
+    </button>
+  </view>
+  <view wx:else class="trust-summary">
+    <text>确认 {{post.confirmations}}</text>
+    <text>过时 {{post.staleCount}}</text>
+    <text>举报 {{post.reportCount}}</text>
+  </view>
 
-  <view class="panel metrics">
-    <view class="metric-item">
-      <view class="metric">{{post.confirmations}}</view>
-      <view class="muted">{{post.confirmationHint}}</view>
+  <view wx:if="{{post.canShowResolve}}" class="resolve-row">
+    <button class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
+  </view>
+
+  <view class="panel comments-panel stack">
+    <view class="row between comments-head">
+      <view>
+        <view class="section-title">评论</view>
+        <view class="muted">{{comments.length}} 条线索</view>
+      </view>
     </view>
-    <view class="metric-item">
-      <view class="metric">{{post.staleCount}}</view>
-      <view class="muted">过时</view>
-    </view>
-    <view class="metric-item">
-      <view class="metric">{{post.reportCount}}</view>
-      <view class="muted">举报</view>
+    <view wx:if="{{!post.canComment}}" class="comment-locked">任务已关闭或过期，评论已暂停</view>
+
+    <view wx:if="{{commentsLoading}}" class="comment-empty">正在读取评论</view>
+    <view wx:elif="{{!comments.length}}" class="comment-empty">还没有评论，附近的人可以补充线索</view>
+    <view wx:else class="comment-list">
+      <view wx:for="{{comments}}" wx:key="id" class="comment-item">
+        <view class="row between comment-meta">
+          <view class="row comment-author">
+            <text class="comment-name">{{item.authorText}}</text>
+            <text wx:if="{{item.badgeText}}" class="comment-badge">{{item.badgeText}}</text>
+          </view>
+          <text class="muted">{{item.createdText}}</text>
+        </view>
+        <view class="comment-body">{{item.body}}</view>
+      </view>
     </view>
   </view>
 
-  <view wx:if="{{post.canReact}}" class="actions {{post.canShowResolve ? 'with-resolve' : 'without-resolve'}}">
-    <button wx:if="{{post.canShowResolve}}" class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
-    <button class="primary-button {{post.confirmedByMe ? 'disabled-action' : ''}}" disabled="{{post.confirmedByMe}}" data-action="confirm" bindtap="react">{{post.confirmedByMe ? '已确认' : '确认有效'}}</button>
-    <button class="secondary-button {{post.staledByMe ? 'disabled-action' : ''}}" disabled="{{post.staledByMe}}" data-action="stale" bindtap="react">{{post.staledByMe ? '已标记过时' : '标记过时'}}</button>
-    <button class="danger-button {{post.reportedByMe ? 'disabled-action' : ''}}" disabled="{{post.reportedByMe}}" data-action="report" bindtap="react">{{post.reportedByMe ? '已举报' : '举报'}}</button>
+  <button wx:if="{{post.canComment}}" class="floating-comment-button" bindtap="openCommentDialog">{{isGuest ? '登录评论' : '写评论'}}</button>
+
+  <view wx:if="{{showCommentDialog}}" class="comment-dialog-mask" bindtap="closeCommentDialog">
+    <view class="comment-dialog" catchtap="stopDialogTap">
+      <view class="row between dialog-head">
+        <view>
+          <view class="section-title">发布评论</view>
+          <view class="muted">补充线索、提问或更新</view>
+        </view>
+        <button class="ghost-button dialog-close" bindtap="closeCommentDialog">取消</button>
+      </view>
+      <textarea
+        class="comment-input"
+        value="{{commentDraft}}"
+        maxlength="{{maxCommentLength}}"
+        auto-height="{{true}}"
+        show-confirm-bar="{{false}}"
+        focus="{{showCommentDialog}}"
+        placeholder="写下你的补充"
+        disabled="{{commentSubmitting}}"
+        bindinput="onCommentInput"
+      />
+      <view class="row between comment-form-footer">
+        <text class="muted">{{commentDraftLength}}/{{maxCommentLength}}</text>
+        <button class="primary-button comment-submit" loading="{{commentSubmitting}}" disabled="{{commentSubmitting || !commentDraft}}" bindtap="submitComment">{{commentSubmitting ? '发送中' : '发送'}}</button>
+      </view>
+    </view>
   </view>
 </view>
 

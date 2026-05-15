@@ -1,16 +1,23 @@
 import config from '../../utils/config.js';
 import { getCurrentUser, isAdmin } from '../../utils/auth.js';
-import { getPost, hasReactedToPost, reactToPost, resolvePost } from '../../utils/store.js';
-import { markerFromPost } from '../../utils/geo.js';
+import {
+  createPostComment,
+  getPost,
+  hasReactedToPost,
+  listPostComments,
+  reactToPost,
+  resolvePost
+} from '../../utils/store.js';
 import {
   categoryLabel,
-  formatConfirmationText,
   formatCreatedAt,
   formatTimeLeft,
   intentLabel,
   resolveActionLabel,
   statusLabel
 } from '../../utils/format.js';
+
+const MAX_COMMENT_LENGTH = 120;
 
 function decorateDetailPost(raw) {
   const user = getCurrentUser();
@@ -23,13 +30,12 @@ function decorateDetailPost(raw) {
     categoryText: categoryLabel(raw.category),
     intentText: intentLabel(raw.intent),
     statusText: statusLabel(raw.status),
-    confirmationText: formatConfirmationText(raw.confirmations, raw.lastConfirmedAt),
-    confirmationHint: raw.lastConfirmedAt ? `${formatCreatedAt(raw.lastConfirmedAt)}确认` : '确认',
     createdText: formatCreatedAt(raw.createdAt),
     expiryText: raw.status === 'resolved' ? '已关闭' : formatTimeLeft(raw.expiresAt),
     distanceText: `${raw.distance}m`,
     resolveText: resolveActionLabel(raw.category),
     canReact,
+    canComment: canReact,
     canResolve,
     canShowResolve,
     confirmedByMe: hasReactedToPost(raw.id, 'confirm'),
@@ -38,14 +44,30 @@ function decorateDetailPost(raw) {
   };
 }
 
+function decorateComment(raw) {
+  return {
+    ...raw,
+    authorText: raw.author || '附近用户',
+    createdText: formatCreatedAt(raw.createdAt),
+    badgeText: raw.isMine ? '我' : (raw.authorRole === 'admin' ? '管理' : '')
+  };
+}
+
 Page({
   data: {
     id: '',
     appInfo: config.appInfo,
     post: null,
-    markers: [],
     loading: true,
-    showPublishSuccess: false
+    showPublishSuccess: false,
+    isGuest: true,
+    comments: [],
+    commentsLoading: false,
+    commentDraft: '',
+    commentDraftLength: 0,
+    commentSubmitting: false,
+    showCommentDialog: false,
+    maxCommentLength: MAX_COMMENT_LENGTH
   },
 
   onLoad(query) {
@@ -72,7 +94,10 @@ Page({
   },
 
   async loadPost() {
-    this.setData({ loading: true });
+    this.setData({
+      loading: true,
+      isGuest: getCurrentUser().isGuest
+    });
     let raw = null;
     try {
       raw = await getPost(this.data.id);
@@ -80,19 +105,43 @@ Page({
       console.warn('[detail] failed to load post', error);
     }
     this.renderPost(raw);
+    if (raw) {
+      this.loadComments();
+    } else {
+      this.setData({
+        comments: [],
+        commentsLoading: false
+      });
+    }
   },
 
   renderPost(raw) {
     if (!raw) {
-      this.setData({ post: null, markers: [], loading: false });
+      this.setData({ post: null, loading: false });
       return;
     }
     const post = decorateDetailPost(raw);
     this.setData({
       post,
-      markers: [markerFromPost(post)],
       loading: false
     });
+  },
+
+  async loadComments() {
+    if (!this.data.id) {
+      return;
+    }
+    this.setData({ commentsLoading: true });
+    try {
+      const comments = await listPostComments(this.data.id);
+      this.setData({
+        comments: comments.map(decorateComment),
+        commentsLoading: false
+      });
+    } catch (error) {
+      console.warn('[detail] failed to load comments', error);
+      this.setData({ commentsLoading: false });
+    }
   },
 
   previewImage(event) {
@@ -105,6 +154,103 @@ Page({
       current: urls[index],
       urls
     });
+  },
+
+  onCommentInput(event) {
+    const value = event.detail.value || '';
+    this.setData({
+      commentDraft: value,
+      commentDraftLength: value.length
+    });
+  },
+
+  promptLogin() {
+    wx.showModal({
+      title: '登录后评论',
+      content: '评论会显示你的昵称，方便发布者和附近的人继续补充线索。',
+      confirmText: '去登录',
+      cancelText: '稍后',
+      success: (result) => {
+        if (result.confirm) {
+          wx.switchTab({ url: '/pages/me/me' });
+        }
+      }
+    });
+  },
+
+  openCommentDialog() {
+    if (!this.data.post || !this.data.post.canComment) {
+      wx.showToast({ title: '当前任务暂不能评论', icon: 'none' });
+      return;
+    }
+    if (getCurrentUser().isGuest) {
+      this.setData({ isGuest: true });
+      this.promptLogin();
+      return;
+    }
+    this.setData({ showCommentDialog: true });
+  },
+
+  closeCommentDialog() {
+    if (this.data.commentSubmitting) {
+      return;
+    }
+    this.setData({ showCommentDialog: false });
+  },
+
+  stopDialogTap() {},
+
+  async submitComment() {
+    if (this.data.commentSubmitting) {
+      return;
+    }
+    if (!this.data.post || !this.data.post.canComment) {
+      wx.showToast({ title: '当前任务暂不能评论', icon: 'none' });
+      return;
+    }
+    if (getCurrentUser().isGuest) {
+      this.setData({ isGuest: true });
+      this.promptLogin();
+      return;
+    }
+    const body = this.data.commentDraft.trim();
+    if (!body) {
+      wx.showToast({ title: '先写一点内容', icon: 'none' });
+      return;
+    }
+    if (body.length > MAX_COMMENT_LENGTH) {
+      wx.showToast({ title: `最多${MAX_COMMENT_LENGTH}字`, icon: 'none' });
+      return;
+    }
+
+    this.setData({ commentSubmitting: true });
+    try {
+      const comment = await createPostComment(this.data.id, body);
+      const nextComments = [
+        decorateComment(comment),
+        ...this.data.comments.filter((item) => item.id !== comment.id)
+      ];
+      this.setData({
+        comments: nextComments,
+        commentDraft: '',
+        commentDraftLength: 0,
+        showCommentDialog: false
+      });
+      wx.showToast({ title: '已评论', icon: 'success' });
+    } catch (error) {
+      if (error && error.code === 'AUTH_REQUIRED') {
+        this.setData({ isGuest: true });
+        this.promptLogin();
+        return;
+      }
+      console.warn('[detail] failed to submit comment', error);
+      wx.showToast({
+        title: error && error.code === 'POST_CLOSED' ? '当前任务暂不能评论' : '评论失败，请稍后再试',
+        icon: 'none'
+      });
+    } finally {
+      this.setData({ commentSubmitting: false });
+    }
   },
 
   async react(event) {

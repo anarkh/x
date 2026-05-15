@@ -11,12 +11,20 @@ const _ = db.command;
 const POSTS_COLLECTION = 'posts';
 const ADMINS_COLLECTION = 'admins';
 const REACTIONS_COLLECTION = 'post_reactions';
+const COMMENTS_COLLECTION = 'post_comments';
+const FEEDBACK_COLLECTION = 'feedback_items';
 const MAX_VISIBLE_POSTS = 100;
 const MAX_IMAGE_COUNT = 6;
 const MAX_IMAGE_URL_LENGTH = 500;
+const MAX_COMMENTS_PER_POST = 50;
+const MAX_COMMENT_LENGTH = 120;
+const MAX_FEEDBACKS = 100;
+const MAX_FEEDBACK_BODY_LENGTH = 500;
+const MAX_FEEDBACK_CONTACT_LENGTH = 80;
 const CLOSED_STATUSES = ['hidden', 'resolved'];
 const CATEGORIES = ['check_in', 'lost_found', 'street_update', 'help_needed'];
 const LOST_FOUND_INTENTS = ['lost', 'found'];
+const FEEDBACK_TYPES = ['suggestion', 'bug', 'content', 'other'];
 const EXPIRY_HOURS = [6, 24, 72];
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
@@ -40,6 +48,14 @@ function isDuplicateError(error) {
 
 function normalizePost(post) {
   return post ? { ...post, id: post.id || post._id } : null;
+}
+
+function normalizeComment(comment) {
+  return comment ? { ...comment, id: comment.id || comment._id } : null;
+}
+
+function normalizeFeedback(feedback) {
+  return feedback ? { ...feedback, id: feedback.id || feedback._id } : null;
 }
 
 function cleanString(value, maxLength, fieldName, required = false) {
@@ -78,6 +94,16 @@ function cleanIntent(category, value) {
   return value;
 }
 
+function cleanFeedbackType(value) {
+  const type = String(value || FEEDBACK_TYPES[0]).trim();
+  if (!FEEDBACK_TYPES.includes(type)) {
+    const error = new Error('Invalid feedback type');
+    error.code = 'VALIDATION_FAILED';
+    throw error;
+  }
+  return type;
+}
+
 function cleanExpiryHours(value) {
   const hours = Number(value);
   if (!EXPIRY_HOURS.includes(hours)) {
@@ -114,6 +140,10 @@ function canTrustReact(post, now) {
   return post && !CLOSED_STATUSES.includes(post.status) && post.expiresAt > now;
 }
 
+function canComment(post, now) {
+  return post && !CLOSED_STATUSES.includes(post.status) && post.expiresAt > now;
+}
+
 function isViewable(post, isAdmin) {
   return post && (isAdmin || post.status !== 'hidden');
 }
@@ -126,6 +156,17 @@ function decorateForUser(post, openid) {
   return {
     ...normalized,
     isMine: normalized.publisherId === openid
+  };
+}
+
+function decorateCommentForUser(comment, openid) {
+  const normalized = normalizeComment(comment);
+  if (!normalized) {
+    return null;
+  }
+  return {
+    ...normalized,
+    isMine: normalized.authorId === openid
   };
 }
 
@@ -360,6 +401,83 @@ async function hidePost(event, openid, isAdmin) {
   return ok({ post: decorateForUser(updated, openid) });
 }
 
+async function listComments(event, openid, isAdmin) {
+  const post = await findPostById(event.id);
+  if (!isViewable(post, isAdmin)) {
+    return ok({ comments: [], isAdmin });
+  }
+  const result = await db.collection(COMMENTS_COLLECTION)
+    .where({
+      postId: post.id,
+      status: 'visible'
+    })
+    .limit(MAX_COMMENTS_PER_POST)
+    .get();
+  const comments = (result.data || [])
+    .map((comment) => decorateCommentForUser(comment, openid))
+    .filter(Boolean)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  return ok({ comments, isAdmin });
+}
+
+async function createComment(event, openid, isAdmin) {
+  const now = Date.now();
+  const post = await findPostById(event.id);
+  if (!isViewable(post, isAdmin)) {
+    return fail('NOT_FOUND', 'Post not found');
+  }
+  if (!canComment(post, now)) {
+    return fail('POST_CLOSED', 'This post no longer accepts comments');
+  }
+  const comment = {
+    id: `comment_${now}_${hashId(`${openid}:${post.id}:${now}:${Math.random()}`).slice(0, 8)}`,
+    postId: post.id,
+    body: cleanString(event.body, MAX_COMMENT_LENGTH, 'body', true),
+    status: 'visible',
+    authorId: openid,
+    author: cleanString(event.author, 32, 'author') || '附近用户',
+    authorAvatarUrl: cleanString(event.authorAvatarUrl, 500, 'authorAvatarUrl'),
+    authorRole: isAdmin ? 'admin' : 'user',
+    authorLoggedInAt: Number(event.authorLoggedInAt) || 0,
+    createdAt: now
+  };
+  await db.collection(COMMENTS_COLLECTION).add({ data: comment });
+  return ok({ comment: decorateCommentForUser(comment, openid) });
+}
+
+async function createFeedback(event, openid, isAdmin) {
+  const input = event.input || {};
+  const now = Date.now();
+  const feedback = {
+    id: `feedback_${now}_${hashId(`${openid}:${now}:${Math.random()}`).slice(0, 8)}`,
+    type: cleanFeedbackType(input.type),
+    body: cleanString(input.body, MAX_FEEDBACK_BODY_LENGTH, 'body', true),
+    contact: cleanString(input.contact, MAX_FEEDBACK_CONTACT_LENGTH, 'contact'),
+    userId: openid,
+    nickname: cleanString(input.nickname, 32, 'nickname') || '街区用户',
+    role: isAdmin ? 'admin' : 'user',
+    status: 'open',
+    createdAt: now
+  };
+  await db.collection(FEEDBACK_COLLECTION).add({ data: feedback });
+  return ok({ feedback: normalizeFeedback(feedback) });
+}
+
+async function listFeedback(event, openid, isAdmin) {
+  if (!isAdmin) {
+    return fail('FORBIDDEN', 'Only admins can list feedback');
+  }
+  const limit = Math.min(Math.max(Number(event.limit) || MAX_FEEDBACKS, 1), MAX_FEEDBACKS);
+  const result = await db.collection(FEEDBACK_COLLECTION)
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+    .get();
+  const feedbacks = (result.data || [])
+    .map(normalizeFeedback)
+    .filter(Boolean);
+  return ok({ feedbacks, isAdmin });
+}
+
 function prepareUpload(event, openid) {
   const ext = cleanUploadExtension(event.ext);
   const index = Math.max(0, Math.min(Number(event.index) || 0, MAX_IMAGE_COUNT - 1));
@@ -396,6 +514,18 @@ exports.main = async (event = {}) => {
     }
     if (event.action === 'hide') {
       return hidePost(event, OPENID, admin);
+    }
+    if (event.action === 'listComments') {
+      return listComments(event, OPENID, admin);
+    }
+    if (event.action === 'createComment') {
+      return createComment(event, OPENID, admin);
+    }
+    if (event.action === 'createFeedback') {
+      return createFeedback(event, OPENID, admin);
+    }
+    if (event.action === 'listFeedback') {
+      return listFeedback(event, OPENID, admin);
     }
     if (event.action === 'prepareUpload') {
       return prepareUpload(event, OPENID);

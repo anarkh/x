@@ -1,18 +1,18 @@
 # TODOs
 
-## Deferred from v1: Free-form comments
+## Deferred: Comment moderation and deletion controls
 
-**What:** Add free-form comments on posts.
+**What:** Add moderation tools for post comments, including comment reporting, hiding, author deletion, and admin review.
 
-**Why:** v1 only supports confirm, stale, and report actions to avoid turning the product into nearby chat or an anonymous forum before the core map task loop is proven.
+**Why:** Basic task comments are now part of the detail page, but the product should not become an unmanaged nearby chat surface.
 
-**Pros:** Adds richer context for lost-and-found, questions, and street-level updates.
+**Pros:** Keeps richer lost-and-found, questions, and street-level updates available while giving admins and authors a way to handle abuse.
 
-**Cons:** Requires comment moderation, deletion, abuse handling, notification rules, and more detail-page complexity.
+**Cons:** Adds comment-specific report state, admin filters, deletion permissions, notification choices, and more detail-page complexity.
 
-**Context:** The accepted v1 scope uses `post_reactions` and `reports` for structured trust signals. Free-form comments should wait until posting, moderation, reporting, and expiration are stable.
+**Context:** Basic comments use local storage or the `post_comments` CloudBase collection. They currently stop on closed or expired tasks, but they do not yet have per-comment reporting or deletion.
 
-**Depends on / blocked by:** Stable task publish, confirm/stale, report, and expiration flows.
+**Depends on / blocked by:** Stable comment usage patterns and a clear abuse-handling policy.
 
 ## Deferred from v1: Saved places and full profile center
 

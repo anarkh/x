@@ -29,7 +29,7 @@ Page({
     });
   },
 
-  submitFeedback() {
+  async submitFeedback() {
     const form = this.data.form;
     if (this.data.submitting) {
       return;
@@ -40,17 +40,23 @@ Page({
     }
 
     this.setData({ submitting: true });
-    createFeedback(form);
-    wx.showToast({ title: '已收到反馈', icon: 'success' });
+    try {
+      await createFeedback(form);
+      wx.showToast({ title: '已收到反馈', icon: 'success' });
 
-    setTimeout(() => {
-      const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
-      if (pages.length > 1) {
-        wx.navigateBack();
-        return;
-      }
+      setTimeout(() => {
+        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
+        if (pages.length > 1) {
+          wx.navigateBack();
+          return;
+        }
+        this.setData({ submitting: false });
+        wx.switchTab({ url: '/pages/me/me' });
+      }, 450);
+    } catch (error) {
+      console.error('[feedback] submit failed', error);
       this.setData({ submitting: false });
-      wx.switchTab({ url: '/pages/me/me' });
-    }, 450);
+      wx.showToast({ title: '反馈提交失败', icon: 'none' });
+    }
   }
 });

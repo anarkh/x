@@ -33,9 +33,14 @@
       <text class="feedback-count">{{feedbacks.length}}</text>
     </view>
 
-    <view wx:if="{{!feedbacks.length}}" class="panel empty-panel">
+    <view wx:if="{{!feedbacks.length && !feedbackError}}" class="panel empty-panel">
       <view class="empty-title">还没有用户反馈</view>
       <view class="muted">用户提交后会显示在这里。</view>
+    </view>
+
+    <view wx:if="{{feedbackError}}" class="panel empty-panel">
+      <view class="empty-title">反馈读取失败</view>
+      <view class="muted">{{feedbackError}}</view>
     </view>
 
     <view wx:for="{{feedbacks}}" wx:key="id" class="panel feedback-admin-card">
