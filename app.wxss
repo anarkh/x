@@ -1,7 +1,7 @@
 page {
   min-height: 100%;
-  background: #edf1ec;
-  color: #17201d;
+  background: #f4f1ea;
+  color: #14211d;
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   font-size: 28rpx;
 }
@@ -30,11 +30,11 @@ button::after {
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 30rpx 28rpx;
+  padding: 32rpx 28rpx;
   background:
-    linear-gradient(180deg, rgba(31, 102, 88, 0.12), rgba(237, 241, 236, 0) 288rpx),
-    linear-gradient(135deg, rgba(229, 109, 63, 0.08), rgba(229, 109, 63, 0) 360rpx),
-    #edf1ec;
+    linear-gradient(180deg, rgba(31, 102, 88, 0.12), rgba(244, 241, 234, 0) 300rpx),
+    linear-gradient(135deg, rgba(215, 103, 63, 0.08), rgba(244, 241, 234, 0) 380rpx),
+    #f4f1ea;
 }
 
 .stack {
@@ -53,28 +53,28 @@ button::after {
 }
 
 .panel {
-  background: rgba(255, 255, 255, 0.96);
-  border: 1rpx solid rgba(22, 49, 42, 0.1);
-  border-radius: 8rpx;
-  box-shadow: 0 18rpx 40rpx rgba(23, 32, 29, 0.08);
+  background: #fffefa;
+  border: 1rpx solid rgba(31, 63, 52, 0.12);
+  border-radius: 16rpx;
+  box-shadow: 0 12rpx 32rpx rgba(23, 32, 29, 0.07);
 }
 
 .muted {
-  color: #5f6f68;
+  color: #697970;
   font-size: 24rpx;
   line-height: 1.5;
 }
 
 .title {
-  color: #111f1b;
-  font-size: 44rpx;
+  color: #14211d;
+  font-size: 42rpx;
   font-weight: 900;
-  line-height: 1.12;
+  line-height: 1.15;
   letter-spacing: 0;
 }
 
 .section-title {
-  color: #14231f;
+  color: #14211d;
   font-size: 32rpx;
   font-weight: 900;
   line-height: 1.25;
@@ -83,46 +83,45 @@ button::after {
 .tag {
   display: inline-flex;
   align-items: center;
-  min-height: 44rpx;
-  padding: 0 17rpx;
+  min-height: 46rpx;
+  padding: 0 18rpx;
   border: 1rpx solid rgba(31, 102, 88, 0.16);
-  border-radius: 6rpx;
-  background: #ecf6f1;
+  border-radius: 999rpx;
+  background: #eaf4ef;
   color: #1b5f52;
   font-size: 22rpx;
   font-weight: 800;
-  box-shadow: inset 0 -1rpx 0 rgba(31, 102, 88, 0.08);
 }
 
 .tag.warn {
-  border-color: rgba(177, 112, 24, 0.2);
-  background: #fff1d7;
-  color: #915709;
+  border-color: rgba(185, 121, 31, 0.2);
+  background: #fff2da;
+  color: #8a560c;
 }
 
 .tag.danger {
   border-color: rgba(178, 54, 39, 0.18);
-  background: #ffe8e2;
+  background: #ffe9e2;
   color: #a73527;
 }
 
 .tag.done {
   border-color: rgba(31, 102, 88, 0.18);
-  background: #dcebe5;
+  background: #e4f0e9;
   color: #28584e;
 }
 
 .tag.neutral {
   border-color: rgba(102, 115, 109, 0.18);
-  background: #eef1ef;
-  color: #5f6f68;
+  background: #f0eee7;
+  color: #697970;
 }
 
 .primary-button,
 .secondary-button {
   width: 100%;
   height: 92rpx;
-  border-radius: 8rpx;
+  border-radius: 16rpx;
   font-weight: 900;
   font-size: 30rpx;
   transition: opacity 160ms ease, transform 160ms ease;
@@ -143,15 +142,15 @@ button::after {
 .secondary-button {
   border: 1rpx solid rgba(31, 102, 88, 0.2);
   color: #1b5f52;
-  background: #e6f2ee;
+  background: #eaf4ef;
 }
 
 .ghost-button {
-  height: 66rpx;
+  height: 64rpx;
   padding: 0 24rpx;
   border: 1rpx solid rgba(31, 102, 88, 0.18);
-  border-radius: 8rpx;
-  background: rgba(255, 255, 255, 0.82);
+  border-radius: 14rpx;
+  background: rgba(255, 254, 250, 0.88);
   color: #1b5f52;
   font-size: 26rpx;
   font-weight: 800;
@@ -159,4 +158,45 @@ button::after {
 
 button[disabled] {
   opacity: 0.56;
+}
+
+.bottom-action {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(116rpx + env(safe-area-inset-bottom));
+  z-index: 60;
+  padding: 18rpx 28rpx 20rpx;
+  box-sizing: border-box;
+  border-top: 1rpx solid rgba(31, 63, 52, 0.1);
+  background: rgba(255, 254, 250, 0.98);
+  box-shadow: 0 -12rpx 34rpx rgba(18, 31, 27, 0.08);
+}
+
+.bottom-action-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220rpx;
+  gap: 18rpx;
+  align-items: center;
+}
+
+.bottom-action-title {
+  color: #14211d;
+  font-size: 26rpx;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.bottom-action-note {
+  margin-top: 6rpx;
+  color: #697970;
+  font-size: 22rpx;
+  line-height: 1.35;
+}
+
+.bottom-action .primary-button {
+  height: 76rpx;
+  border-radius: 14rpx;
+  font-size: 28rpx;
+  box-shadow: 0 12rpx 24rpx rgba(31, 102, 88, 0.2);
 }

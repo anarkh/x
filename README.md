@@ -29,6 +29,8 @@ The app has no fixed service area. Users can browse and publish tasks from any c
 
 For local-only development, the app falls back to `wx` local storage. For shared user data, deploy the `posts` cloud function and create the `posts`, `post_reactions`, `post_comments`, `feedback_items`, and `admins` collections in CloudBase.
 
+Posts with images require CloudBase Storage. The publish flow compresses selected images, accepts up to 4 images under 1.5MB each, uploads them to CloudBase Storage, and saves only `cloud://` file IDs. If the cloud upload or cloud post save is unavailable, image posts fail explicitly instead of falling back to local-only image paths.
+
 ## Product Scope
 
 The current version intentionally keeps the product focused: map, publish, detail, structured trust actions, and admin-lite moderation. Deferred items are tracked in `TODOS.md`.

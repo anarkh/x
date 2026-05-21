@@ -7,6 +7,7 @@
 <view wx:elif="{{post}}" class="page stack">
   <view class="panel hero stack">
     <view class="hero-grid"></view>
+    <view class="hero-kicker">附近任务</view>
     <view class="row between">
       <view class="row hero-tags">
         <text class="tag">{{post.categoryText}}</text>
@@ -29,7 +30,19 @@
         bindtap="previewImage"
       />
     </view>
-    <view class="muted">{{post.placeName}} · {{post.distanceText}} · {{post.createdText}}</view>
+    <view class="publisher-meta-row">
+      <view class="publisher-profile">
+        <image
+          wx:if="{{post.publisherAvatarUrl}}"
+          class="publisher-avatar"
+          src="{{post.publisherAvatarUrl}}"
+          mode="aspectFill"
+        />
+        <view wx:else class="publisher-avatar publisher-avatar-fallback">{{post.publisherInitial}}</view>
+        <text class="publisher-name">{{post.publisherName}}</text>
+      </view>
+      <view class="muted detail-meta">{{post.placeName}} · {{post.distanceText}} · {{post.createdText}}</view>
+    </view>
   </view>
 
   <view wx:if="{{showPublishSuccess}}" class="panel publish-success">

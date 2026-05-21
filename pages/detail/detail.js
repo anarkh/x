@@ -19,11 +19,16 @@ import {
 
 const MAX_COMMENT_LENGTH = 120;
 
+function publisherInitial(name) {
+  return (String(name || '').trim().slice(0, 1) || '邻').toUpperCase();
+}
+
 function decorateDetailPost(raw) {
   const user = getCurrentUser();
   const canReact = raw.status === 'active' || raw.status === 'stale';
   const canResolve = canReact && (isAdmin(user) || raw.isMine || raw.publisherId === user.id);
   const canShowResolve = canResolve && raw.category !== 'check_in';
+  const publisherName = String(raw.publisher || '附近用户').trim() || '附近用户';
   return {
     ...raw,
     imageUrls: Array.isArray(raw.imageUrls) ? raw.imageUrls : [],
@@ -33,6 +38,9 @@ function decorateDetailPost(raw) {
     createdText: formatCreatedAt(raw.createdAt),
     expiryText: raw.status === 'resolved' ? '已关闭' : formatTimeLeft(raw.expiresAt),
     distanceText: `${raw.distance}m`,
+    publisherName,
+    publisherAvatarUrl: raw.publisherAvatarUrl || '',
+    publisherInitial: publisherInitial(publisherName),
     resolveText: resolveActionLabel(raw.category),
     canReact,
     canComment: canReact,

@@ -1,6 +1,6 @@
 {
   "project": "Street Tasks / 街区任务",
-  "last_updated": "2026-05-14",
+  "last_updated": "2026-05-21",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -52,7 +52,7 @@
       "area": "map",
       "title": "地图首页附近任务浏览",
       "user_visible_behavior": "用户进入地图页后可以看到地图、附近任务标记、底部列表，并可定位或查找一条附近任务。",
-      "status": "not_started",
+      "status": "in_progress",
       "verification": [
         "在 WeChat DevTools 中编译项目。",
         "打开地图 tab。",
@@ -60,8 +60,48 @@
         "点击任务标记，确认进入对应详情页。",
         "点击查找附近任务，确认地图移动到有效任务。"
       ],
-      "evidence": [],
-      "notes": "已有实现未等于 harness passing；需要手动小程序验证证据。"
+      "evidence": [
+        "2026-05-18: Added DESIGN_SYSTEM.md with TDesign-style native mini program UI rules, semantic tokens, typography, layout rules, and QA checklist.",
+        "2026-05-18: Refreshed global WXSS, custom tabBar, map overlays, selected post card, list drawer, and post cards around the new local-life visual system.",
+        "2026-05-18: Synchronized primary visual treatment across detail, publish, feedback, admin, me, my-posts, and activities pages.",
+        "2026-05-18: node scripts/check-json.mjs passed, output: Checked 11 JSON files.",
+        "2026-05-18: git diff --check passed with no output.",
+        "2026-05-18: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
+        "2026-05-18: bash harness/init.sh passed after the UI refresh; npm-free fallback skipped install, then JSON and harness checks passed.",
+        "2026-05-18: Docked the custom tabBar to the bottom with an opaque surface so normal page content no longer shows through under the navigation.",
+        "2026-05-18: Adjusted map floating controls, selected-post card, and list drawer bottom offsets to align with the docked tabBar.",
+        "2026-05-18: Added a design-system rule that the custom tabBar should avoid floating gaps on form and list pages.",
+        "2026-05-19: Added a global BottomAction component pattern and moved the publish submit action into a fixed bottom action zone above the custom tabBar.",
+        "2026-05-19: Reworked the publish form into grouped FormSection blocks and changed task category selection from a picker to direct two-column option buttons.",
+        "2026-05-19: Added a DrawerCounter to the map list drawer and changed task-card signals into three SignalPill metrics for confirmation, stale count, and expiry.",
+        "2026-05-19: node --check pages/publish/publish.js passed.",
+        "2026-05-19: node scripts/check-json.mjs passed, output: Checked 11 JSON files.",
+        "2026-05-19: git diff --check passed with no output.",
+        "2026-05-19: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
+        "2026-05-19: bash harness/init.sh passed after the UI landing pass; npm-free fallback skipped install, then JSON and harness checks passed.",
+        "2026-05-21: Removed the extra empty cover-view indicator and absolute-position/cropping styles from the custom tabBar to reduce cover-view rendering compatibility risk after a white-screen report.",
+        "2026-05-21: WeChat DevTools local WXML compiler wcc passed for all WXML files with no output.",
+        "2026-05-21: WeChat DevTools local WXSS compiler wcsc -lc passed for all WXSS files with no output.",
+        "2026-05-21: node --check passed for pages/map/map.js and pages/publish/publish.js.",
+        "2026-05-21: node scripts/check-json.mjs passed, output: Checked 11 JSON files.",
+        "2026-05-21: git diff --check passed with no output.",
+        "2026-05-21: bash harness/init.sh passed; npm install reported up to date, then check:json and check-harness both passed.",
+        "2026-05-21: Confirmed in WeChat DevTools that the simulator startup failure was `TypeError: Cannot read property 'subPackages' of undefined` from DevTools hot reload/getAppConfig, not a WXML/WXSS syntax error.",
+        "2026-05-21: Added runtime diagnostics storage, App-level startup guards, cloud read fallback, and a map-page cover-view diagnostic panel so startup/runtime failures can surface on screen.",
+        "2026-05-21: Cleared DevTools compile cache through the UI, terminated the simulator, and recompiled; the map page rendered again at pages/map/map with map tiles, bottom tabBar, and list entry visible.",
+        "2026-05-21: After clearing the DevTools console and recompiling, the debugger panel showed Errors: 0 and Warnings: 0.",
+        "2026-05-21: Re-ran node --check for app.js, utils/diagnostics.js, utils/store.js, and pages/map/map.js; node scripts/check-json.mjs; git diff --check; full WXML/WXSS DevTools compiler checks; node harness/check-harness.mjs; and bash harness/init.sh. All passed.",
+        "2026-05-21: Changed the map first paint to use default center plus local-only posts, so startup no longer waits on wx.getLocation, CloudBase listPosts, or mapContext.getRegion.",
+        "2026-05-21: Changed map show-location to remain off until a user-initiated location request succeeds, reducing startup native API timeout risk.",
+        "2026-05-21: Re-ran node --check for utils/store.js and pages/map/map.js; node scripts/check-json.mjs; git diff --check; full WXML/WXSS DevTools compiler checks; node harness/check-harness.mjs; and bash harness/init.sh. All passed.",
+        "2026-05-21: Cleared the DevTools console, recompiled, and confirmed the map page remained visible with markers, tabBar, and list entry; debugger showed Errors: 0 and no new Error: timeout.",
+        "2026-05-21: Fixed detail lookup mismatch for local-first map posts by falling back to same-id local storage/mock posts when CloudBase get returns empty or NOT_FOUND.",
+        "2026-05-21: Re-ran node --check for utils/store.js and pages/detail/detail.js; node scripts/check-json.mjs; git diff --check; and bash harness/init.sh. All passed.",
+        "2026-05-21: In WeChat DevTools, opened the map list and tapped a local `测试` task detail; the detail page showed the task content instead of the `任务不存在` state.",
+        "2026-05-21: Reworked the map information list cards: full-height drawer layout, category/status chips moved beside the title, body shown under the title, simple bottom counts on the left, created time and distance on the right, and a lighter detail chevron.",
+        "2026-05-21: Re-ran node --check pages/map/map.js; node scripts/check-json.mjs; git diff --check; full WXML/WXSS DevTools compiler checks; node harness/check-harness.mjs; bash harness/init.sh; and WeChat DevTools visual check for the open list drawer. All passed except the known non-blocking native WAServiceMainContext timeout remains visible in DevTools console."
+      ],
+      "notes": "已有实现未等于 harness passing；需要手动小程序验证证据。2026-05-18 UI 刷新采用 TDesign 式设计 token 和原生小程序控件落地，未引入 tdesign-miniprogram npm 依赖，避免在当前无小程序 npm 构建链路下增加编译风险。底部 tabBar 已由悬浮胶囊改为贴底不透明导航栏。2026-05-19 发布页和地图抽屉已落地 design-ui-designer 组件化优化。2026-05-21 白屏排查未发现 WXML/WXSS/JS 语法错误，已移除 tabBar 中新增的空 cover-view 指示条以降低渲染兼容风险；同日继续排查确认 DevTools hot reload/getAppConfig 缓存会触发 subPackages 内部错误，清编译缓存并终止重编译后地图恢复，同时加入页面诊断和云读取 fallback；随后针对 `Error: timeout` 将地图首屏改为本地优先，定位、云函数列表和地图 region 读取都不再阻塞启动；详情页已补上本地 fallback，避免本地列表任务因云端不存在而显示“任务不存在”。信息列表已改为铺满抽屉、标题后置标签、底部轻量统计。仍需在 WeChat DevTools/真机中确认 safe area、键盘、地图抽屉、定位授权分支和多分类详情链路。"
     },
     {
       "id": "publish-001",
@@ -77,8 +117,17 @@
         "确认成功提示、分享入口和地图/详情页可见新任务。",
         "验证必填项、字数、图片数量和过期时间的错误提示。"
       ],
-      "evidence": [],
-      "notes": "当前仓库有 CloudBase 相关未提交改动；验证时需要区分云端成功和本地 fallback。"
+      "evidence": [
+        "2026-05-15: Image publishing now compresses selected images, limits them to 4 files under 1.5MB each, uploads only to CloudBase Storage, and stores cloud:// file IDs.",
+        "2026-05-15: Image posts set requireCloud so cloud post save failures no longer fall back to local-only storage.",
+        "2026-05-15: If image upload or later post creation fails, newly uploaded cloud files are cleaned up and image items are reset for retry.",
+        "2026-05-15: node --check passed for pages/publish/publish.js, utils/store.js, and cloudfunctions/posts/index.js.",
+        "2026-05-15: git diff --check passed.",
+        "2026-05-15: node scripts/check-json.mjs passed, output: Checked 11 JSON files.",
+        "2026-05-15: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
+        "2026-05-15: bash harness/init.sh passed after npm-free fallback; package-lock has no external dependencies, then JSON and harness checks passed."
+      ],
+      "notes": "图片发布已改为云端必需；仍需部署更新后的 posts 云函数，并在 WeChat DevTools/真机中验证上传、跨用户浏览和过大图片拦截。"
     },
     {
       "id": "detail-trust-001",
@@ -86,7 +135,7 @@
       "area": "detail",
       "title": "任务详情、评论与结构化信任动作",
       "user_visible_behavior": "用户进入详情页后可以查看评论，登录后补充线索或提问，并可以确认仍有效、标记过时、举报或关闭自己的任务，重复动作会被阻止。",
-      "status": "in_progress",
+      "status": "blocked",
       "verification": [
         "从地图或列表进入一条 active 任务详情。",
         "确认详情页不再展示地图，评论区在信任动作下方直接可见。",
@@ -112,9 +161,11 @@
         "2026-05-14: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
         "2026-05-14: bash harness/init.sh passed after the comment changes; npm ci reported up to date, then check:json and check-harness both passed.",
         "2026-05-14: Re-ran node --check for detail/store/cloud function, npm run check:json, node harness/check-harness.mjs, and bash harness/init.sh after compacting the detail layout; all passed.",
-        "2026-05-14: Re-ran the same syntax, JSON, harness, and init checks after moving comment publishing into the floating-button dialog; all passed."
+        "2026-05-14: Re-ran the same syntax, JSON, harness, and init checks after moving comment publishing into the floating-button dialog; all passed.",
+        "2026-05-21: Added a publisher meta row to the detail hero: avatar/name on the left, place/distance/created time right-aligned on the same line.",
+        "2026-05-21: Re-ran node --check pages/detail/detail.js; node scripts/check-json.mjs; git diff --check; full WXML/WXSS DevTools compiler checks; node harness/check-harness.mjs; and WeChat DevTools detail rendering. All passed except the known non-blocking native WAServiceMainContext timeout remains visible in DevTools console."
       ],
-      "notes": "评论与信任动作都涉及本地 storage 和 CloudBase 两条路径；当前代码实现已推进，仍需要 WeChat DevTools 手动验证后才能标记 passing。"
+      "notes": "评论与信任动作都涉及本地 storage 和 CloudBase 两条路径；当前代码实现已推进，仍需要 WeChat DevTools 手动验证后才能标记 passing。2026-05-21 详情头部已补充发布者头像/名称与右侧地址时间同排展示。当前会话转向发布图片云存储修复，避免同时存在多个 in_progress 功能。"
     },
     {
       "id": "admin-001",

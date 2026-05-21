@@ -3,9 +3,12 @@ import { getCurrentUser } from '../../utils/auth.js';
 import { createPost, preparePostImageUpload } from '../../utils/store.js';
 import { syncTabBar } from '../../utils/tab-bar.js';
 
-const MAX_IMAGE_COUNT = 6;
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_COUNT = 4;
+const MAX_IMAGE_SIZE_BYTES = 1536 * 1024;
+const MAX_IMAGE_SIZE_TEXT = '1.5MB';
+const IMAGE_COMPRESS_QUALITY = 70;
 const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+const CLOUD_FILE_ID_PREFIX = 'cloud://';
 
 function defaultForm() {
   return {
@@ -22,13 +25,23 @@ function shouldUseCloudStorage() {
   return Boolean(config.cloud && config.cloud.enabled && config.cloud.envId && wx.cloud);
 }
 
+function publishError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
 function fileExtension(path) {
   const match = String(path || '').match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
   return match ? match[1].toLowerCase() : 'jpg';
 }
 
-function isAllowedImage(path) {
-  return ALLOWED_IMAGE_EXTENSIONS.indexOf(fileExtension(path)) >= 0;
+function isAllowedImageExtension(ext) {
+  return ALLOWED_IMAGE_EXTENSIONS.indexOf(String(ext || '').toLowerCase()) >= 0;
+}
+
+function isCloudFileId(path) {
+  return String(path || '').indexOf(CLOUD_FILE_ID_PREFIX) === 0;
 }
 
 function getFileInfo(path) {
@@ -45,12 +58,17 @@ function getFileInfo(path) {
   });
 }
 
-function saveLocalFile(path) {
-  return new Promise((resolve, reject) => {
-    wx.saveFile({
-      tempFilePath: path,
-      success: (result) => resolve(result.savedFilePath),
-      fail: reject
+function compressImage(path) {
+  return new Promise((resolve) => {
+    if (!wx.compressImage) {
+      resolve(path);
+      return;
+    }
+    wx.compressImage({
+      src: path,
+      quality: IMAGE_COMPRESS_QUALITY,
+      success: (result) => resolve(result.tempFilePath || path),
+      fail: () => resolve(path)
     });
   });
 }
@@ -64,6 +82,27 @@ function uploadCloudFile(path, cloudPath) {
       fail: reject
     });
   });
+}
+
+function deleteCloudFiles(fileList) {
+  return new Promise((resolve) => {
+    if (!fileList.length || !wx.cloud || !wx.cloud.deleteFile) {
+      resolve();
+      return;
+    }
+    wx.cloud.deleteFile({
+      fileList,
+      complete: () => resolve()
+    });
+  });
+}
+
+async function cleanupCloudFiles(fileList) {
+  try {
+    await deleteCloudFiles(fileList.filter(isCloudFileId));
+  } catch (error) {
+    console.warn('[publish] failed to clean uploaded images', error);
+  }
 }
 
 function getCurrentLocation() {
@@ -94,6 +133,7 @@ Page({
     isGuest: true,
     submitting: false,
     maxImageCount: MAX_IMAGE_COUNT,
+    maxImageSizeText: MAX_IMAGE_SIZE_TEXT,
     canAddImage: true,
     imageItems: [],
     form: defaultForm()
@@ -148,23 +188,28 @@ Page({
 
     const success = async (files) => {
       const normalizedFiles = await Promise.all(files.slice(0, remaining).map(async (file) => {
-        const path = typeof file === 'string' ? file : file.tempFilePath || file.path || '';
-        const info = file.size ? { size: Number(file.size) || 0 } : await getFileInfo(path);
+        const sourcePath = typeof file === 'string' ? file : file.tempFilePath || file.path || '';
+        const ext = fileExtension(sourcePath);
+        const path = isAllowedImageExtension(ext) ? await compressImage(sourcePath) : sourcePath;
+        const info = await getFileInfo(path);
+        const fallbackSize = typeof file === 'string' ? 0 : Number(file.size) || 0;
         return {
           path,
-          size: info.size
+          ext,
+          size: info.size || fallbackSize
         };
       }));
       const acceptedFiles = normalizedFiles.filter((file) => (
         file.path
-        && isAllowedImage(file.path)
+        && isAllowedImageExtension(file.ext)
         && (!file.size || file.size <= MAX_IMAGE_SIZE_BYTES)
       ));
       if (acceptedFiles.length < normalizedFiles.length) {
-        wx.showToast({ title: '仅支持5MB内图片', icon: 'none' });
+        wx.showToast({ title: `图片需小于${MAX_IMAGE_SIZE_TEXT}`, icon: 'none' });
       }
       const nextItems = acceptedFiles.map((file) => ({
         path: file.path,
+        ext: file.ext,
         size: file.size,
         storedPath: '',
         status: 'local'
@@ -217,32 +262,84 @@ Page({
     });
   },
 
+  resetUploadedImages(fileList) {
+    if (!fileList.length) {
+      return;
+    }
+    const imageItems = this.data.imageItems.map((item) => (
+      fileList.indexOf(item.storedPath) >= 0
+        ? { ...item, storedPath: '', status: 'local' }
+        : item
+    ));
+    this.setData({ imageItems });
+  },
+
   async persistImages() {
-    const useCloud = shouldUseCloudStorage();
-    const imageItems = await Promise.all(this.data.imageItems.map(async (item, index) => {
-      if (item.storedPath) {
-        return item;
+    if (!this.data.imageItems.length) {
+      return [];
+    }
+    if (!shouldUseCloudStorage()) {
+      throw publishError('CLOUD_STORAGE_REQUIRED', '图片需要云端存储');
+    }
+
+    const imageItems = [];
+    const uploadedFileIds = [];
+    try {
+      for (let index = 0; index < this.data.imageItems.length; index += 1) {
+        const item = this.data.imageItems[index];
+        if (isCloudFileId(item.storedPath)) {
+          imageItems.push(item);
+          continue;
+        }
+        if (item.size && item.size > MAX_IMAGE_SIZE_BYTES) {
+          throw publishError('IMAGE_TOO_LARGE', `图片需小于${MAX_IMAGE_SIZE_TEXT}`);
+        }
+        const ext = item.ext || fileExtension(item.path);
+        if (!isAllowedImageExtension(ext)) {
+          throw publishError('IMAGE_TYPE_UNSUPPORTED', '仅支持 jpg、png、webp 图片');
+        }
+        const cloudPath = await preparePostImageUpload(ext, index);
+        if (!cloudPath) {
+          throw publishError('CLOUD_STORAGE_REQUIRED', '图片需要云端存储');
+        }
+        let storedPath = '';
+        try {
+          storedPath = await uploadCloudFile(item.path, cloudPath);
+        } catch {
+          throw publishError('IMAGE_UPLOAD_FAILED', '图片上传失败，请稍后再试');
+        }
+        if (!isCloudFileId(storedPath)) {
+          throw publishError('IMAGE_UPLOAD_FAILED', '图片上传失败');
+        }
+        uploadedFileIds.push(storedPath);
+        imageItems.push({
+          ...item,
+          storedPath,
+          status: 'cloud'
+        });
       }
-      const ext = fileExtension(item.path);
-      const cloudPath = useCloud ? await preparePostImageUpload(ext, index) : '';
-      const storedPath = cloudPath
-        ? await uploadCloudFile(item.path, cloudPath)
-        : await saveLocalFile(item.path);
-      return {
-        ...item,
-        storedPath,
-        status: cloudPath ? 'cloud' : 'saved'
-      };
-    }));
+    } catch (error) {
+      await cleanupCloudFiles(uploadedFileIds);
+      throw error;
+    }
     this.setData({
       imageItems,
       canAddImage: imageItems.length < MAX_IMAGE_COUNT
     });
-    return imageItems.map((item) => item.storedPath || item.path);
+    return imageItems.map((item) => item.storedPath);
   },
 
   onCategoryChange(event) {
     const index = Number(event.detail.value);
+    this.applyCategoryIndex(index);
+  },
+
+  onCategoryTap(event) {
+    const index = Number(event.currentTarget.dataset.index);
+    this.applyCategoryIndex(index);
+  },
+
+  applyCategoryIndex(index) {
     const category = this.data.categories[index].value;
     this.setData({
       categoryIndex: index,
@@ -289,22 +386,28 @@ Page({
     }
 
     this.setData({ submitting: true });
+    let imageUrls = [];
+    let postCreated = false;
     try {
-      const [currentLocation, imageUrls] = await Promise.all([
-        getCurrentLocation(),
-        this.persistImages()
-      ]);
+      const currentLocation = await getCurrentLocation();
+      imageUrls = await this.persistImages();
       const post = await createPost({
         ...form,
         imageUrls,
+        requireCloud: imageUrls.length > 0,
         ...currentLocation
       });
+      postCreated = true;
       wx.showToast({ title: '已发布', icon: 'success' });
       this.resetForm();
       setTimeout(() => {
         wx.navigateTo({ url: `/pages/detail/detail?id=${post.id}&from=publish` });
       }, 400);
     } catch (error) {
+      if (imageUrls.length && !postCreated) {
+        await cleanupCloudFiles(imageUrls);
+        this.resetUploadedImages(imageUrls);
+      }
       if (error && error.code === 'AUTH_REQUIRED') {
         this.setData({ isGuest: true });
         this.promptLogin();
@@ -312,7 +415,10 @@ Page({
       }
       console.warn('[publish] failed to submit post', error);
       const message = error && (error.errMsg || error.message || '');
-      const title = message.indexOf('getLocation') >= 0 ? '无法获取当前位置' : '发布失败，请稍后再试';
+      const imageErrorCodes = ['CLOUD_STORAGE_REQUIRED', 'IMAGE_TOO_LARGE', 'IMAGE_TYPE_UNSUPPORTED', 'IMAGE_UPLOAD_FAILED', 'CLOUD_REQUIRED'];
+      const title = imageErrorCodes.indexOf(error && error.code) >= 0
+        ? (message || '图片上传失败，请稍后再试')
+        : (message.indexOf('getLocation') >= 0 ? '无法获取当前位置' : '发布失败，请稍后再试');
       wx.showToast({ title, icon: 'none' });
     } finally {
       this.setData({ submitting: false });

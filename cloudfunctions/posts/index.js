@@ -14,7 +14,8 @@ const REACTIONS_COLLECTION = 'post_reactions';
 const COMMENTS_COLLECTION = 'post_comments';
 const FEEDBACK_COLLECTION = 'feedback_items';
 const MAX_VISIBLE_POSTS = 100;
-const MAX_IMAGE_COUNT = 6;
+const MAX_IMAGE_COUNT = 4;
+const MAX_IMAGE_SIZE_BYTES = 1536 * 1024;
 const MAX_IMAGE_URL_LENGTH = 500;
 const MAX_COMMENTS_PER_POST = 50;
 const MAX_COMMENT_LENGTH = 120;
@@ -486,6 +487,7 @@ function prepareUpload(event, openid) {
   return ok({
     cloudPath: `posts/${ownerHash}/${Date.now()}_${index}_${nonce}.${ext}`,
     maxImageCount: MAX_IMAGE_COUNT,
+    maxImageSizeBytes: MAX_IMAGE_SIZE_BYTES,
     allowedExtensions: IMAGE_EXTENSIONS
   });
 }
