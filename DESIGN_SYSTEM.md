@@ -59,7 +59,7 @@ The project currently has no frontend build step and no mini program npm depende
 - `CategoryOption`: two-column direct-choice buttons for small option sets such as task categories. Prefer this over a picker when the choices are few and user-facing.
 - `DrawerCounter`: compact number block in bottom drawers to make counts scannable without adding another sentence.
 - `SignalPill`: small metric tile for repeated task-card signals such as confirmation count, stale count, and remaining time.
-- `TrustInsight`: detail-page section placed before trust actions. Summarize confirmations, stale reports, reports, and comment count into one status sentence, then show compact segmented metrics and the next sensible action. Use it to explain the counts instead of making users infer trust from numbers alone.
+- `TrustInsight`: detail-page section placed before trust actions. Summarize confirmations, stale reports, reports, and comment count into one cautious status sentence, then show compact segmented metrics and the next sensible action. Use it to explain the counts without implying absolute trust.
 
 ## QA Checklist
 
