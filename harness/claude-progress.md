@@ -155,3 +155,15 @@
 - 更新过的文件或工件：`pages/map/map.wxml`，`pages/map/map.wxss`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：DevTools 控制台仍显示既有的原生 `WAServiceMainContext timeout`，本轮观察该错误未阻断地图列表渲染；更长标题和带图卡片仍建议真机再看一次
 - 下一步最佳动作：在真机或 DevTools 不同机型宽度下打开信息列表，确认标题较长、正文较长和带图卡片都不挤压底部统计
+
+### Session 014C
+
+- 日期：2026-06-12
+- 分支：`codex/iter-detail-trust`
+- 本轮目标：C 组产品/设计/开发探索详情页信任判断迭代
+- 产品假设：详情页已有评论和信任动作，但用户仍需从原始计数自行判断可信度；信任判断摘要应让下一步行动更清楚
+- 已完成：新增 `formatTrustInsight` 将确认、过时、举报和评论数归纳为信任判断；详情页在信任动作前新增 TrustInsight 面板和分段指标；评论区标题右侧新增写评论入口，保留长页面上的悬浮评论按钮
+- 运行过的验证：`node --check pages/detail/detail.js`；`node --check utils/format.js`；Node import check for `formatTrustInsight`
+- 已记录证据：两条 `node --check` 通过；Node import check 输出 `Trust insight checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证窄屏布局、信任动作后的面板刷新、游客登录评论引导、resolved/expired 只读状态和云端评论路径
+- 下一步最佳动作：在 WeChat DevTools 打开 active、stale、resolved、expired 任务详情，验证 TrustInsight 文案、指标换行和评论入口

@@ -12,6 +12,7 @@ import {
   categoryLabel,
   formatCreatedAt,
   formatTimeLeft,
+  formatTrustInsight,
   intentLabel,
   resolveActionLabel,
   statusLabel
@@ -71,6 +72,7 @@ Page({
     isGuest: true,
     comments: [],
     commentsLoading: false,
+    trustInsight: null,
     commentDraft: '',
     commentDraftLength: 0,
     commentSubmitting: false,
@@ -118,19 +120,25 @@ Page({
     } else {
       this.setData({
         comments: [],
-        commentsLoading: false
+        commentsLoading: false,
+        trustInsight: null
       });
     }
   },
 
   renderPost(raw) {
     if (!raw) {
-      this.setData({ post: null, loading: false });
+      this.setData({
+        post: null,
+        trustInsight: null,
+        loading: false
+      });
       return;
     }
     const post = decorateDetailPost(raw);
     this.setData({
       post,
+      trustInsight: formatTrustInsight(post, this.data.comments.length),
       loading: false
     });
   },
@@ -142,8 +150,10 @@ Page({
     this.setData({ commentsLoading: true });
     try {
       const comments = await listPostComments(this.data.id);
+      const nextComments = comments.map(decorateComment);
       this.setData({
-        comments: comments.map(decorateComment),
+        comments: nextComments,
+        trustInsight: formatTrustInsight(this.data.post, nextComments.length),
         commentsLoading: false
       });
     } catch (error) {
@@ -240,6 +250,7 @@ Page({
       ];
       this.setData({
         comments: nextComments,
+        trustInsight: formatTrustInsight(this.data.post, nextComments.length),
         commentDraft: '',
         commentDraftLength: 0,
         showCommentDialog: false
