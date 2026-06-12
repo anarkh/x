@@ -64,6 +64,22 @@ function missingLocationCopy(locationStatus) {
   };
 }
 
+function primaryActionForState({ submitting, isGuest, ready, onlyNeedsLocation, locationStatus }) {
+  if (submitting) {
+    return 'submitting';
+  }
+  if (isGuest) {
+    return 'login';
+  }
+  if (ready) {
+    return 'publish';
+  }
+  if (onlyNeedsLocation) {
+    return locationStatus === 'locating' ? 'waitLocation' : 'confirmLocation';
+  }
+  return 'fill';
+}
+
 export function buildPublishState(options = {}) {
   const form = options.form || {};
   const isGuest = Boolean(options.isGuest);
@@ -129,6 +145,13 @@ export function buildPublishState(options = {}) {
   const actionDisabled = submitting || (!isGuest && missing.length > 0 && !canConfirmLocation);
   const completionText = `${doneCount}/${items.length}`;
   const nextLocationActionText = locationActionText(locationStatus);
+  const primaryAction = primaryActionForState({
+    submitting,
+    isGuest,
+    ready,
+    onlyNeedsLocation,
+    locationStatus
+  });
 
   if (submitting) {
     return {
@@ -136,6 +159,7 @@ export function buildPublishState(options = {}) {
       missing,
       ready: false,
       actionDisabled: true,
+      primaryAction,
       buttonText: '发布中',
       title: '正在发布',
       note: '正在保存图片和任务信息',
@@ -150,6 +174,7 @@ export function buildPublishState(options = {}) {
       missing,
       ready: false,
       actionDisabled: false,
+      primaryAction,
       buttonText: '去登录',
       title: '登录后可发布',
       note: '登录后会记录发布者，方便管理自己的任务',
@@ -165,6 +190,7 @@ export function buildPublishState(options = {}) {
       missing,
       ready: false,
       actionDisabled,
+      primaryAction,
       buttonText: missingActionText(missing[0], locationStatus),
       title: locationCopy ? locationCopy.title : `还差${missing[0]}`,
       note: locationCopy ? locationCopy.note : `补全${missing.join('、')}后再发布`,
@@ -178,6 +204,7 @@ export function buildPublishState(options = {}) {
     missing,
     ready: true,
     actionDisabled: false,
+    primaryAction,
     buttonText: '发布',
     title: '可以发布到附近',
     note: imageCount > 0

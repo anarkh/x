@@ -131,9 +131,11 @@
         "2026-06-12: Publish page now shows a readiness checklist, title/body counters, explicit current-location confirmation, direct expiry buttons, and a bottom action that names the next missing step.",
         "2026-06-12: node --check passed for pages/publish/publish.js and pages/publish/publish-state.js; node --no-warnings scripts/check-publish-flow.mjs passed with Publish flow checks passed.",
         "2026-06-12: Second B-group iteration refined publish readiness states for locating, failed location retry, only-location-missing submission, and lost/found intent completion.",
-        "2026-06-12: node --no-warnings scripts/check-publish-flow.mjs passed after adding coverage for locating, needs-location, failed-location retry, lost-found missing direction, and ready lost-found states."
+        "2026-06-12: node --no-warnings scripts/check-publish-flow.mjs passed after adding coverage for locating, needs-location, failed-location retry, lost-found missing direction, and ready lost-found states.",
+        "2026-06-12: Third B-group iteration added primaryAction to buildPublishState so publish submit behavior is driven by an explicit state-machine action instead of re-inferring missing fields in the page.",
+        "2026-06-12: node --no-warnings scripts/check-publish-flow.mjs first failed because primaryAction was missing, then passed after covering login, fill, confirmLocation, waitLocation, and publish states."
       ],
-      "notes": "图片发布已改为云端必需；仍需部署更新后的 posts 云函数，并在 WeChat DevTools/真机中验证上传、跨用户浏览和过大图片拦截。 2026-06-12 B 组发布迭代新增发布准备度、位置确认和有效期按钮；尚未在 WeChat DevTools/真机验证定位授权、键盘遮挡、图片上传和真实发布闭环。 第二轮 B 组已收敛定位失败/重试路径和 readiness 文案；定位授权弹窗、键盘、图片上传和真实发布仍需 DevTools/真机验证。"
+      "notes": "图片发布已改为云端必需；仍需部署更新后的 posts 云函数，并在 WeChat DevTools/真机中验证上传、跨用户浏览和过大图片拦截。 2026-06-12 B 组发布迭代新增发布准备度、位置确认和有效期按钮；尚未在 WeChat DevTools/真机验证定位授权、键盘遮挡、图片上传和真实发布闭环。 第二轮 B 组已收敛定位失败/重试路径和 readiness 文案；定位授权弹窗、键盘、图片上传和真实发布仍需 DevTools/真机验证。 第三轮 B 组已将发布主动作显式化为 primaryAction；仍需 DevTools/真机验证真实定位授权、键盘安全区、图片上传和跳转。"
     },
     {
       "id": "detail-trust-001",

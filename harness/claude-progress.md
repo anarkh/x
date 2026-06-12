@@ -178,3 +178,14 @@
 - 已记录证据：`node --no-warnings scripts/check-publish-flow.mjs` 输出 `Publish flow checks passed.`
 - 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权弹窗、拒绝/超时恢复、键盘遮挡和图片上传失败回滚
 - 下一步最佳动作：跑完整自动验证后，在真机或 DevTools 中验证定位允许、拒绝、重试三条路径
+
+### Session 016B
+
+- 日期：2026-06-12
+- 分支：`codex/iter-publish-flow`
+- 本轮目标：第三轮聚焦发布准备度状态机稳定性
+- 已完成：`buildPublishState` 新增 `primaryAction`，显式区分 `login`、`fill`、`confirmLocation`、`waitLocation`、`publish`、`submitting`；发布页 `submit()` 改为按 `primaryAction` 分派，避免页面层重复推断 missing 数组
+- 运行过的验证：`node --no-warnings scripts/check-publish-flow.mjs`
+- 已记录证据：检查脚本先因 `primaryAction` 缺失按预期失败，补实现后输出 `Publish flow checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权、键盘安全区、图片上传失败回滚和发布后详情跳转
+- 下一步最佳动作：跑完整自动验证后，把第三轮 B 组更新发给用户评测 agent，再进入 DevTools 手测

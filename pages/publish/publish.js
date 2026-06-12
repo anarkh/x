@@ -473,12 +473,13 @@ Page({
       this.promptLogin();
       return;
     }
-    if (this.data.readiness.actionDisabled) {
-      wx.showToast({ title: this.data.readiness.title, icon: 'none' });
+    const readiness = this.data.readiness;
+    if (readiness.primaryAction === 'confirmLocation') {
+      await this.confirmLocation();
       return;
     }
-    if (!this.data.readiness.ready && this.data.readiness.missing.length === 1 && this.data.readiness.missing[0] === '当前位置') {
-      await this.confirmLocation();
+    if (readiness.actionDisabled || readiness.primaryAction !== 'publish') {
+      wx.showToast({ title: readiness.title, icon: 'none' });
       return;
     }
     if (!this.data.draftLocation) {

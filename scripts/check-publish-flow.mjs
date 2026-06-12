@@ -25,11 +25,13 @@ function state(overrides = {}) {
 const guestState = state({ isGuest: true });
 assert.equal(guestState.buttonText, '去登录');
 assert.equal(guestState.actionDisabled, false);
+assert.equal(guestState.primaryAction, 'login');
 assert.equal(guestState.items.find((item) => item.key === 'account').done, false);
 
 const emptyState = state();
 assert.equal(emptyState.buttonText, '补标题');
 assert.equal(emptyState.actionDisabled, true);
+assert.equal(emptyState.primaryAction, 'fill');
 assert.equal(emptyState.missing[0], '标题');
 assert.equal(emptyState.items.find((item) => item.key === 'content').done, false);
 
@@ -45,6 +47,7 @@ assert.equal(locatingState.ready, false);
 assert.equal(locatingState.actionDisabled, true);
 assert.equal(locatingState.buttonText, '确认位置中');
 assert.equal(locatingState.title, '正在确认位置');
+assert.equal(locatingState.primaryAction, 'waitLocation');
 assert.equal(locatingState.items.find((item) => item.key === 'location').value, '确认中');
 
 const needsLocationState = state({
@@ -58,6 +61,7 @@ assert.equal(needsLocationState.ready, false);
 assert.equal(needsLocationState.actionDisabled, false);
 assert.equal(needsLocationState.buttonText, '确认位置');
 assert.equal(needsLocationState.title, '确认当前位置');
+assert.equal(needsLocationState.primaryAction, 'confirmLocation');
 
 const failedLocationState = state({
   locationStatus: 'failed',
@@ -72,6 +76,7 @@ assert.equal(failedLocationState.ready, false);
 assert.equal(failedLocationState.actionDisabled, false);
 assert.equal(failedLocationState.buttonText, '重试定位');
 assert.equal(failedLocationState.title, '位置未确认');
+assert.equal(failedLocationState.primaryAction, 'confirmLocation');
 assert.match(failedLocationState.note, /授权|重试/);
 assert.equal(failedLocationState.items.find((item) => item.key === 'location').value, '待重试');
 
@@ -87,6 +92,7 @@ const lostFoundState = state({
 assert.equal(lostFoundState.actionDisabled, true);
 assert.deepEqual(lostFoundState.missing, ['失物方向']);
 assert.equal(lostFoundState.buttonText, '选失物方向');
+assert.equal(lostFoundState.primaryAction, 'fill');
 
 const readyLostFoundState = state({
   hasLocation: true,
@@ -101,6 +107,7 @@ const readyLostFoundState = state({
 assert.equal(readyLostFoundState.ready, true);
 assert.equal(readyLostFoundState.actionDisabled, false);
 assert.equal(readyLostFoundState.buttonText, '发布');
+assert.equal(readyLostFoundState.primaryAction, 'publish');
 
 const readyState = state({
   hasLocation: true,
@@ -117,6 +124,7 @@ assert.equal(readyState.actionDisabled, false);
 assert.equal(readyState.buttonText, '发布');
 assert.equal(readyState.title, '可以发布到附近');
 assert.equal(readyState.completionText, '4/4');
+assert.equal(readyState.primaryAction, 'publish');
 assert.match(readyState.note, /2张图片/);
 
 console.log('Publish flow checks passed.');
