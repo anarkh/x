@@ -155,3 +155,15 @@
 - 更新过的文件或工件：`pages/map/map.wxml`，`pages/map/map.wxss`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：DevTools 控制台仍显示既有的原生 `WAServiceMainContext timeout`，本轮观察该错误未阻断地图列表渲染；更长标题和带图卡片仍建议真机再看一次
 - 下一步最佳动作：在真机或 DevTools 不同机型宽度下打开信息列表，确认标题较长、正文较长和带图卡片都不挤压底部统计
+
+### Session 014B
+
+- 日期：2026-06-12
+- 分支：`codex/iter-publish-flow`
+- 本轮目标：B 组产品/设计/开发探索发布流程迭代
+- 产品假设：用户在提交时才触发定位和校验会造成失败感；把发布准备度和位置确认前置，应提升表单完成率
+- 已完成：新增 `pages/publish/publish-state.js` 计算身份、内容、分类和位置准备度；发布页新增发布准备清单、标题/详情字数提示、当前位置显式确认、有效期直接按钮和动态底部提交文案；新增 `scripts/check-publish-flow.mjs`
+- 运行过的验证：`node --check pages/publish/publish.js`；`node --check pages/publish/publish-state.js`；`node --no-warnings scripts/check-publish-flow.mjs`
+- 已记录证据：两条 `node --check` 通过；`node --no-warnings scripts/check-publish-flow.mjs` 输出 `Publish flow checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权、键盘遮挡、位置确认失败恢复、图片上传和真实发布闭环
+- 下一步最佳动作：在 WeChat DevTools 用游客和登录用户分别打开发布页，验证准备度清单、定位确认、必填提示、图片和发布成功链路

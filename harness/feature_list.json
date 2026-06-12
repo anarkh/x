@@ -1,6 +1,6 @@
 {
   "project": "Street Tasks / 街区任务",
-  "last_updated": "2026-05-21",
+  "last_updated": "2026-06-12",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -125,9 +125,13 @@
         "2026-05-15: git diff --check passed.",
         "2026-05-15: node scripts/check-json.mjs passed, output: Checked 11 JSON files.",
         "2026-05-15: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
-        "2026-05-15: bash harness/init.sh passed after npm-free fallback; package-lock has no external dependencies, then JSON and harness checks passed."
+        "2026-05-15: bash harness/init.sh passed after npm-free fallback; package-lock has no external dependencies, then JSON and harness checks passed.",
+        "2026-06-12: B 组发布迭代产品假设：用户在提交时才触发定位和校验会造成失败感；把发布准备度和位置确认前置，应提升表单完成率。",
+        "2026-06-12: Added pages/publish/publish-state.js and scripts/check-publish-flow.mjs to model identity/content/category/location readiness before submission.",
+        "2026-06-12: Publish page now shows a readiness checklist, title/body counters, explicit current-location confirmation, direct expiry buttons, and a bottom action that names the next missing step.",
+        "2026-06-12: node --check passed for pages/publish/publish.js and pages/publish/publish-state.js; node --no-warnings scripts/check-publish-flow.mjs passed with Publish flow checks passed."
       ],
-      "notes": "图片发布已改为云端必需；仍需部署更新后的 posts 云函数，并在 WeChat DevTools/真机中验证上传、跨用户浏览和过大图片拦截。"
+      "notes": "图片发布已改为云端必需；仍需部署更新后的 posts 云函数，并在 WeChat DevTools/真机中验证上传、跨用户浏览和过大图片拦截。 2026-06-12 B 组发布迭代新增发布准备度、位置确认和有效期按钮；尚未在 WeChat DevTools/真机验证定位授权、键盘遮挡、图片上传和真实发布闭环。"
     },
     {
       "id": "detail-trust-001",

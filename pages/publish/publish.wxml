@@ -11,6 +11,25 @@
       <view class="muted">发布时会记录你的用户身份，方便在“我的发布”里管理任务。</view>
     </view>
 
+    <view class="publish-ready">
+      <view class="ready-head">
+        <view>
+          <view class="ready-title">发布准备</view>
+          <view class="ready-note">按顺序补齐，底部按钮会实时提示下一步。</view>
+        </view>
+        <view class="ready-count">{{readiness.completionText}}</view>
+      </view>
+      <view class="ready-grid">
+        <view wx:for="{{readiness.items}}" wx:key="key" class="ready-item {{item.done ? 'done' : ''}}">
+          <view class="ready-dot"></view>
+          <view class="ready-copy">
+            <view class="ready-label">{{item.label}}</view>
+            <view class="ready-value">{{item.value}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <view class="form-section">
       <view class="form-section-head">
         <view class="form-section-title">任务内容</view>
@@ -19,11 +38,13 @@
       <view class="field">
         <view class="label">标题</view>
         <input class="input" maxlength="32" placeholder="{{activeGuide.titlePlaceholder}}" value="{{form.title}}" data-field="title" bindinput="onInput" />
+        <view class="field-meta">{{form.title.length}}/32</view>
       </view>
 
       <view class="field">
         <view class="label">详情</view>
         <textarea class="textarea" maxlength="180" placeholder="{{activeGuide.bodyPlaceholder}}" value="{{form.body}}" data-field="body" bindinput="onInput" />
+        <view class="field-meta">{{form.body.length}}/180</view>
       </view>
 
       <view class="field">
@@ -45,7 +66,7 @@
     <view class="form-section">
       <view class="form-section-head">
         <view class="form-section-title">分类与位置</view>
-        <view class="form-section-note">分类会影响附近列表里的筛选和提示</view>
+        <view class="form-section-note">分类、位置和有效期决定附近的人如何看到它</view>
       </view>
       <view class="field">
         <view class="label">类型</view>
@@ -78,15 +99,34 @@
       </view>
 
       <view class="field">
+        <view class="label">当前位置</view>
+        <view class="location-check {{locationStatus}}">
+          <view class="location-copy">
+            <view class="location-title">{{locationStatus === 'ready' ? '位置已确认' : locationStatus === 'failed' ? '位置确认失败' : '使用微信当前位置'}}</view>
+            <view class="location-note">{{locationSummary}}</view>
+          </view>
+          <button class="location-button" loading="{{locationStatus === 'locating'}}" disabled="{{locationStatus === 'locating'}}" bindtap="confirmLocation">{{readiness.locationActionText}}</button>
+        </view>
+      </view>
+
+      <view class="field">
         <view class="label">地点补充</view>
         <input class="input" maxlength="40" placeholder="{{activeGuide.placePlaceholder}}" value="{{form.placeName}}" data-field="placeName" bindinput="onInput" />
       </view>
 
       <view class="field">
         <view class="label">有效期</view>
-        <picker mode="selector" range="{{expiryOptions}}" range-key="label" value="{{expiryIndex}}" bindchange="onExpiryChange">
-          <view class="picker">{{expiryOptions[expiryIndex].label}}</view>
-        </picker>
+        <view class="expiry-grid">
+          <button
+            wx:for="{{expiryOptions}}"
+            wx:key="value"
+            class="expiry-option {{expiryIndex === index ? 'active' : ''}}"
+            data-index="{{index}}"
+            bindtap="onExpiryTap"
+          >
+            {{item.label}}
+          </button>
+        </view>
       </view>
     </view>
   </view>
@@ -94,10 +134,10 @@
   <view class="bottom-action publish-action">
     <view class="bottom-action-inner">
       <view>
-        <view class="bottom-action-title">{{isGuest ? '登录后可发布' : '发布到附近'}}</view>
-        <view class="bottom-action-note">使用当前位置，发布后可在“我的发布”管理</view>
+        <view class="bottom-action-title">{{readiness.title}}</view>
+        <view class="bottom-action-note">{{readiness.note}}</view>
       </view>
-      <button class="primary-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">{{isGuest ? '去登录' : submitting ? '发布中' : '发布'}}</button>
+      <button class="primary-button" loading="{{submitting}}" disabled="{{readiness.actionDisabled}}" bindtap="submit">{{readiness.buttonText}}</button>
     </view>
   </view>
 </view>
