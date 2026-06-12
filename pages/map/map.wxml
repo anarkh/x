@@ -46,7 +46,7 @@
           <text class="nearby-hint">{{item.browseHint}}</text>
           <text class="nearby-distance">{{item.distanceText}}</text>
         </view>
-        <view class="nearby-item-title">{{item.title}}</view>
+        <view class="nearby-item-title">{{item.previewTitle}}</view>
         <view class="nearby-item-meta">{{item.categoryText}} · {{item.expiryText}}</view>
       </view>
     </scroll-view>

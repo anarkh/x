@@ -167,3 +167,14 @@
 - 已记录证据：三条 `node --check` 通过；`node harness/check-map-feed.mjs` 输出 `Map feed checks passed.`
 - 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证地图原生层、首屏预览是否遮挡地图工具、窄屏文案省略、marker 点击和详情链路
 - 下一步最佳动作：在 WeChat DevTools 打开地图页，观察 NearbyPreview、点击预览/marker/列表之间的选中联动，再决定是否合入主线
+
+### Session 015A
+
+- 日期：2026-06-12
+- 分支：`codex/iter-map-ux`
+- 本轮目标：按用户评测报告收敛 NearbyPreview 遮挡和长标题风险
+- 已完成：NearbyPreview 改用 `previewTitle` 短标题；`buildNearbyPreviewPosts` 为预览卡生成截断标题；检查脚本覆盖长标题截断，避免首屏预览被超长标题撑开
+- 运行过的验证：`node harness/check-map-feed.mjs`
+- 已记录证据：`node harness/check-map-feed.mjs` 先因 `previewTitle` 缺失按预期失败，补实现后输出 `Map feed checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证真实地图覆盖层、横向滚动和 marker callout 渲染
+- 下一步最佳动作：跑完整自动验证后，用 DevTools 验证窄屏首屏遮挡关系

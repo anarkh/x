@@ -103,9 +103,11 @@
         "2026-06-12: A 组地图迭代产品假设：地图首屏虽然有列表入口，但用户进入后仍需要打开抽屉才知道最近可处理任务；新增附近优先预览应降低首次浏览成本。",
         "2026-06-12: Added a NearbyPreview first-screen overlay for the nearest active/stale tasks, plus selected marker/list highlighting through decorateMapPost and markerFromPost selected callout styling.",
         "2026-06-12: Added harness/check-map-feed.mjs to verify nearest-open sorting, stale hinting, selected preview state, and selected marker callout styling.",
-        "2026-06-12: node --check passed for pages/map/map.js, utils/post-presenter.js, and utils/geo.js; node harness/check-map-feed.mjs passed with Map feed checks passed."
+        "2026-06-12: node --check passed for pages/map/map.js, utils/post-presenter.js, and utils/geo.js; node harness/check-map-feed.mjs passed with Map feed checks passed.",
+        "2026-06-12: Second A-group iteration refined NearbyPreview by adding previewTitle truncation for long task titles, so first-screen preview cards have stable text length.",
+        "2026-06-12: node harness/check-map-feed.mjs first failed because previewTitle was missing; after updating buildNearbyPreviewPosts and map WXML, it passed with Map feed checks passed."
       ],
-      "notes": "已有实现未等于 harness passing；需要手动小程序验证证据。2026-05-18 UI 刷新采用 TDesign 式设计 token 和原生小程序控件落地，未引入 tdesign-miniprogram npm 依赖，避免在当前无小程序 npm 构建链路下增加编译风险。底部 tabBar 已由悬浮胶囊改为贴底不透明导航栏。2026-05-19 发布页和地图抽屉已落地 design-ui-designer 组件化优化。2026-05-21 白屏排查未发现 WXML/WXSS/JS 语法错误，已移除 tabBar 中新增的空 cover-view 指示条以降低渲染兼容风险；同日继续排查确认 DevTools hot reload/getAppConfig 缓存会触发 subPackages 内部错误，清编译缓存并终止重编译后地图恢复，同时加入页面诊断和云读取 fallback；随后针对 `Error: timeout` 将地图首屏改为本地优先，定位、云函数列表和地图 region 读取都不再阻塞启动；详情页已补上本地 fallback，避免本地列表任务因云端不存在而显示“任务不存在”。信息列表已改为铺满抽屉、标题后置标签、底部轻量统计。仍需在 WeChat DevTools/真机中确认 safe area、键盘、地图抽屉、定位授权分支和多分类详情链路。 2026-06-12 A 组地图迭代新增 NearbyPreview 首屏附近优先预览和选中态联动；尚未在 WeChat DevTools/真机验证地图原生层、窄屏覆盖和 marker 点击链路。"
+      "notes": "已有实现未等于 harness passing；需要手动小程序验证证据。2026-05-18 UI 刷新采用 TDesign 式设计 token 和原生小程序控件落地，未引入 tdesign-miniprogram npm 依赖，避免在当前无小程序 npm 构建链路下增加编译风险。底部 tabBar 已由悬浮胶囊改为贴底不透明导航栏。2026-05-19 发布页和地图抽屉已落地 design-ui-designer 组件化优化。2026-05-21 白屏排查未发现 WXML/WXSS/JS 语法错误，已移除 tabBar 中新增的空 cover-view 指示条以降低渲染兼容风险；同日继续排查确认 DevTools hot reload/getAppConfig 缓存会触发 subPackages 内部错误，清编译缓存并终止重编译后地图恢复，同时加入页面诊断和云读取 fallback；随后针对 `Error: timeout` 将地图首屏改为本地优先，定位、云函数列表和地图 region 读取都不再阻塞启动；详情页已补上本地 fallback，避免本地列表任务因云端不存在而显示“任务不存在”。信息列表已改为铺满抽屉、标题后置标签、底部轻量统计。仍需在 WeChat DevTools/真机中确认 safe area、键盘、地图抽屉、定位授权分支和多分类详情链路。 2026-06-12 A 组地图迭代新增 NearbyPreview 首屏附近优先预览和选中态联动；尚未在 WeChat DevTools/真机验证地图原生层、窄屏覆盖和 marker 点击链路。 第二轮 A 组已收敛 NearbyPreview 长标题风险；地图原生层覆盖和横向滚动仍需 DevTools/真机验证。"
     },
     {
       "id": "publish-001",

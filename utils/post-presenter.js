@@ -49,6 +49,11 @@ function browseHintForPost(post, index) {
   return '附近';
 }
 
+function previewTitle(title, maxLength = 14) {
+  const value = String(title || '').trim();
+  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+}
+
 export function decoratePost(post) {
   const imageUrls = Array.isArray(post.imageUrls) ? post.imageUrls : [];
   return {
@@ -89,7 +94,8 @@ export function buildNearbyPreviewPosts(posts, selectedPostId = '', limit = 3) {
     .map((post, index) => ({
       ...decorateMapPost(post, selectedPostId),
       browseRank: index + 1,
-      browseHint: browseHintForPost(post, index)
+      browseHint: browseHintForPost(post, index),
+      previewTitle: previewTitle(post.title)
     }));
 }
 

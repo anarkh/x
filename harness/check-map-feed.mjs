@@ -53,7 +53,7 @@ const posts = [
   {
     id: 'stale_middle',
     markerId: 104,
-    title: '中距离待复核任务',
+    title: '中距离待复核任务标题非常非常长需要被预览卡片截短',
     status: 'stale',
     category: 'lost_found',
     intent: 'lost',
@@ -78,6 +78,8 @@ assert.equal(previewPosts[0].isSelected, true);
 assert.equal(previewPosts[0].browseRank, 1);
 assert.equal(previewPosts[0].browseHint, '最近');
 assert.equal(previewPosts[1].browseHint, '待复核');
+assert.equal(previewPosts[1].previewTitle, '中距离待复核任务标题非常非常...');
+assert(previewPosts[1].previewTitle.length <= 18);
 
 const selectedMarker = markerFromPost(previewPosts[0]);
 assert.equal(selectedMarker.callout.bgColor, '#1F6658');
