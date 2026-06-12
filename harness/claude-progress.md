@@ -187,5 +187,5 @@
 - 已完成：`buildPublishState` 新增 `primaryAction`，显式区分 `login`、`fill`、`confirmLocation`、`waitLocation`、`publish`、`submitting`；发布页 `submit()` 改为按 `primaryAction` 分派，避免页面层重复推断 missing 数组
 - 运行过的验证：`node --no-warnings scripts/check-publish-flow.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
 - 已记录证据：检查脚本先因 `primaryAction` 缺失按预期失败，补实现后输出 `Publish flow checks passed.`；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出
-- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权、键盘安全区、图片上传失败回滚和发布后详情跳转
-- 下一步最佳动作：跑完整自动验证后，把第三轮 B 组更新发给用户评测 agent，再进入 DevTools 手测
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权、键盘安全区、图片上传失败回滚和发布后详情跳转；CLI `open`/`preview` 已尝试启用服务端口并连接 9420，但均因 `wait IDE port timeout` 失败，`preview` 未产出二维码信息
+- 下一步最佳动作：在本机 WeChat DevTools UI 中确认“设置 -> 安全设置 -> 服务端口”已开启并重新打开 `/tmp/street-tasks-iter-worktrees/publish`，再执行游客、缺位置、定位失败/重试、图片发布和发布后详情跳转手测
