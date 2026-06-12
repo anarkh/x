@@ -7,9 +7,61 @@ function locationValue(locationStatus, hasLocation) {
     return '确认中';
   }
   if (locationStatus === 'failed') {
-    return '需重试';
+    return '待重试';
   }
   return hasLocation ? '已确认' : '待确认';
+}
+
+function locationActionText(locationStatus) {
+  if (locationStatus === 'ready') {
+    return '重新确认';
+  }
+  if (locationStatus === 'locating') {
+    return '确认中';
+  }
+  if (locationStatus === 'failed') {
+    return '重试定位';
+  }
+  return '确认位置';
+}
+
+function missingActionText(missingItem, locationStatus) {
+  const actionMap = {
+    登录: '去登录',
+    标题: '补标题',
+    详情: '补详情',
+    分类: '选分类',
+    失物方向: '选失物方向'
+  };
+  if (missingItem === '当前位置') {
+    if (locationStatus === 'locating') {
+      return '确认位置中';
+    }
+    if (locationStatus === 'failed') {
+      return '重试定位';
+    }
+    return '确认位置';
+  }
+  return actionMap[missingItem] || '继续填写';
+}
+
+function missingLocationCopy(locationStatus) {
+  if (locationStatus === 'locating') {
+    return {
+      title: '正在确认位置',
+      note: '请停留在当前页面，确认成功后即可发布'
+    };
+  }
+  if (locationStatus === 'failed') {
+    return {
+      title: '位置未确认',
+      note: '请检查微信定位授权，或点重试定位再试一次'
+    };
+  }
+  return {
+    title: '确认当前位置',
+    note: '发布前确认当前位置，附近的人会按这里看到任务'
+  };
 }
 
 export function buildPublishState(options = {}) {
@@ -72,9 +124,11 @@ export function buildPublishState(options = {}) {
 
   const doneCount = items.filter((item) => item.done).length;
   const ready = missing.length === 0 && !submitting;
-  const actionDisabled = submitting || (!isGuest && missing.length > 0);
+  const onlyNeedsLocation = missing.length === 1 && missing[0] === '当前位置';
+  const canConfirmLocation = onlyNeedsLocation && locationStatus !== 'locating';
+  const actionDisabled = submitting || (!isGuest && missing.length > 0 && !canConfirmLocation);
   const completionText = `${doneCount}/${items.length}`;
-  const locationActionText = locationStatus === 'ready' ? '重新确认' : '确认位置';
+  const nextLocationActionText = locationActionText(locationStatus);
 
   if (submitting) {
     return {
@@ -86,7 +140,7 @@ export function buildPublishState(options = {}) {
       title: '正在发布',
       note: '正在保存图片和任务信息',
       completionText,
-      locationActionText
+      locationActionText: nextLocationActionText
     };
   }
 
@@ -100,21 +154,22 @@ export function buildPublishState(options = {}) {
       title: '登录后可发布',
       note: '登录后会记录发布者，方便管理自己的任务',
       completionText,
-      locationActionText
+      locationActionText: nextLocationActionText
     };
   }
 
   if (!ready) {
+    const locationCopy = onlyNeedsLocation ? missingLocationCopy(locationStatus) : null;
     return {
       items,
       missing,
       ready: false,
       actionDisabled,
-      buttonText: '继续填写',
-      title: `还差${missing[0]}`,
-      note: `补全${missing.join('、')}后再发布`,
+      buttonText: missingActionText(missing[0], locationStatus),
+      title: locationCopy ? locationCopy.title : `还差${missing[0]}`,
+      note: locationCopy ? locationCopy.note : `补全${missing.join('、')}后再发布`,
       completionText,
-      locationActionText
+      locationActionText: nextLocationActionText
     };
   }
 
@@ -129,6 +184,6 @@ export function buildPublishState(options = {}) {
       ? `当前位置已确认，含${imageCount}张图片`
       : '当前位置已确认，可直接发布',
     completionText,
-    locationActionText
+    locationActionText: nextLocationActionText
   };
 }

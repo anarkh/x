@@ -167,3 +167,14 @@
 - 已记录证据：两条 `node --check` 通过；`node --no-warnings scripts/check-publish-flow.mjs` 输出 `Publish flow checks passed.`
 - 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权、键盘遮挡、位置确认失败恢复、图片上传和真实发布闭环
 - 下一步最佳动作：在 WeChat DevTools 用游客和登录用户分别打开发布页，验证准备度清单、定位确认、必填提示、图片和发布成功链路
+
+### Session 015B
+
+- 日期：2026-06-12
+- 分支：`codex/iter-publish-flow`
+- 本轮目标：按用户评测报告收敛发布准备度的定位失败和重试路径
+- 已完成：`buildPublishState` 细化 locating/failed/ready 文案；只缺当前位置时底部按钮可直接触发定位确认；定位失败文案改为检查授权或重试；发布检查脚本覆盖定位中、待确认、失败重试和失物招领方向补齐
+- 运行过的验证：`node --no-warnings scripts/check-publish-flow.mjs`
+- 已记录证据：`node --no-warnings scripts/check-publish-flow.mjs` 输出 `Publish flow checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权弹窗、拒绝/超时恢复、键盘遮挡和图片上传失败回滚
+- 下一步最佳动作：跑完整自动验证后，在真机或 DevTools 中验证定位允许、拒绝、重试三条路径

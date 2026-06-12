@@ -28,10 +28,52 @@ assert.equal(guestState.actionDisabled, false);
 assert.equal(guestState.items.find((item) => item.key === 'account').done, false);
 
 const emptyState = state();
-assert.equal(emptyState.buttonText, '继续填写');
+assert.equal(emptyState.buttonText, '补标题');
 assert.equal(emptyState.actionDisabled, true);
 assert.equal(emptyState.missing[0], '标题');
 assert.equal(emptyState.items.find((item) => item.key === 'content').done, false);
+
+const locatingState = state({
+  locationStatus: 'locating',
+  form: {
+    title: '楼下快递架有积水',
+    body: '经过的人注意绕一下，已经提醒物业。',
+    category: 'check_in'
+  }
+});
+assert.equal(locatingState.ready, false);
+assert.equal(locatingState.actionDisabled, true);
+assert.equal(locatingState.buttonText, '确认位置中');
+assert.equal(locatingState.title, '正在确认位置');
+assert.equal(locatingState.items.find((item) => item.key === 'location').value, '确认中');
+
+const needsLocationState = state({
+  form: {
+    title: '楼下快递架有积水',
+    body: '经过的人注意绕一下，已经提醒物业。',
+    category: 'check_in'
+  }
+});
+assert.equal(needsLocationState.ready, false);
+assert.equal(needsLocationState.actionDisabled, false);
+assert.equal(needsLocationState.buttonText, '确认位置');
+assert.equal(needsLocationState.title, '确认当前位置');
+
+const failedLocationState = state({
+  locationStatus: 'failed',
+  form: {
+    title: '东门钥匙串招领',
+    body: '放在保安室前台，可以报挂件颜色领取。',
+    category: 'lost_found',
+    intent: 'found'
+  }
+});
+assert.equal(failedLocationState.ready, false);
+assert.equal(failedLocationState.actionDisabled, false);
+assert.equal(failedLocationState.buttonText, '重试定位');
+assert.equal(failedLocationState.title, '位置未确认');
+assert.match(failedLocationState.note, /授权|重试/);
+assert.equal(failedLocationState.items.find((item) => item.key === 'location').value, '待重试');
 
 const lostFoundState = state({
   hasLocation: true,
@@ -44,6 +86,21 @@ const lostFoundState = state({
 });
 assert.equal(lostFoundState.actionDisabled, true);
 assert.deepEqual(lostFoundState.missing, ['失物方向']);
+assert.equal(lostFoundState.buttonText, '选失物方向');
+
+const readyLostFoundState = state({
+  hasLocation: true,
+  locationStatus: 'ready',
+  form: {
+    title: '捡到蓝色门禁卡',
+    body: '在地铁口附近捡到，有挂绳。',
+    category: 'lost_found',
+    intent: 'found'
+  }
+});
+assert.equal(readyLostFoundState.ready, true);
+assert.equal(readyLostFoundState.actionDisabled, false);
+assert.equal(readyLostFoundState.buttonText, '发布');
 
 const readyState = state({
   hasLocation: true,

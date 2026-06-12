@@ -11,8 +11,9 @@ const IMAGE_COMPRESS_QUALITY = 70;
 const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const CLOUD_FILE_ID_PREFIX = 'cloud://';
 const LOCATION_IDLE_SUMMARY = '发布前确认一次当前位置，附近的人会按这个位置看到任务。';
-const LOCATION_READY_SUMMARY = '已确认当前位置，发布时会使用这里。';
-const LOCATION_FAILED_SUMMARY = '无法获取当前位置，请检查定位权限后重试。';
+const LOCATION_LOCATING_SUMMARY = '正在确认当前位置，请停留在当前页面。';
+const LOCATION_READY_SUMMARY = '已确认当前位置，需要更换时可重新确认。';
+const LOCATION_FAILED_SUMMARY = '还没拿到当前位置，请检查微信定位授权，或点重试定位。';
 
 function defaultForm() {
   return {
@@ -439,7 +440,7 @@ Page({
     }
     this.setPublishData({
       locationStatus: 'locating',
-      locationSummary: '正在确认微信定位...'
+      locationSummary: LOCATION_LOCATING_SUMMARY
     });
     try {
       const location = await getCurrentLocation();
@@ -474,6 +475,10 @@ Page({
     }
     if (this.data.readiness.actionDisabled) {
       wx.showToast({ title: this.data.readiness.title, icon: 'none' });
+      return;
+    }
+    if (!this.data.readiness.ready && this.data.readiness.missing.length === 1 && this.data.readiness.missing[0] === '当前位置') {
+      await this.confirmLocation();
       return;
     }
     if (!this.data.draftLocation) {
