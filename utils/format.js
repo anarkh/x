@@ -100,12 +100,12 @@ export function formatTrustInsight(post = {}, commentCount = 0) {
     hint = '看到最新情况时，优先写评论补充现场状态。';
   } else if (confirmations > 0) {
     tone = 'good';
-    title = '有人确认有效';
-    body = `${confirmations}人确认过，${lastConfirmedText}。`;
-    hint = '如果你也看到情况属实，可以点确认；有新线索可写评论。';
+    title = '有确认信号';
+    body = `已有${confirmations}次确认信号，${lastConfirmedText}。`;
+    hint = '仍建议结合现场和评论判断；看到情况属实再点确认。';
   } else if (comments > 0) {
     tone = 'neutral';
-    title = '已有线索可看';
+    title = '先看评论线索';
     body = `已有${comments}条评论，先看补充信息再决定是否行动。`;
     hint = '如果评论仍不够清楚，可以继续提问或补充线索。';
   }

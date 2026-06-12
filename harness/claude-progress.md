@@ -201,3 +201,14 @@
 - 已记录证据：两条 `node --check` 通过；Node import check 输出 `Trust insight checks passed.`
 - 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证窄屏布局、信任动作后的面板刷新、游客登录评论引导、resolved/expired 只读状态和云端评论路径
 - 下一步最佳动作：在 WeChat DevTools 打开 active、stale、resolved、expired 任务详情，验证 TrustInsight 文案、指标换行和评论入口
+
+### Session 015C
+
+- 日期：2026-06-12
+- 分支：`codex/iter-detail-trust`
+- 本轮目标：按用户评测报告收敛 TrustInsight 文案误导和冲突优先级风险
+- 已完成：确认文案从“有人确认有效”改为更谨慎的“有确认信号”；评论-only 场景改为“先看评论线索”；新增 `harness/check-trust-insight.mjs` 覆盖举报优先、过时优先、resolved/expired、comments-only 和四指标短 note
+- 运行过的验证：`node harness/check-trust-insight.mjs`
+- 已记录证据：`node harness/check-trust-insight.mjs` 先因旧文案按预期失败，补实现后输出 `Trust insight checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证 TrustInsight 面板密度、信任动作点击刷新和云端评论路径
+- 下一步最佳动作：跑完整自动验证后，优先做 DevTools 手测以决定是否将 C 组合入主线

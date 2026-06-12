@@ -61,7 +61,7 @@ The project currently has no frontend build step and no mini program npm depende
 - `SignalPill`: small metric tile for repeated task-card signals such as confirmation count, stale count, and remaining time.
 - `PublishReadiness`: compact checklist near the top of the publish form. It should show identity, content, category, and location completion so the fixed submit action can explain or trigger the next required step.
 - `LocationCheck`: explicit location confirmation block in the publish form. Use it when location is required for correctness; show idle, loading, ready, and failed states without moving the submit button, and make retry language non-technical.
-- `TrustInsight`: detail-page section placed before trust actions. Summarize confirmations, stale reports, reports, and comment count into one status sentence, then show compact segmented metrics and the next sensible action. Use it to explain the counts instead of making users infer trust from numbers alone.
+- `TrustInsight`: detail-page section placed before trust actions. Summarize confirmations, stale reports, reports, and comment count into one cautious status sentence, then show compact segmented metrics and the next sensible action. Use it to explain the counts without implying absolute trust.
 
 ## QA Checklist
 
