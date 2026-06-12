@@ -6,6 +6,7 @@ import {
   intentLabel,
   statusLabel
 } from './format.js';
+import { formatDistance } from './geo.js';
 
 export const actionMeta = {
   confirm: {
@@ -26,6 +27,28 @@ export function isOpenPost(post) {
   return post.status === 'active' || post.status === 'stale';
 }
 
+function safeDistance(value) {
+  const distance = Number(value);
+  return Number.isFinite(distance) ? distance : Number.POSITIVE_INFINITY;
+}
+
+function safeCount(value) {
+  return Math.max(0, Number(value) || 0);
+}
+
+function browseHintForPost(post, index) {
+  if (index === 0) {
+    return '最近';
+  }
+  if (post.status === 'stale' || safeCount(post.staleCount) >= 3) {
+    return '待复核';
+  }
+  if (safeCount(post.confirmations) > 0) {
+    return '已确认';
+  }
+  return '附近';
+}
+
 export function decoratePost(post) {
   const imageUrls = Array.isArray(post.imageUrls) ? post.imageUrls : [];
   return {
@@ -40,6 +63,34 @@ export function decoratePost(post) {
     createdText: formatCreatedAt(post.createdAt),
     expiryText: post.status === 'resolved' ? '已关闭' : formatTimeLeft(post.expiresAt)
   };
+}
+
+export function decorateMapPost(post, selectedPostId = '') {
+  const distance = safeDistance(post.distance);
+  return {
+    ...decoratePost(post),
+    distanceText: Number.isFinite(distance) ? formatDistance(distance) : '距离未知',
+    isSelected: Boolean(selectedPostId && post.id === selectedPostId)
+  };
+}
+
+export function buildNearbyPreviewPosts(posts, selectedPostId = '', limit = 3) {
+  return posts
+    .filter(isOpenPost)
+    .slice()
+    .sort((a, b) => {
+      const distanceDiff = safeDistance(a.distance) - safeDistance(b.distance);
+      if (distanceDiff !== 0) {
+        return distanceDiff;
+      }
+      return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+    })
+    .slice(0, limit)
+    .map((post, index) => ({
+      ...decorateMapPost(post, selectedPostId),
+      browseRank: index + 1,
+      browseHint: browseHintForPost(post, index)
+    }));
 }
 
 export function buildActivities(posts, reactions) {

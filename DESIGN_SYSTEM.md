@@ -59,6 +59,7 @@ The project currently has no frontend build step and no mini program npm depende
 - `CategoryOption`: two-column direct-choice buttons for small option sets such as task categories. Prefer this over a picker when the choices are few and user-facing.
 - `DrawerCounter`: compact number block in bottom drawers to make counts scannable without adding another sentence.
 - `SignalPill`: small metric tile for repeated task-card signals such as confirmation count, stale count, and remaining time.
+- `NearbyPreview`: compact first-screen map overlay for the nearest open tasks. Show it only when the list drawer and selected-post card are closed; reserve the right side for map tools, and let tapping an item select the same marker/list item.
 
 ## QA Checklist
 

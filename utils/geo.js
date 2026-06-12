@@ -33,6 +33,7 @@ function markerBorderColor(status) {
 }
 
 export function markerFromPost(post) {
+  const selected = Boolean(post.isSelected);
   return {
     id: Number(post.markerId),
     postId: post.id,
@@ -46,13 +47,13 @@ export function markerFromPost(post) {
     },
     callout: {
       content: markerSummary(post),
-      color: '#17201D',
+      color: selected ? '#FFFFFF' : '#17201D',
       fontSize: 12,
       borderRadius: 8,
-      bgColor: '#FFFFFF',
-      padding: 7,
-      borderColor: markerBorderColor(post.status),
-      borderWidth: 1,
+      bgColor: selected ? '#1F6658' : '#FFFFFF',
+      padding: selected ? 8 : 7,
+      borderColor: selected ? '#D7673F' : markerBorderColor(post.status),
+      borderWidth: selected ? 2 : 1,
       display: 'ALWAYS',
       textAlign: 'center'
     }

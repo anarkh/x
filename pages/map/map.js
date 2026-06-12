@@ -1,13 +1,10 @@
 import { listPosts } from '../../utils/store.js';
-import { formatDistance, markerFromPost } from '../../utils/geo.js';
+import { markerFromPost } from '../../utils/geo.js';
 import {
-  categoryLabel,
-  formatConfirmationText,
-  formatCreatedAt,
-  formatTimeLeft,
-  intentLabel,
-  statusLabel
-} from '../../utils/format.js';
+  buildNearbyPreviewPosts,
+  decorateMapPost,
+  isOpenPost
+} from '../../utils/post-presenter.js';
 import config from '../../utils/config.js';
 import { syncTabBar } from '../../utils/tab-bar.js';
 import { addDiagnostic, listDiagnostics } from '../../utils/diagnostics.js';
@@ -31,10 +28,6 @@ function isPostInRegion(post, region) {
     && post.longitude <= northeast.longitude;
 }
 
-function isOpenPost(post) {
-  return post.status === 'active' || post.status === 'stale';
-}
-
 Page({
   data: {
     center: app.globalData.center,
@@ -47,6 +40,7 @@ Page({
     selectedPost: null,
     posts: [],
     visiblePosts: [],
+    nearbyPreviewPosts: [],
     markers: [],
     showList: false,
     showLocation: false,
@@ -133,24 +127,12 @@ Page({
   async buildPosts(center) {
     // Keep the map first paint independent from cloud/network startup timing.
     const posts = await listPosts(center, { localOnly: true });
-    return posts.map((post) => ({
-      ...post,
-      imageUrls: Array.isArray(post.imageUrls) ? post.imageUrls : [],
-      coverImage: Array.isArray(post.imageUrls) && post.imageUrls[0] ? post.imageUrls[0] : '',
-      imageCount: Array.isArray(post.imageUrls) ? post.imageUrls.length : 0,
-      categoryText: categoryLabel(post.category),
-      intentText: intentLabel(post.intent),
-      statusText: statusLabel(post.status),
-      confirmationText: formatConfirmationText(post.confirmations, post.lastConfirmedAt),
-      createdText: formatCreatedAt(post.createdAt),
-      expiryText: post.status === 'resolved' ? '已关闭' : formatTimeLeft(post.expiresAt),
-      distanceText: formatDistance(post.distance)
-    }));
+    return posts.map((post) => decorateMapPost(post));
   },
 
   applyPostFilters(posts, activeCategory, mapRegion, options = {}) {
     const viewportPosts = posts.filter((post) => isPostInRegion(post, mapRegion));
-    const visiblePosts = activeCategory === 'all'
+    const baseVisiblePosts = activeCategory === 'all'
       ? viewportPosts
       : viewportPosts.filter((post) => post.category === activeCategory);
     const categoryCounts = {};
@@ -162,16 +144,22 @@ Page({
       count: item.value === 'all' ? viewportPosts.length : categoryCounts[item.value] || 0
     }));
     const activeFilter = categoryFilters.find((item) => item.value === activeCategory);
-    const selectedPost = options.clearSelection
+    const selectedPostCandidate = options.clearSelection
       ? null
       : this.pendingSelectedPost
-      ? visiblePosts.find((post) => post.id === this.pendingSelectedPost.id) || this.pendingSelectedPost
+      ? baseVisiblePosts.find((post) => post.id === this.pendingSelectedPost.id) || this.pendingSelectedPost
       : this.data.selectedPost
-      ? visiblePosts.find((post) => post.id === this.data.selectedPost.id) || null
+      ? baseVisiblePosts.find((post) => post.id === this.data.selectedPost.id) || null
       : null;
     this.pendingSelectedPost = null;
+    const selectedPostId = selectedPostCandidate ? selectedPostCandidate.id : '';
+    const visiblePosts = baseVisiblePosts.map((post) => decorateMapPost(post, selectedPostId));
+    const selectedPost = selectedPostId
+      ? visiblePosts.find((post) => post.id === selectedPostId) || decorateMapPost(selectedPostCandidate, selectedPostId)
+      : null;
     const nextData = {
       visiblePosts,
+      nearbyPreviewPosts: buildNearbyPreviewPosts(visiblePosts, selectedPostId),
       categoryFilters,
       activeCategory,
       activeCategoryText: activeFilter ? activeFilter.label : '全部',
@@ -269,9 +257,9 @@ Page({
     const marker = this.data.markers.find((item) => item.id === event.detail.markerId);
     if (marker) {
       const selectedPost = this.data.visiblePosts.find((post) => post.id === marker.postId);
-      this.setData({
-        selectedPost: selectedPost || null,
-        showList: false
+      this.pendingSelectedPost = selectedPost || null;
+      this.setData({ showList: false }, () => {
+        this.applyPostFilters(this.data.posts, this.data.activeCategory, this.data.mapRegion);
       });
     }
   },
@@ -361,7 +349,11 @@ Page({
   },
 
   clearSelectedPost() {
-    this.setData({ selectedPost: null });
+    this.setData({ selectedPost: null }, () => {
+      this.applyPostFilters(this.data.posts, this.data.activeCategory, this.data.mapRegion, {
+        clearSelection: true
+      });
+    });
   },
 
   onShareAppMessage() {
