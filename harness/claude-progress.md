@@ -6,9 +6,9 @@
 - 标准启动路径：在 WeChat DevTools 中打开仓库，使用 `project.config.json`，公开 appid 保持 `touristappid`
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
-- 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：优化地图信息列表卡片布局；已改为列表抽屉铺满、标题后展示分类/状态、标题下展示详情、底部左侧展示简单统计、右侧展示时间和距离
-- 当前 blocker：任务详情不存在问题在 DevTools 中已验证缓解；地图原生层仍会偶发输出 `WAServiceMainContext timeout`，但页面可显示且详情链路可用；定位按钮、真机授权、云端数据、图片跨用户可见性仍需要真机或部署后验证
+- 当前最高优先级未完成功能：`admin-001`（本分支为多组迭代实验分支）
+- 当前正在实现的用户请求：第四组管理台风险处置实验；已补充产品/设计简报，管理台卡片新增处理原因、建议动作、处置中防重复点击、确认弹窗任务标题/ID 和成功/失败反馈
+- 当前 blocker：本分支自动验证和 WXML/WXSS 本地编译已通过，但尚未在 WeChat DevTools 中以普通用户和管理员身份手动验证权限、筛选、隐藏、关闭和普通列表隐藏效果
 
 ## 会话记录
 
@@ -155,3 +155,14 @@
 - 更新过的文件或工件：`pages/map/map.wxml`，`pages/map/map.wxss`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：DevTools 控制台仍显示既有的原生 `WAServiceMainContext timeout`，本轮观察该错误未阻断地图列表渲染；更长标题和带图卡片仍建议真机再看一次
 - 下一步最佳动作：在真机或 DevTools 不同机型宽度下打开信息列表，确认标题较长、正文较长和带图卡片都不挤压底部统计
+
+### Session 014
+
+- 日期：2026-06-13
+- 本轮目标：第四组迭代实验，围绕 `admin-001` 轻量管理与风险内容处理，创建产品、设计、开发子 agent 并形成可评测版本
+- 已完成：创建 `codex/iter-admin-risk` 独立 worktree；产品 agent 输出 `harness/admin-product-brief.md`，明确风险解释、建议动作、误操作防护和权限异常为本轮重点；设计 agent 输出 `harness/admin-design-brief.md`，建议把“为什么要处理”和“下一步做什么”前置；开发实现抽出 `pages/admin/admin-review.js`，管理台任务卡新增处理原因与建议动作，隐藏/关闭期间显示处理中并禁用当前动作，确认弹窗包含任务标题和 ID，操作成功/失败都有反馈；新增 `scripts/check-admin-review.mjs` 覆盖高举报、过时/过期、hidden/resolved 动作能力、搜索过滤和统计数量
+- 运行过的验证：`node --check pages/admin/admin.js`；`node --check pages/admin/admin-review.js`；`node scripts/check-admin-review.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`bash harness/init.sh`
+- 已记录证据：两条 `node --check` 均通过，无语法错误输出；`node scripts/check-admin-review.mjs` 输出 `Admin review helper checks passed.`，同时出现项目既有的 `MODULE_TYPELESS_PACKAGE_JSON` ESM 警告；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过；全量 WXML/WXSS 本地编译退出码均为 0；`bash harness/init.sh` 完整跑通，npm install up to date，随后 JSON 和 harness 自检通过
+- 更新过的文件或工件：`harness/admin-product-brief.md`，`harness/admin-design-brief.md`，`pages/admin/admin-review.js`，`pages/admin/admin.js`，`pages/admin/admin.wxml`，`pages/admin/admin.wxss`，`scripts/check-admin-review.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 中用普通用户验证无管理能力、用管理员验证待处理筛选/搜索/隐藏/关闭；尚未确认隐藏后普通地图列表不显示、关闭后详情状态同步为 resolved；云端 admins 集合缺失路径仍需要真实环境验证
+- 下一步最佳动作：把 `codex/iter-admin-risk` 交给用户评测 agent 追加评分；随后在 WeChat DevTools UI 中打开 `/tmp/street-tasks-iter-worktrees/admin` 做普通用户和管理员两条手测路径
