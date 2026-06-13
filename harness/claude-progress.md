@@ -202,6 +202,17 @@
 - 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证窄屏布局、信任动作后的面板刷新、游客登录评论引导、resolved/expired 只读状态和云端评论路径
 - 下一步最佳动作：在 WeChat DevTools 打开 active、stale、resolved、expired 任务详情，验证 TrustInsight 文案、指标换行和评论入口
 
+### Session 017F
+
+- 日期：2026-06-13
+- 分支：`codex/iter-candidate-publish-trust`
+- 本轮目标：组合 B 组发布准备度和 C 组详情信任解释，形成更接近合入候选的第六组实验
+- 已完成：从 `codex/iter-publish-flow` HEAD 创建候选分支，cherry-pick C 组详情信任三个提交；合并 `DESIGN_SYSTEM.md` 和 harness 记录冲突，保留 `PublishReadiness`、`LocationCheck` 和谨慎版 `TrustInsight` 规则；新增 `harness/candidate-publish-trust-report.md` 记录组合目标、验证和未手测项
+- 运行过的验证：`node --check pages/publish/publish.js`；`node --check pages/publish/publish-state.js`；`node --check pages/detail/detail.js`；`node --check utils/format.js`；`node --check harness/check-trust-insight.mjs`；`node --no-warnings scripts/check-publish-flow.mjs`；`node harness/check-trust-insight.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：发布检查输出 `Publish flow checks passed.`；详情信任检查输出 `Trust insight checks passed.`；JSON 检查输出 `Checked 11 JSON files.`；harness 检查输出 `Harness OK: 6 features checked.`；`git diff --check` 通过；全量 WXML/WXSS 本地编译退出码均为 0
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证发布定位授权、键盘安全区、图片上传失败回滚、发布后详情跳转；尚未验证详情页 TrustInsight 窄屏、评论入口、信任动作刷新和云端评论路径；DevTools CLI 9420 端口超时问题未在本组合分支重新尝试
+- 下一步最佳动作：启动用户评测 agent 对 F 组组合候选评分；随后在 WeChat DevTools UI 中优先手测 F 组发布闭环，再手测详情 TrustInsight
+
 ### Session 015C
 
 - 日期：2026-06-12
