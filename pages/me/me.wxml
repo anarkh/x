@@ -52,6 +52,31 @@
     </view>
   </view>
 
+  <view class="panel next-panel">
+    <view class="next-copy">
+      <view class="section-title">{{nextAction.title}}</view>
+      <view class="muted">{{nextAction.note}}</view>
+    </view>
+    <button class="next-action-button" bindtap="handleNextAction">{{nextAction.buttonText}}</button>
+  </view>
+
+  <view wx:if="{{recentActivities.length}}" class="panel recent-panel">
+    <view class="section-head">
+      <view>
+        <view class="section-title">最近动态</view>
+        <view class="muted">你刚参与过的附近任务</view>
+      </view>
+      <view class="mini-link" bindtap="goActivities">全部</view>
+    </view>
+    <view wx:for="{{recentActivities}}" wx:key="activityKey" class="recent-row" data-id="{{item.post.id}}" bindtap="openDetail">
+      <view class="activity-mark {{item.tone}}">{{item.label}}</view>
+      <view class="recent-main">
+        <view class="recent-title">{{item.post.title}}</view>
+        <view class="muted">{{item.post.placeName}} · {{item.reactedText}}</view>
+      </view>
+    </view>
+  </view>
+
   <view class="panel profile-link-card" bindtap="goMyPosts">
     <view>
       <view class="profile-link-title">我的发布</view>

@@ -1,6 +1,6 @@
 {
   "project": "Street Tasks / 街区任务",
-  "last_updated": "2026-05-21",
+  "last_updated": "2026-06-13",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -198,8 +198,20 @@
         "进入反馈页，提交各类型反馈并确认成功或失败提示。",
         "重启小程序后确认本地状态没有异常丢失。"
       ],
-      "evidence": [],
-      "notes": "这组页面是辅助面，优先级低于核心地图/发布/详情闭环。"
+      "evidence": [
+        "2026-06-13 profile iteration branch: Added product and design briefs for turning the profile page into a status panel with next action and recent activity summary.",
+        "2026-06-13 profile iteration branch: Added pages/me/me-state.js to build stats, link summaries, nextAction, and recentActivities from posts, reactions, and user profile state.",
+        "2026-06-13 profile iteration branch: Updated pages/me to show a next-action card and up to two recent activities on the profile home page, while keeping existing profile, feedback, my-posts, and activities flows.",
+        "2026-06-13 profile iteration branch: node --check passed for pages/me/me.js and pages/me/me-state.js.",
+        "2026-06-13 profile iteration branch: node scripts/check-me-state.mjs passed, output: Me state checks passed. Node emitted the existing MODULE_TYPELESS_PACKAGE_JSON warning for ESM files.",
+        "2026-06-13 profile iteration branch: node scripts/check-json.mjs passed, output: Checked 11 JSON files.",
+        "2026-06-13 profile iteration branch: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
+        "2026-06-13 profile iteration branch: git diff --check passed with no output.",
+        "2026-06-13 profile iteration branch: WeChat DevTools local wcc compiled all WXML files with exit code 0.",
+        "2026-06-13 profile iteration branch: WeChat DevTools local wcsc -lc compiled all WXSS files with exit code 0.",
+        "2026-06-13 profile iteration branch: bash harness/init.sh passed; npm install reported up to date, then JSON and harness checks passed."
+      ],
+      "notes": "这组页面是辅助面，优先级低于核心地图/发布/详情闭环。本实验分支已补充个人中心下一步建议和最近动态摘要，但尚未在 WeChat DevTools 中验证登录、补资料、跳转、长文案和窄屏表现，因此不标记 passing。"
     }
   ]
 }
