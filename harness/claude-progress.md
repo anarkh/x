@@ -499,3 +499,15 @@
 - 更新过的文件或工件：`harness/package-readiness-gate-product-brief.md`，`harness/package-readiness-gate-checklist.md`，`package.json`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：AC 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让本地和未来自动化更容易调用现有静态/readiness/preflight 门禁。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；`npm run check` 通过也不能替代真实 UI 证据
 - 下一步最佳动作：提交 AC 组并启动用户评测 agent，评估 AC 相比 AB 是否降低“默认入口存在但调用不统一”的风险；若继续推进，优先恢复 DevTools UI/真机入口，或设计不强制安装的可选 git hook/CI 文档，但避免把本地 blocked evidence 当发布准入
+
+### Session 041AD
+
+- 日期：2026-06-14
+- 分支：`codex/iter-ci-readiness-gate`
+- 本轮目标：第三十组 CI readiness gate 实验，在 AC 组已有 `npm run check` 后，新增最小 GitHub Actions workflow，让 push 和 pull_request 自动运行 JSON、harness、readiness 和 blocked summary preflight 门禁
+- 已完成：产品 agent 新增 `harness/ci-readiness-gate-product-brief.md`，定义 CI 门禁价值、验收和非 UI passed 边界；设计/QA agent 新增 `harness/ci-readiness-gate-checklist.md`，覆盖 workflow 结构、npm check 正向、缺 results/summary passed 负向、清理和报告口径；开发 agent 新增 `.github/workflows/readiness.yml`，在 push/pull_request 上用 Ubuntu、Node 20、`npm ci --ignore-scripts` 和 `npm run check` 执行门禁，并设置 `contents: read` 权限；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`ruby -e 'require "yaml"; YAML.load_file(".github/workflows/readiness.yml"); puts "workflow yaml ok"'`；workflow 结构检查；workflow 单独扫描确认不含 secrets、artifact、local evidence 或 UI passed 口径；`npm run check`；生成 `harness/manual-test-results.local-ad-ci.json` 和 `harness/manual-test-summary.local-ad-ci.md` 后 `npm run check` 应通过；删除对应 results JSON 后 `npm run check` 应失败；重新生成 pair 并把 summary 目标行改成 `passed` 后 `npm run check` 应失败；清理 local JSON/MD
+- 已记录证据：workflow YAML 解析输出 `workflow yaml ok`，结构检查输出 `workflow structure ok`；workflow 中包含 `on: push`、`pull_request`、`permissions: contents: read`、`actions/checkout@v4`、`actions/setup-node@v4`、`npm ci --ignore-scripts` 和 `npm run check`；workflow 单独敏感词扫描无命中；无 local summary 的 `npm run check` 通过并输出 `Preflight is not UI passed evidence...`；正向 local pair 的 `npm run check` 输出 `Checking harness/manual-test-summary.local-ad-ci.md with harness/manual-test-results.local-ad-ci.json.`、`Map-list blocked summary checks passed.` 和 `Map-list blocked summary preflight passed. Checked 1 pair(s).`；缺 results 负向输出 `Missing results JSON for harness/manual-test-summary.local-ad-ci.md; expected harness/manual-test-results.local-ad-ci.json.`；passed 篡改负向输出 `map-list-visual-smoke summary row must not be passed`
+- 更新过的文件或工件：`.github/workflows/readiness.yml`，`harness/ci-readiness-gate-product-brief.md`，`harness/ci-readiness-gate-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AD 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让 `npm run check` 具备未来 push/PR 自动化入口。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；本地未验证 GitHub Actions 在远端仓库真实触发、分支保护或 PR required check 配置
+- 下一步最佳动作：提交 AD 组并启动用户评测 agent，评估 AD 相比 AC 是否降低“本地命令存在但没有自动化门禁”的风险；若继续推进，优先恢复 DevTools UI/真机入口，或改善 readiness 失败输出可读性并避免断言真实 UI 通过
