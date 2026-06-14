@@ -110,9 +110,16 @@ try {
 
   runScript('scripts/prepare-map-list-blocked-evidence.mjs', resultsArgs);
   runScript('scripts/create-manual-summary.mjs', ['--input', resultsOutPath, '--out', summaryOutPath]);
+  runScript('scripts/check-map-list-blocked-summary.mjs', [
+    '--results',
+    resultsOutPath,
+    '--summary',
+    summaryOutPath
+  ]);
 
   console.log('');
   console.log('Created blocked result and sanitized summary.');
+  console.log('Blocked summary guard passed.');
   console.log(`Result: ${projectRelativePath(resultsOutPath)}`);
   console.log(`Summary: ${projectRelativePath(summaryOutPath)}`);
   console.log('Summary is not UI passed evidence; rerun the real map-list visual smoke when DevTools or device access is available.');
