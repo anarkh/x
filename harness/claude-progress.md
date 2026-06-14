@@ -247,3 +247,15 @@
 - 更新过的文件或工件：`harness/devtools-readiness-product-brief.md`，`harness/devtools-readiness-checklist.md`，`scripts/check-devtools-readiness.mjs`
 - 已知风险或未解决问题：H 组不新增功能，也不代表已经完成 WeChat DevTools/真机手测；真实定位授权、键盘/安全区、图片上传、发布后详情跳转、信任动作刷新、评论入口、跨用户和云端路径仍必须按清单执行并记录证据
 - 下一步最佳动作：启动用户评测 agent 评估 H 组相对 G 组的价值；若继续推进，优先在 WeChat DevTools UI 打开 `/tmp/street-tasks-iter-worktrees/devtools-readiness`，按 readiness 清单执行完整手测并把结果写回 harness
+
+### Session 020I
+
+- 日期：2026-06-14
+- 分支：`codex/iter-manual-evidence-gate`
+- 本轮目标：第九组手测证据完整性实验，为 H 组 readiness 后续真实手测补充机器可读结果模板和校验脚本，防止“已通过”缺少环境、步骤、实际结果和证据
+- 已完成：产品 agent 输出 `harness/manual-evidence-product-brief.md`，定义 `passed`、`failed`、`blocked`、`not_covered` 状态和发布准入影响；QA/数据 agent 输出 `harness/manual-test-results.example.json`，提供不声称真实通过的手测结果示例；开发 agent 新增 `scripts/check-manual-evidence.mjs`，校验顶层环境、journey 字段、状态枚举和不同状态的证据要求
+- 运行过的验证：`node --check scripts/check-manual-evidence.mjs`；`node scripts/check-manual-evidence.mjs`；`node -e` 解析 `harness/manual-test-results.example.json`；`git diff --check`；用 `/tmp/manual-evidence-bad.json` 临时坏样例验证缺 evidence 的 `passed` 会失败
+- 已记录证据：`node scripts/check-manual-evidence.mjs` 输出 `Manual evidence checks passed.`；JSON 解析输出 `manual evidence example JSON parsed`；坏样例检查输出 `Bad passed evidence rejected as expected.`
+- 更新过的文件或工件：`harness/manual-evidence-product-brief.md`，`harness/manual-test-results.example.json`，`scripts/check-manual-evidence.mjs`
+- 已知风险或未解决问题：I 组仍不代表已经完成真实 WeChat DevTools/真机手测；示例 JSON 只覆盖 `not_covered` 和 `blocked` 写法，没有真实 `passed` 证据；后续若填真实结果，必须附可复核截图、录屏、日志、任务 id 或云端记录
+- 下一步最佳动作：运行完整候选验证并提交 I 组；随后启动用户评测 agent，评估 I 组相对 H 组是否进一步降低“手测口头通过但证据不足”的风险
