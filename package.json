@@ -4,6 +4,10 @@
   "private": true,
   "description": "WeChat mini program for short-lived neighborhood tasks.",
   "scripts": {
-    "check:json": "node scripts/check-json.mjs"
+    "check": "npm run check:json && npm run check:harness && npm run check:readiness",
+    "check:blocked-summary": "node scripts/check-map-list-blocked-summary-preflight.mjs",
+    "check:harness": "node harness/check-harness.mjs",
+    "check:json": "node scripts/check-json.mjs",
+    "check:readiness": "node --no-warnings scripts/check-devtools-readiness.mjs"
   }
 }
