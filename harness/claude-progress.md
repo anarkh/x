@@ -295,3 +295,15 @@
 - 更新过的文件或工件：`.gitignore`，`harness/sanitized-summary-product-brief.md`，`harness/sanitized-summary-checklist.md`，`scripts/check-evidence-hygiene.mjs`，`scripts/create-manual-summary.mjs`
 - 已知风险或未解决问题：L 组仍不代表真实 DevTools/真机手测已经完成；摘要草稿来自本地 JSON，不能把 example、mock、占位或自动脚本结果包装成真实 evidence；local Markdown 草稿保持 ignored，若要写入可提交报告仍需人工脱敏复核
 - 下一步最佳动作：运行完整候选验证并提交 L 组；随后启动用户评测 agent，评估 L 组是否进一步降低“本地证据可读性不足或摘要误泄漏”的风险
+
+### Session 024M
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-smoke-unblock`
+- 本轮目标：第十三组 DevTools smoke access unblock 实验，把真实 WeChat DevTools smoke 的 CLI/服务端口阻塞变成可重复诊断和明确 blocked 记录，避免继续把 harness 完整度误读成真实用户旅程通过
+- 已完成：产品 agent 输出 `harness/devtools-smoke-product-brief.md`，明确 M 组从扩展 harness 转向真实 smoke access 排查；QA agent 输出 `harness/devtools-smoke-checklist.md`，覆盖端口/进程/CLI/blocked 字段和端口恢复后的最小 smoke 旅程；开发 agent 新增 `scripts/check-devtools-smoke-access.mjs`，默认无副作用检查项目、DevTools CLI、服务端口监听和 `ide-http-port` 进程声明，可选 `--attempt-open` 捕获 CLI open 结果，默认 blocked exit 0，`--strict` 时 blocked exit 1，并对输出中的本机路径和凭证模式做脱敏
+- 运行过的验证：`node --check scripts/check-devtools-smoke-access.mjs`；`node scripts/check-devtools-smoke-access.mjs --project /tmp/street-tasks-iter-worktrees/devtools-smoke --port 9420`；`node scripts/check-devtools-smoke-access.mjs --project /tmp/street-tasks-iter-worktrees/devtools-smoke --port 9420 --strict` 验证 blocked 会 exit 1；`node scripts/check-devtools-smoke-access.mjs --project /tmp/street-tasks-iter-worktrees/devtools-smoke --port 9420 --attempt-open --timeout-ms 12000`；对 attempt-open 输出运行路径泄漏扫描，确认没有 `/Users/`、`/private/tmp` 或 `/tmp/street-tasks`；手动复现 `curl http://127.0.0.1:9420/` connection refused、`cli open --project ... --port 9420` 12s timeout、进程列表中存在 1 个声明 `--ide-http-port 9420` 的 DevTools-like 进程
+- 已记录证据：默认诊断报告输出 `status: blocked`，项目和 CLI 可用，但 `service port 9420: no (127.0.0.1: ECONNREFUSED; ::1: ECONNREFUSED)`，`ide-http-port process: yes (1 matching declaration(s), 1 DevTools-like)`；strict 模式输出同样 blocked 报告且 exit 1；attempt-open 输出 `attempt-open: no (timed out)`、`signal: SIGTERM`、stderr 摘要包含 `IDE may already started at port 9420, trying to connect`；脱敏检查输出 `DevTools smoke report redaction check passed.`
+- 更新过的文件或工件：`harness/devtools-smoke-product-brief.md`，`harness/devtools-smoke-checklist.md`，`scripts/check-devtools-smoke-access.mjs`
+- 已知风险或未解决问题：M 组仍未完成真实 DevTools/真机 smoke；当前环境显示 DevTools 进程声明 9420 但端口未监听，CLI open 只能进入 timeout；下一步需要有 UI 权限的执行者确认 DevTools 安全设置服务端口、正常退出重启 IDE 或换端口/换机，再执行 L/K 的真实 smoke runbook
+- 下一步最佳动作：运行完整候选验证并提交 M 组；随后启动用户评测 agent，评估 M 组是否比 L 更接近真实手测入口恢复，若端口仍 blocked，下轮应优先进行人工 DevTools UI 服务端口恢复而不是继续新增文档
