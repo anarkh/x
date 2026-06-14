@@ -128,6 +128,8 @@ try {
   console.log(`Summary: ${summaryRelativePath}`);
   console.log('Post-edit rerun guard: if either local file is edited after this point, rerun:');
   console.log(rerunGuardCommand);
+  console.log('Review preflight: before citing local blocked summaries, run:');
+  console.log('node scripts/check-map-list-blocked-summary-preflight.mjs');
   console.log('Summary is not UI passed evidence; rerun the real map-list visual smoke when DevTools or device access is available.');
 } catch (error) {
   console.error(error.message);
