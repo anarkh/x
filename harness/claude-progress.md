@@ -307,3 +307,15 @@
 - 更新过的文件或工件：`harness/devtools-smoke-product-brief.md`，`harness/devtools-smoke-checklist.md`，`scripts/check-devtools-smoke-access.mjs`
 - 已知风险或未解决问题：M 组仍未完成真实 DevTools/真机 smoke；当前环境显示 DevTools 进程声明 9420 但端口未监听，CLI open 只能进入 timeout；下一步需要有 UI 权限的执行者确认 DevTools 安全设置服务端口、正常退出重启 IDE 或换端口/换机，再执行 L/K 的真实 smoke runbook
 - 下一步最佳动作：运行完整候选验证并提交 M 组；随后启动用户评测 agent，评估 M 组是否比 L 更接近真实手测入口恢复，若端口仍 blocked，下轮应优先进行人工 DevTools UI 服务端口恢复而不是继续新增文档
+
+### Session 025N
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-service-recovery`
+- 本轮目标：第十四组 DevTools service port 受控恢复实验，在 M 组诊断基础上尝试显式 quit/reopen 恢复 9420 服务端口，并记录恢复成功或继续 blocked 的证据
+- 已完成：产品 agent 输出 `harness/devtools-service-recovery-product-brief.md`，定义受控恢复边界和避免误判口径；QA agent 输出 `harness/devtools-service-recovery-checklist.md`，覆盖恢复前检查、退出/重启风险、恢复命令、ready/blocked 判定和最小 smoke；开发 agent 新增 `scripts/recover-devtools-service-port.mjs`，默认 dry-run，只在显式 `--quit-reopen` 且非 `--dry-run` 时执行 DevTools CLI `quit`、等待、`open --project <repo> --port 9420 --disable-gpu`，并用 M 组 access 检查做 before/after 对比
+- 运行过的验证：`node --check scripts/recover-devtools-service-port.mjs`；默认 dry-run 报告 before/after 均为 blocked 且跳过 quit/open；`--dry-run --quit-reopen` 确认仍跳过 quit/open；`--strict` blocked 路径 exit 1；执行 `node scripts/recover-devtools-service-port.mjs --project /tmp/street-tasks-iter-worktrees/devtools-recovery --port 9420 --timeout-ms 20000 --quit-reopen` 做受控恢复尝试；恢复后运行 `node scripts/check-devtools-smoke-access.mjs --project /tmp/street-tasks-iter-worktrees/devtools-recovery --port 9420 --strict`；恢复报告路径脱敏扫描确认没有 `/Users/`、`/private/tmp` 或 `/tmp/street-tasks`；检查 9420 仍无监听，进程列表仍有 1 个声明 `--ide-http-port 9420` 的 DevTools-like 进程；补跑 `node scripts/check-json.mjs`、`node harness/check-harness.mjs`、`bash harness/init.sh`、`git diff --check`、`node --no-warnings scripts/check-devtools-readiness.mjs`、`node scripts/check-manual-evidence.mjs`、`node scripts/check-evidence-hygiene.mjs`、`node --check scripts/check-devtools-smoke-access.mjs`、微信开发者工具内置 `wcc` 全量编译 WXML、微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：受控恢复报告显示 before 为 blocked；`DevTools quit` timed out，`signal: SIGTERM`，stderr 摘要包含 `IDE may already started at port 9420, trying to connect`；等待 1200ms 后 `DevTools open` 同样 timed out；after 仍为 blocked，`service port 9420: no (127.0.0.1: ECONNREFUSED; ::1: ECONNREFUSED)`；strict after check exit 1 并输出 `After recovery still blocked as expected.`；恢复报告脱敏检查输出 `Recovery report redaction check passed.`；JSON 检查输出 `Checked 11 JSON files.`；harness 自检输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通；readiness 检查输出 `Publish flow checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`DevTools readiness checks passed.`；manual evidence 和 evidence hygiene 分别输出通过；`git diff --check` 通过；`wcc`/`wcsc -lc` 编译退出码为 0
+- 更新过的文件或工件：`harness/devtools-service-recovery-product-brief.md`，`harness/devtools-service-recovery-checklist.md`，`scripts/recover-devtools-service-port.mjs`
+- 已知风险或未解决问题：N 组未恢复 9420 服务端口，真实 DevTools/真机 smoke 仍未执行；CLI quit/open 均因 IDE 端口连接问题超时，下一步需要人工操作 DevTools UI 安全设置、正常退出重启或换机/换端口验证
+- 下一步最佳动作：提交 N 组并启动用户评测 agent，评估 N 组是否推动了阻塞收敛。若继续推进，应由有 UI 权限的执行者手动恢复 DevTools 服务端口，而不是继续用 CLI 反复 quit/open
