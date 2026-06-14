@@ -271,3 +271,15 @@
 - 更新过的文件或工件：`.gitignore`，`harness/evidence-hygiene-product-brief.md`，`harness/evidence-redaction-checklist.md`，`scripts/check-evidence-hygiene.mjs`
 - 已知风险或未解决问题：J 组不代表真实 DevTools/真机手测或真实脱敏审查已经完成；它只保护 future 手测证据提交边界。真实附件仍应保存在本地或受控系统，提交前还需按清单人工复核
 - 下一步最佳动作：运行完整候选验证并提交 J 组；随后启动用户评测 agent，评估 J 组是否进一步降低“完整证据但含敏感原始材料”的风险
+
+### Session 022K
+
+- 日期：2026-06-14
+- 分支：`codex/iter-manual-runbook`
+- 本轮目标：第十一组手测运行手册实验，为 J 组证据卫生链路补充可执行入口，帮助后续执行者准备 ignored local 结果文件、确认 worktree、运行前置门禁和收尾门禁
+- 已完成：产品 agent 输出 `harness/manual-runbook-product-brief.md`，定义 helper 目标、非目标、本地文件命名和 H/I/J/K 分工；QA agent 输出 `harness/manual-runbook-checklist.md`，覆盖准备、执行、收尾和常见失败修复；开发 agent 新增 `scripts/prepare-manual-test-run.mjs`，从 example 生成 ignored local 结果文件、创建 ignored 附件目录、运行 readiness/manual evidence/evidence hygiene 三层门禁并打印下一步；主线程补充输出路径 guard，只允许 `harness/manual-test-results.local*.json`
+- 运行过的验证：`node --check scripts/prepare-manual-test-run.mjs`；`node scripts/prepare-manual-test-run.mjs --out harness/manual-test-results.local-smoke.json`；`node scripts/prepare-manual-test-run.mjs --out harness/not-local-test-results.json` 验证非 ignored 路径会失败；重复运行 local smoke 验证默认拒绝覆盖；解析生成的 local smoke JSON，确认 `branch=codex/iter-manual-runbook`、`summary.overallStatus=not_covered`、`passed` journey 数量为 0；清理临时 ignored 产物
+- 已记录证据：helper 正向运行输出 readiness、manual evidence、evidence hygiene 三层门禁均通过并输出 `Manual test run prepared.`；非 ignored 输出路径失败并提示必须匹配 `harness/manual-test-results.local*.json`；重复运行失败并提示 `Refusing to overwrite existing output file`；local smoke 解析输出 `local smoke result prepared for codex/iter-manual-runbook@4aff484; passed journeys: 0`
+- 更新过的文件或工件：`harness/manual-runbook-product-brief.md`，`harness/manual-runbook-checklist.md`，`scripts/prepare-manual-test-run.mjs`
+- 已知风险或未解决问题：K 组仍不代表真实 DevTools/真机手测已经完成；helper 只准备本地结果文件和命令入口，不收集真实截图/录屏/日志，也不替执行者判断 passed；后续仍需真实手测、填写 local JSON，并通过 I/J 门禁和人工脱敏复核
+- 下一步最佳动作：运行完整候选验证并提交 K 组；随后启动用户评测 agent，评估 K 组是否进一步降低“准备手测时漏跑门禁或误改 example”的风险
