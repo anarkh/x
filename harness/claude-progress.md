@@ -379,3 +379,15 @@
 - 更新过的文件或工件：`harness/map-list-visual-evidence-product-brief.md`，`harness/map-list-visual-evidence-checklist.md`，`harness/manual-test-results.example.json`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：S 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让真实视觉 smoke 有固定证据结构。地图列表长标题、长正文、图片加载、safe area、原生地图层、列表滚动、marker/list/detail 链路仍未在 DevTools 或真机中验证
 - 下一步最佳动作：提交 S 组并启动用户评测 agent，评估 S 相比 R 是否更接近真实视觉证据闭环；若继续推进，优先执行或恢复真实 DevTools UI/真机 smoke，而不是把模板和清单当作视觉通过
+
+### Session 031T
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-evidence-gate`
+- 本轮目标：第二十组地图列表视觉证据必备 journey 门禁实验，在 S 组已新增 `map-list-visual-smoke` 后，防止该证据槽位未来被删除或重复而仍通过手测证据校验
+- 已完成：产品 agent 新增 `harness/map-list-evidence-gate-product-brief.md`，定义 `map-list-visual-smoke` 从文档约定升级为必备 journey gate 的价值和边界；QA agent 新增 `harness/map-list-evidence-gate-checklist.md`，覆盖正向模板、缺 journey、重复 journey、关键字段、错误状态、blocked/passed 边界、local helper 和证据卫生；开发 agent 更新 `scripts/check-manual-evidence.mjs`，要求 manual evidence JSON 中恰好包含一条 `map-list-visual-smoke` journey；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-manual-evidence.mjs`；`node scripts/check-manual-evidence.mjs`；缺失 `map-list-visual-smoke` 的 `/tmp` 坏样例检查应失败；重复 `map-list-visual-smoke` 的 `/tmp` 坏样例检查应失败；`node scripts/prepare-manual-test-run.mjs --out harness/manual-test-results.local-t-smoke.json --force`；`node scripts/check-manual-evidence.mjs harness/manual-test-results.local-t-smoke.json`；解析 local JSON 确认 `map-list-visual-smoke=not_covered`、`passed=0`、`evidence=0`；`node scripts/check-evidence-hygiene.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；检查未写入错误日期；清理 local smoke 和 `/tmp` 坏样例
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-evidence-gate`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-evidence-gate`；当前分支为 `codex/iter-map-list-evidence-gate`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；manual evidence 正向检查输出 `Manual evidence checks passed.`；缺失坏样例输出 `Missing required journey id: map-list-visual-smoke`；重复坏样例输出 `Expected exactly one required journey id: map-list-visual-smoke; found 2.`；helper local JSON 解析保持 `map-list-visual-smoke=not_covered passed=0 evidence=0`；evidence hygiene、readiness 和 `git diff --check` 均通过
+- 更新过的文件或工件：`harness/map-list-evidence-gate-product-brief.md`，`harness/map-list-evidence-gate-checklist.md`，`scripts/check-manual-evidence.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：T 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只守护 S 组新增的手测证据槽位。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed
+- 下一步最佳动作：提交 T 组并启动用户评测 agent，评估 T 相比 S 是否降低“证据结构未来被误删”的风险；若继续推进，优先执行真实 DevTools UI/真机 smoke 或将 blocked 结果按 T/S 结构写入 local evidence

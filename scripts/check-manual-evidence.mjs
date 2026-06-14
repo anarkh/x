@@ -11,6 +11,7 @@ const resultsPath = process.argv[2]
   : defaultResultsPath;
 
 const allowedStatuses = new Set(['passed', 'failed', 'blocked', 'not_covered']);
+const requiredJourneyIds = ['map-list-visual-smoke'];
 const requiredTopLevelFields = [
   'schemaVersion',
   'branch',
@@ -151,6 +152,29 @@ function validateEnvironment(environment, errors) {
   }
 }
 
+function validateRequiredJourneys(journeys, errors) {
+  const journeyIdCounts = new Map();
+
+  journeys
+    .filter((journey) => isPlainObject(journey) && isNonEmpty(journey.id))
+    .forEach((journey) => {
+      journeyIdCounts.set(journey.id, (journeyIdCounts.get(journey.id) || 0) + 1);
+    });
+
+  for (const requiredJourneyId of requiredJourneyIds) {
+    const count = journeyIdCounts.get(requiredJourneyId) || 0;
+
+    if (count === 0) {
+      errors.push(`Missing required journey id: ${requiredJourneyId}`);
+      continue;
+    }
+
+    if (count > 1) {
+      errors.push(`Expected exactly one required journey id: ${requiredJourneyId}; found ${count}.`);
+    }
+  }
+}
+
 function validateJourney(journey, index, environment, errors) {
   const label = isPlainObject(journey) && isNonEmpty(journey.id)
     ? `journey ${journey.id}`
@@ -222,6 +246,8 @@ if (!isPlainObject(results)) {
   validateEnvironment(results.environment, errors);
 
   if (Array.isArray(results.journeys)) {
+    validateRequiredJourneys(results.journeys, errors);
+
     results.journeys.forEach((journey, index) => {
       validateJourney(journey, index, results.environment, errors);
     });
