@@ -6,6 +6,7 @@ const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const requiredGitignorePatterns = [
   'harness/manual-test-results.local*.json',
+  'harness/manual-test-summary.local*.md',
   'harness/manual-evidence-artifacts/'
 ];
 
@@ -13,7 +14,9 @@ const evidenceFiles = [
   { path: 'harness/manual-test-results.example.json', required: true, json: true },
   { path: 'harness/manual-evidence-product-brief.md', required: false },
   { path: 'harness/evidence-hygiene-product-brief.md', required: false },
-  { path: 'harness/evidence-redaction-checklist.md', required: false }
+  { path: 'harness/evidence-redaction-checklist.md', required: false },
+  { path: 'harness/sanitized-summary-product-brief.md', required: false },
+  { path: 'harness/sanitized-summary-checklist.md', required: false }
 ];
 
 const sensitivePatterns = [
