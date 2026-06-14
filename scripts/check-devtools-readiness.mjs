@@ -11,6 +11,7 @@ const requiredFiles = [
   'harness/check-trust-insight.mjs',
   'scripts/check-candidate-flow.mjs',
   'scripts/check-map-list-resilience.mjs',
+  'scripts/check-map-list-blocked-summary-preflight.mjs',
   'harness/devtools-readiness-product-brief.md',
   'harness/devtools-readiness-checklist.md',
   'harness/map-list-resilience-product-brief.md',
@@ -87,5 +88,8 @@ runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 console.log('Running map list static layout regression guard. This static WXML/WXSS check does not prove DevTools or real-device visual acceptance.');
 runCheck('scripts/check-map-list-resilience.mjs', 'map list static layout regression guard');
 console.log('Map list static layout regression guard passed; DevTools and real-device visual acceptance are still required.');
+console.log('Running blocked summary preflight. This preflight does not prove DevTools or real-device UI passed.');
+runCheck('scripts/check-map-list-blocked-summary-preflight.mjs', 'blocked summary preflight');
+console.log('Blocked summary preflight passed; DevTools and real-device UI acceptance are still required.');
 
 console.log('DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.');
