@@ -235,3 +235,15 @@
 - 已记录证据：`node harness/check-trust-insight.mjs` 先因旧文案按预期失败，补实现后输出 `Trust insight checks passed.`；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出
 - 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证 TrustInsight 面板密度、信任动作点击刷新和云端评论路径
 - 下一步最佳动作：跑完整自动验证后，优先做 DevTools 手测以决定是否将 C 组合入主线
+
+### Session 019H
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-readiness`
+- 本轮目标：第八组 DevTools/真机手测准入实验，为 G/F 候选补齐产品准入、手测清单和自动前置门禁，避免把脚本结果误判为真实用户旅程通过
+- 已完成：产品 agent 输出 `harness/devtools-readiness-product-brief.md`，明确 H 组目标、非目标、自动检查门槛、必测用户旅程、证据升级规则和阻塞记录口径；设计/QA agent 输出 `harness/devtools-readiness-checklist.md`，覆盖测试环境记录、DevTools 编译/控制台、地图、发布、详情、跨用户和云端路径的待执行手测清单；开发 agent 新增 `scripts/check-devtools-readiness.mjs`，检查 readiness 文档和既有候选脚本齐备，并串联发布、TrustInsight、候选 flow 检查
+- 运行过的验证：`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`bash harness/init.sh`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `Publish flow checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`DevTools readiness checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通；`git diff --check` 通过；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出
+- 更新过的文件或工件：`harness/devtools-readiness-product-brief.md`，`harness/devtools-readiness-checklist.md`，`scripts/check-devtools-readiness.mjs`
+- 已知风险或未解决问题：H 组不新增功能，也不代表已经完成 WeChat DevTools/真机手测；真实定位授权、键盘/安全区、图片上传、发布后详情跳转、信任动作刷新、评论入口、跨用户和云端路径仍必须按清单执行并记录证据
+- 下一步最佳动作：启动用户评测 agent 评估 H 组相对 G 组的价值；若继续推进，优先在 WeChat DevTools UI 打开 `/tmp/street-tasks-iter-worktrees/devtools-readiness`，按 readiness 清单执行完整手测并把结果写回 harness
