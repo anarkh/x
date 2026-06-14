@@ -319,3 +319,15 @@
 - 更新过的文件或工件：`harness/devtools-service-recovery-product-brief.md`，`harness/devtools-service-recovery-checklist.md`，`scripts/recover-devtools-service-port.mjs`
 - 已知风险或未解决问题：N 组未恢复 9420 服务端口，真实 DevTools/真机 smoke 仍未执行；CLI quit/open 均因 IDE 端口连接问题超时，下一步需要人工操作 DevTools UI 安全设置、正常退出重启或换机/换端口验证
 - 下一步最佳动作：提交 N 组并启动用户评测 agent，评估 N 组是否推动了阻塞收敛。若继续推进，应由有 UI 权限的执行者手动恢复 DevTools 服务端口，而不是继续用 CLI 反复 quit/open
+
+### Session 026O
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-port-forensics`
+- 本轮目标：第十五组 DevTools port forensics 只读排查实验，在 M/N 组 9420 blocked 结论之后固化只读观察项、脱敏字段、ready/blocked/unknown 判定、人工 UI 恢复建议和更细的端口状态诊断
+- 已完成：产品 agent 新增 `harness/devtools-port-forensics-product-brief.md`，明确 O 组不是产品功能、真实 smoke 或端口恢复，只解释 DevTools 环境 blocker；QA/设计 agent 新增 `harness/devtools-port-forensics-checklist.md`，覆盖准备/基线、只读进程与端口检查、DevTools app/CLI 版本与路径摘要、多实例识别、声明 `ide-http-port` 但无监听的记录口径、blocked 字段、状态判定、脱敏规则和后续人工 UI 恢复建议；开发 agent 新增 `scripts/inspect-devtools-port-state.mjs`，只读汇总 project config、DevTools CLI、app bundle Info.plist、`lsof`、socket connect 和进程声明，不执行 quit/open/kill/清缓存/写配置
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/inspect-devtools-port-state.mjs`；`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-forensics --port 9420`；`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-forensics --port 9420 --strict`；`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-forensics --port 1 --strict`；对默认报告运行路径和 token 脱敏扫描
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/devtools-forensics`，对应约定 `/tmp/street-tasks-iter-worktrees/devtools-forensics`；当前分支为 `codex/iter-devtools-port-forensics`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；默认 forensics 报告输出 `status: blocked`、`diagnosis: declared_without_listener, connect_refused`，DevTools CLI 和 app bundle 可用，版本为 `2.01.2510290` / `4240.111`，`lsof` 无监听，IPv4/IPv6 均 `ECONNREFUSED`，22 个 DevTools-like 相关进程中 1 个声明 requested port；strict 模式对 9420 blocked exit 1；`--port 1 --strict` 输出 `status: unknown` 并 exit 1；脱敏扫描未发现 `/Users/`、`/private/tmp`、`/tmp/street-tasks`、Bearer、cookie 或 token 片段
+- 更新过的文件或工件：`harness/devtools-port-forensics-product-brief.md`，`harness/devtools-port-forensics-checklist.md`，`scripts/inspect-devtools-port-state.mjs`，`harness/claude-progress.md`
+- 已知风险或未解决问题：O 组没有退出 DevTools、打开/重启项目、杀进程、清缓存、写用户配置或执行真实 DevTools/真机 smoke；本轮也不证明 9420 已恢复。真实端口恢复和产品旅程仍需有 UI 权限的执行者后续操作并记录脱敏证据
+- 下一步最佳动作：由有本机 UI 权限的执行者按清单先做只读端口观察；若端口仍 blocked，走人工 UI 安全设置、正常退出重开、换端口或换机；若端口 access ready，再按已有手测 runbook 执行真实 DevTools UI/真机 smoke
