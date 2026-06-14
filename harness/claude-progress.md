@@ -213,6 +213,18 @@
 - 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证发布定位授权、键盘安全区、图片上传失败回滚、发布后详情跳转；尚未验证详情页 TrustInsight 窄屏、评论入口、信任动作刷新和云端评论路径；DevTools CLI 9420 端口超时问题未在本组合分支重新尝试
 - 下一步最佳动作：启动用户评测 agent 对 F 组组合候选评分；随后在 WeChat DevTools UI 中优先手测 F 组发布闭环，再手测详情 TrustInsight
 
+### Session 018G
+
+- 日期：2026-06-14
+- 分支：`codex/iter-candidate-hardening`
+- 本轮目标：第七组候选硬化实验，为 F 组组合候选补充产品风险排序、视觉手测清单和跨页面 smoke 检查
+- 已完成：产品 agent 输出 `harness/hardening-product-brief.md`，明确发布闭环、位置确认、详情信任解释和边界状态是最高风险；设计 agent 输出 `harness/hardening-design-checklist.md`，覆盖发布准备度、定位卡片、底部按钮、TrustInsight、评论入口、信任动作、窄屏、键盘、安全区和图片状态；开发 agent 新增 `scripts/check-candidate-flow.mjs`，用纯逻辑同时覆盖发布 `primaryAction` 状态机和 TrustInsight 谨慎文案
+- 运行过的验证：`node --check scripts/check-candidate-flow.mjs`；`node scripts/check-candidate-flow.mjs`
+- 已记录证据：`node scripts/check-candidate-flow.mjs` 输出 `Candidate flow checks passed.`，同时出现项目既有的 `MODULE_TYPELESS_PACKAGE_JSON` ESM 警告
+- 更新过的文件或工件：`harness/hardening-product-brief.md`，`harness/hardening-design-checklist.md`，`scripts/check-candidate-flow.mjs`
+- 已知风险或未解决问题：本轮不改功能代码，仍未完成 WeChat DevTools/真机真实发布闭环、图片上传、定位授权、详情信任动作刷新、评论入口和云端路径验证
+- 下一步最佳动作：运行完整候选验证命令并提交 G 组硬化；随后更新用户评测报告，记录 G 组不是新功能合入候选，而是降低 F 组手测风险的验证增强
+
 ### Session 015C
 
 - 日期：2026-06-12
