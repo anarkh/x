@@ -331,3 +331,15 @@
 - 更新过的文件或工件：`harness/devtools-port-forensics-product-brief.md`，`harness/devtools-port-forensics-checklist.md`，`scripts/inspect-devtools-port-state.mjs`，`harness/claude-progress.md`
 - 已知风险或未解决问题：O 组没有退出 DevTools、打开/重启项目、杀进程、清缓存、写用户配置或执行真实 DevTools/真机 smoke；本轮也不证明 9420 已恢复。真实端口恢复和产品旅程仍需有 UI 权限的执行者后续操作并记录脱敏证据
 - 下一步最佳动作：由有本机 UI 权限的执行者按清单先做只读端口观察；若端口仍 blocked，走人工 UI 安全设置、正常退出重开、换端口或换机；若端口 access ready，再按已有手测 runbook 执行真实 DevTools UI/真机 smoke
+
+### Session 027P
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-resilience`
+- 本轮目标：第十六组地图列表 UX resilience 静态防回归实验，在 DevTools 端口 blocked 的情况下先守住地图列表卡片结构和关键 WXSS 约束，降低长标题、长正文、带图和底部统计挤压风险
+- 已完成：产品 agent 新增 `harness/map-list-resilience-product-brief.md`，定义地图列表抽屉和任务卡的静态防回归价值、非目标、关键 UX 风险、成功标准和真机/DevTools 未验证边界；设计/QA agent 新增 `harness/map-list-resilience-checklist.md`，区分可脚本检查项和必须人工确认项，覆盖长标题、长正文、长地点、带图/无图、过期/已解决、多标签、底部统计和详情入口；开发 agent 新增 `scripts/check-map-list-resilience.mjs`，检查 `pages/map/map.wxml` 和 `pages/map/map.wxss` 中抽屉、列表、卡片、标题/标签、正文、footer、图片和详情按钮的结构/样式 guard
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-map-list-resilience.mjs`；`node scripts/check-map-list-resilience.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-resilience`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-resilience`；当前分支为 `codex/iter-map-list-resilience`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；map list resilience 脚本输出 `Map list resilience checks passed.`；`git diff --check` 通过；`wcc`/`wcsc -lc` 编译退出码为 0
+- 更新过的文件或工件：`harness/map-list-resilience-product-brief.md`，`harness/map-list-resilience-checklist.md`，`scripts/check-map-list-resilience.mjs`，`harness/claude-progress.md`
+- 已知风险或未解决问题：P 组不代表地图列表视觉已通过；它只证明当前 WXML/WXSS 保留了关键结构和防挤压约束。DevTools service port 9420 仍 blocked，真机/DevTools 中长标题、长正文、图片加载、safe area、地图原生层和详情点击仍未验证
+- 下一步最佳动作：提交 P 组并启动用户评测 agent；端口恢复后按 P 组 checklist 做地图列表真实视觉 smoke，补充窄屏/常见宽度/真机截图或录屏证据
