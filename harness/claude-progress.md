@@ -367,3 +367,15 @@
 - 更新过的文件或工件：`harness/manual-preflight-alignment-product-brief.md`，`harness/manual-preflight-alignment-checklist.md`，`scripts/prepare-manual-test-run.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：R 组没有修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让手测准备入口更清楚地运行并展示 Q readiness。地图列表真实渲染、长内容视觉、图片加载、safe area、地图原生层、列表滚动和详情入口点击仍需 DevTools 或真机证据
 - 下一步最佳动作：提交 R 组并启动用户评测 agent，评估 R 相比 Q 是否更贴近真实手测执行入口；若继续推进，优先围绕 9420 blocked 的人工 UI 恢复或真实视觉 smoke 证据闭环，而不是继续把 static gate 当作 UI 通过
+
+### Session 030S
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-visual-evidence`
+- 本轮目标：第十九组地图列表真实视觉证据结构实验，在 P/Q/R 已经补齐 static guard、readiness 集成和手测准备提示后，为地图列表真实视觉 smoke 增加固定记录入口
+- 已完成：产品 agent 新增 `harness/map-list-visual-evidence-product-brief.md`，定义长标题、长正文、带图/无图、安全区、原生地图层、列表滚动和详情链路的证据槽位与通过/阻塞口径；QA agent 新增 `harness/map-list-visual-evidence-checklist.md`，覆盖环境记录、视觉项、交互项、数据变体、失败/blocked 记录、证据卫生和收尾验证；开发 agent 在 `harness/manual-test-results.example.json` 新增 `map-list-visual-smoke` journey，并保持 `status: not_covered` 和空 evidence，避免把未执行的 DevTools/真机观察写成通过；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node scripts/check-json.mjs`；`node scripts/check-manual-evidence.mjs`；`node scripts/prepare-manual-test-run.mjs --out harness/manual-test-results.local-s-smoke.json --force`；`node scripts/check-manual-evidence.mjs harness/manual-test-results.local-s-smoke.json`；`node scripts/check-evidence-hygiene.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node harness/check-harness.mjs`；`git diff --check`；检查未写入错误日期；清理 local smoke 文件
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-visual-evidence`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-visual-evidence`；当前分支为 `codex/iter-map-list-visual-evidence`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；manual evidence 检查输出 `Manual evidence checks passed.`；helper smoke 输出 readiness、map list static guard、manual evidence 和 evidence hygiene 均通过，并生成只含未覆盖/占位结果的 ignored local JSON；`map-list-visual-smoke` journey 在 example 和 local smoke 中保持 `not_covered` 且没有 passed evidence；`git diff --check` 通过
+- 更新过的文件或工件：`harness/map-list-visual-evidence-product-brief.md`，`harness/map-list-visual-evidence-checklist.md`，`harness/manual-test-results.example.json`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：S 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让真实视觉 smoke 有固定证据结构。地图列表长标题、长正文、图片加载、safe area、原生地图层、列表滚动、marker/list/detail 链路仍未在 DevTools 或真机中验证
+- 下一步最佳动作：提交 S 组并启动用户评测 agent，评估 S 相比 R 是否更接近真实视觉证据闭环；若继续推进，优先执行或恢复真实 DevTools UI/真机 smoke，而不是把模板和清单当作视觉通过

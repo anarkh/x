@@ -64,6 +64,33 @@
       "followUp": "Run this journey in DevTools and at least one narrow device profile, then record the exact post id used."
     },
     {
+      "id": "map-list-visual-smoke",
+      "title": "地图信息列表真实视觉 smoke",
+      "status": "not_covered",
+      "steps": [
+        "Open the project in WeChat DevTools or on a real device using the tested branch and commit.",
+        "Compile the mini program and open the map tab with seeded or real posts that include long titles, long body text, image and no-image variants.",
+        "Open the map information list, scroll through several task cards, and observe the top, middle, and bottom of the drawer.",
+        "Tap a visible map marker, then tap a list card detail entry and wait for the matching detail page to render.",
+        "Repeat the visual check on at least one narrow simulator or real-device profile with safe area enabled."
+      ],
+      "expected": [
+        "Long titles, long body text, category/status tags, counts, time, distance, and the detail affordance remain readable without overlap or unexpected clipping.",
+        "Image and no-image cards keep stable spacing, and thumbnails do not push footer metadata out of view.",
+        "The list drawer respects safe area and tabBar boundaries, remains scrollable, and is not obscured by the native map layer.",
+        "Marker selection, list selection, and detail navigation point to the same task content.",
+        "Any native map timeout, cover-view layering issue, or safe-area problem is recorded as observed behavior rather than inferred from static checks."
+      ],
+      "actual": "Not covered in this example. Replace with observed visual behavior for long-title, long-body, image, no-image, safe-area, native-map-layer, scroll, marker/list, and detail-link checks.",
+      "evidence": [],
+      "risks": [
+        "Static WXML/WXSS guards cannot prove native map layering, cover-view rendering, image loading, or safe-area behavior.",
+        "Long content and image variants may only reveal clipping or overlap on specific simulator widths or real devices.",
+        "Marker, list, and detail data can diverge if local-first posts and CloudBase lookup fallback regress."
+      ],
+      "followUp": "Run this smoke journey manually after DevTools or real-device access is available; record tested device width, post ids, whether cards had images, and any screenshot or recording artifact only if it actually exists."
+    },
+    {
       "id": "publish-readiness-location-retry",
       "title": "发布准备度与定位失败重试",
       "status": "blocked",
