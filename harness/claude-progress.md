@@ -259,3 +259,15 @@
 - 更新过的文件或工件：`harness/manual-evidence-product-brief.md`，`harness/manual-test-results.example.json`，`scripts/check-manual-evidence.mjs`
 - 已知风险或未解决问题：I 组仍不代表已经完成真实 WeChat DevTools/真机手测；示例 JSON 只覆盖 `not_covered` 和 `blocked` 写法，没有真实 `passed` 证据；后续若填真实结果，必须附可复核截图、录屏、日志、任务 id 或云端记录
 - 下一步最佳动作：运行完整候选验证并提交 I 组；随后启动用户评测 agent，评估 I 组相对 H 组是否进一步降低“手测口头通过但证据不足”的风险
+
+### Session 021J
+
+- 日期：2026-06-14
+- 分支：`codex/iter-evidence-hygiene`
+- 本轮目标：第十组证据卫生实验，为 I 组手测结果证据补充提交前脱敏边界、本地附件忽略规则和敏感内容扫描，避免真实截图、云端 ID、本机路径或 token 进入仓库
+- 已完成：产品 agent 输出 `harness/evidence-hygiene-product-brief.md`，区分可提交摘要与本地原始证据；安全/QA agent 输出 `harness/evidence-redaction-checklist.md`，列出提交前脱敏和 reviewer 检查项；开发 agent 新增 `scripts/check-evidence-hygiene.mjs`，校验 `.gitignore`、可提交 evidence 文档和 example JSON；主线程更新 `.gitignore`，忽略 `harness/manual-test-results.local*.json` 与 `harness/manual-evidence-artifacts/`
+- 运行过的验证：`node --check scripts/check-evidence-hygiene.mjs`；`node scripts/check-evidence-hygiene.mjs`；`node scripts/check-manual-evidence.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；用 `/tmp/evidence-hygiene-bad-root` 临时坏样例验证具体 `cloud://` 路径和 example 中 `passed` 会失败
+- 已记录证据：`node scripts/check-evidence-hygiene.mjs` 输出 `Evidence hygiene checks passed.`；`node scripts/check-manual-evidence.mjs` 输出 `Manual evidence checks passed.`；readiness 检查输出 `Publish flow checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`DevTools readiness checks passed.`；坏样例检查输出 `Bad evidence hygiene sample rejected as expected.`
+- 更新过的文件或工件：`.gitignore`，`harness/evidence-hygiene-product-brief.md`，`harness/evidence-redaction-checklist.md`，`scripts/check-evidence-hygiene.mjs`
+- 已知风险或未解决问题：J 组不代表真实 DevTools/真机手测或真实脱敏审查已经完成；它只保护 future 手测证据提交边界。真实附件仍应保存在本地或受控系统，提交前还需按清单人工复核
+- 下一步最佳动作：运行完整候选验证并提交 J 组；随后启动用户评测 agent，评估 J 组是否进一步降低“完整证据但含敏感原始材料”的风险
