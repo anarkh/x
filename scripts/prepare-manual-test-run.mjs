@@ -78,15 +78,24 @@ function assertIgnoredLocalResultPath(outPath) {
   }
 }
 
-function runGate(scriptPath, extraArgs = []) {
+function runGate(scriptPath, extraArgs = [], failureContext = '') {
   const result = spawnSync(process.execPath, [scriptPath, ...extraArgs], {
     cwd: rootDir,
     stdio: 'inherit'
   });
 
   if (result.status !== 0) {
-    throw new Error(`Gate failed: node ${[scriptPath, ...extraArgs].join(' ')}`);
+    const command = `node ${[scriptPath, ...extraArgs].join(' ')}`;
+    const context = failureContext ? `${failureContext}\n` : '';
+    throw new Error(`${context}Gate failed: ${command}`);
   }
+}
+
+function printPreflightIntro() {
+  console.log('Running readiness preflight before manual UI testing.');
+  console.log('This includes scripts/check-devtools-readiness.mjs and the map list static guard.');
+  console.log('Passing preflight does not prove DevTools or real-device visual acceptance.');
+  console.log('');
 }
 
 function readExampleResults() {
@@ -129,11 +138,12 @@ function printNextSteps(outPath) {
 
   console.log('');
   console.log('Next steps:');
-  console.log(`1. Open this worktree in the WeChat DevTools UI: ${rootDir}`);
-  console.log(`2. Run the manual journeys, then fill in ${relativeOut} with real observations.`);
-  console.log(`3. Re-run: node scripts/check-manual-evidence.mjs ${relativeOut}`);
-  console.log('4. Re-run: node scripts/check-evidence-hygiene.mjs');
-  console.log('5. Do not commit local JSON files or files under harness/manual-evidence-artifacts/.');
+  console.log('1. Read the readiness preflight output above first, including the map list static guard result.');
+  console.log(`2. Open this worktree in the WeChat DevTools UI: ${rootDir}`);
+  console.log(`3. Run the manual journeys, then fill in ${relativeOut} with real observations.`);
+  console.log(`4. Re-run: node scripts/check-manual-evidence.mjs ${relativeOut}`);
+  console.log('5. Re-run: node scripts/check-evidence-hygiene.mjs');
+  console.log('6. Do not commit local JSON files or files under harness/manual-evidence-artifacts/.');
 }
 
 try {
@@ -142,7 +152,12 @@ try {
   assertIgnoredLocalResultPath(outPath);
   writeResults(outPath, force);
 
-  runGate('scripts/check-devtools-readiness.mjs');
+  printPreflightIntro();
+  runGate(
+    'scripts/check-devtools-readiness.mjs',
+    [],
+    'Readiness preflight failed. It includes the map list static guard; DevTools and real-device visual acceptance remain unverified until UI manual testing passes.'
+  );
   runGate('scripts/check-manual-evidence.mjs', [outPath]);
   runGate('scripts/check-evidence-hygiene.mjs');
 
