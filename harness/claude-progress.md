@@ -343,3 +343,15 @@
 - 更新过的文件或工件：`harness/map-list-resilience-product-brief.md`，`harness/map-list-resilience-checklist.md`，`scripts/check-map-list-resilience.mjs`，`harness/claude-progress.md`
 - 已知风险或未解决问题：P 组不代表地图列表视觉已通过；它只证明当前 WXML/WXSS 保留了关键结构和防挤压约束。DevTools service port 9420 仍 blocked，真机/DevTools 中长标题、长正文、图片加载、safe area、地图原生层和详情点击仍未验证
 - 下一步最佳动作：提交 P 组并启动用户评测 agent；端口恢复后按 P 组 checklist 做地图列表真实视觉 smoke，补充窄屏/常见宽度/真机截图或录屏证据
+
+### Session 028Q
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-preflight`
+- 本轮目标：第十七组地图列表 preflight 集成实验，把 P 组新增的地图列表静态韧性检查接入 DevTools readiness 聚合门禁，降低后续候选版漏跑该检查的风险
+- 已完成：产品 agent 新增 `harness/map-list-preflight-product-brief.md`，定义 Q 组用户价值、非目标、preflight blocker 口径和 9420 blocked 下的边界；QA/设计 agent 新增 `harness/map-list-preflight-checklist.md`，覆盖自动命令、失败提示、长标题/标签/缩略图/footer/详情入口风险、人工验证项和降级证据字段；开发 agent 更新 `scripts/check-devtools-readiness.mjs`，把 `scripts/check-map-list-resilience.mjs` 作为必需文件和默认运行项，并在输出中明确静态 WXML/WXSS guard 不代表 DevTools 或真机视觉验收通过；主线程同步更新 `harness/feature_list.json` 的 map-feed evidence 和 notes
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-map-list-resilience.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-preflight`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-preflight`；当前分支为 `codex/iter-map-list-preflight`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；readiness 聚合输出 `Publish flow checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`Running map list static layout regression guard...`、`Map list resilience checks passed.`、`Map list static layout regression guard passed; DevTools and real-device visual acceptance are still required.`、`DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；独立地图列表检查输出 `Map list resilience checks passed.`；`git diff --check` 通过
+- 更新过的文件或工件：`harness/map-list-preflight-product-brief.md`，`harness/map-list-preflight-checklist.md`，`scripts/check-devtools-readiness.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：Q 组没有修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只保证 readiness/preflight 默认串联地图列表静态 guard。地图列表真实渲染、长内容视觉、图片加载、safe area、地图原生层和详情点击仍需 DevTools 或真机证据
+- 下一步最佳动作：提交 Q 组并启动用户评测 agent，评估 Q 相比 P 是否减少“新增检查但未来候选漏跑”的风险；若继续推进，优先做能在端口 blocked 状态下提升真实 UI 证据准备度的下一组实验，或等待人工恢复 DevTools 服务端口后执行地图列表视觉 smoke

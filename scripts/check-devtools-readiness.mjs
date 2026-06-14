@@ -10,13 +10,18 @@ const requiredFiles = [
   'scripts/check-publish-flow.mjs',
   'harness/check-trust-insight.mjs',
   'scripts/check-candidate-flow.mjs',
+  'scripts/check-map-list-resilience.mjs',
   'harness/devtools-readiness-product-brief.md',
-  'harness/devtools-readiness-checklist.md'
+  'harness/devtools-readiness-checklist.md',
+  'harness/map-list-resilience-product-brief.md',
+  'harness/map-list-resilience-checklist.md'
 ];
 
 const readinessDocs = [
   'harness/devtools-readiness-product-brief.md',
-  'harness/devtools-readiness-checklist.md'
+  'harness/devtools-readiness-checklist.md',
+  'harness/map-list-resilience-product-brief.md',
+  'harness/map-list-resilience-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -62,7 +67,7 @@ for (const group of requiredSemanticGroups) {
   );
 }
 
-function runCheck(scriptPath) {
+function runCheck(scriptPath, label) {
   const result = spawnSync(process.execPath, ['--no-warnings', scriptPath], {
     cwd: rootDir,
     encoding: 'utf8',
@@ -72,12 +77,15 @@ function runCheck(scriptPath) {
   assert.equal(
     result.status,
     0,
-    `Command failed: node --no-warnings ${scriptPath}`
+    `Readiness gate failed: ${label} (${scriptPath}). This is a preflight blocker; DevTools or real-device visual acceptance must stay unverified until manually tested.`
   );
 }
 
-runCheck('scripts/check-publish-flow.mjs');
-runCheck('harness/check-trust-insight.mjs');
-runCheck('scripts/check-candidate-flow.mjs');
+runCheck('scripts/check-publish-flow.mjs', 'publish flow model check');
+runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
+runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
+console.log('Running map list static layout regression guard. This static WXML/WXSS check does not prove DevTools or real-device visual acceptance.');
+runCheck('scripts/check-map-list-resilience.mjs', 'map list static layout regression guard');
+console.log('Map list static layout regression guard passed; DevTools and real-device visual acceptance are still required.');
 
-console.log('DevTools readiness checks passed.');
+console.log('DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.');
