@@ -511,3 +511,15 @@
 - 更新过的文件或工件：`.github/workflows/readiness.yml`，`harness/ci-readiness-gate-product-brief.md`，`harness/ci-readiness-gate-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：AD 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让 `npm run check` 具备未来 push/PR 自动化入口。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；本地未验证 GitHub Actions 在远端仓库真实触发、分支保护或 PR required check 配置
 - 下一步最佳动作：提交 AD 组并启动用户评测 agent，评估 AD 相比 AC 是否降低“本地命令存在但没有自动化门禁”的风险；若继续推进，优先恢复 DevTools UI/真机入口，或改善 readiness 失败输出可读性并避免断言真实 UI 通过
+
+### Session 042AE
+
+- 日期：2026-06-14
+- 分支：`codex/iter-ci-required-check-runbook`
+- 本轮目标：第三十一组 CI required-check runbook 实验，在 AD 组已有 GitHub Actions workflow 后，补充远端 workflow 触发验证、required check 名称确认和 branch protection 配置步骤，同时避免声称远端已通过或分支保护已配置
+- 已完成：产品 agent 新增 `harness/ci-required-check-runbook-product-brief.md`，定义 runbook 的目标、用户价值、验收和非 UI passed 边界；设计/QA agent 新增 `harness/ci-required-check-runbook-checklist.md`，覆盖本地 `npm run check`、workflow YAML、远端 Actions 验证、required check 名称、branch protection 配置和未验证口径；开发 agent 更新 `.github/workflows/readiness.yml`，为 `readiness` job 添加稳定显示名 `readiness / npm run check`；开发 agent 新增 `harness/ci-required-check-runbook.md`，说明如何验证远端 workflow、读取实际 check 名称、配置 required status check、记录证据和报告未验证状态；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`npm run check`；`ruby -e 'require "yaml"; y=YAML.load_file(".github/workflows/readiness.yml"); puts "workflow=#{y["name"]}; job=#{y.dig("jobs", "readiness", "name")}"'`；`git diff --check`；`rg` 检查 runbook 包含 remote Actions、required status checks、branch protection、unverified、workflow run URL 等关键口径；workflow/runbook 扫描确认没有 secrets、artifact、local evidence 引用或虚假 UI passed 声称
+- 已记录证据：`npm run check` 通过并继续输出 static/readiness/preflight 非 UI passed 口径；workflow YAML 解析输出 `workflow=Readiness checks; job=readiness / npm run check`；runbook 明确 `Do not record the workflow as verified until a remote run exists and its final status has been checked in GitHub.`；runbook 明确 `Do not mark branch protection as configured until the repository settings show the readiness check as required and a pull request displays it as a required check.`；runbook 证据模板包含 `Workflow run URL`、`Observed check name` 和 `Required check configured`
+- 更新过的文件或工件：`.github/workflows/readiness.yml`，`harness/ci-required-check-runbook.md`，`harness/ci-required-check-runbook-product-brief.md`，`harness/ci-required-check-runbook-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AE 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只把远端 Actions 和 branch protection 验证步骤文档化并稳定 job display name。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；本地仍未实际验证远端 GitHub Actions 触发、分支保护 required check 生效或 PR 合并阻断
+- 下一步最佳动作：提交 AE 组并启动用户评测 agent，评估 AE 相比 AD 是否降低“有 workflow 但远端触发和 required check 配置不可验证”的风险；若继续推进，优先恢复 DevTools UI/真机入口，或在有远端权限时实际执行 runbook 并记录真实 workflow run URL 与 branch protection 结果
