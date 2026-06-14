@@ -117,11 +117,17 @@ try {
     summaryOutPath
   ]);
 
+  const resultsRelativePath = projectRelativePath(resultsOutPath);
+  const summaryRelativePath = projectRelativePath(summaryOutPath);
+  const rerunGuardCommand = `node scripts/check-map-list-blocked-summary.mjs --results ${resultsRelativePath} --summary ${summaryRelativePath}`;
+
   console.log('');
   console.log('Created blocked result and sanitized summary.');
   console.log('Blocked summary guard passed.');
-  console.log(`Result: ${projectRelativePath(resultsOutPath)}`);
-  console.log(`Summary: ${projectRelativePath(summaryOutPath)}`);
+  console.log(`Result: ${resultsRelativePath}`);
+  console.log(`Summary: ${summaryRelativePath}`);
+  console.log('Post-edit rerun guard: if either local file is edited after this point, rerun:');
+  console.log(rerunGuardCommand);
   console.log('Summary is not UI passed evidence; rerun the real map-list visual smoke when DevTools or device access is available.');
 } catch (error) {
   console.error(error.message);
