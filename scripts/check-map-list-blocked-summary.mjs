@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const targetJourneyId = 'map-list-visual-smoke';
+const readableFragmentLength = 80;
 
 function usage() {
   return [
@@ -134,6 +135,8 @@ function validateResults(results) {
   if (targetEvidenceCount !== 0) {
     throw new Error(`${targetJourneyId} must have evidence count 0; found ${targetEvidenceCount}.`);
   }
+
+  return targetJourney;
 }
 
 function readMarkdown(filePath) {
@@ -176,6 +179,37 @@ function splitMarkdownRow(line) {
   return cells;
 }
 
+function normalizeReadableText(value) {
+  if (Array.isArray(value)) {
+    return value.map(normalizeReadableText).filter(Boolean).join(' ');
+  }
+
+  if (value === undefined || value === null) {
+    return '';
+  }
+
+  // Summary cells use <br> for arrays/newlines and escape literal pipes.
+  return String(value)
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replaceAll('\\|', '|')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function comparisonText(value) {
+  return normalizeReadableText(value).toLowerCase();
+}
+
+function readableFragment(value, label) {
+  const normalized = normalizeReadableText(value);
+
+  if (!normalized) {
+    throw new Error(`${label} must not be empty.`);
+  }
+
+  return normalized.slice(0, readableFragmentLength);
+}
+
 function isSeparatorRow(cells) {
   return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell.trim()));
 }
@@ -206,6 +240,36 @@ function rowsInSection(markdown, sectionName) {
   return rows;
 }
 
+function sectionFieldValue(markdown, sectionName, fieldName) {
+  const rows = rowsInSection(markdown, sectionName).filter(({ cells }) => cells[0] === fieldName);
+
+  if (rows.length !== 1) {
+    throw new Error(
+      `Summary Markdown ${sectionName} section must contain exactly one ${fieldName} row; found ${rows.length}.`
+    );
+  }
+
+  return {
+    value: rows[0].cells[1] ?? '',
+    lineNumber: rows[0].lineNumber
+  };
+}
+
+function validateRunSection(markdown, results) {
+  for (const fieldName of ['branch', 'commit']) {
+    const { value, lineNumber } = sectionFieldValue(markdown, 'Run', fieldName);
+    const summaryValue = normalizeReadableText(value);
+    const jsonValue = normalizeReadableText(results[fieldName]);
+
+    if (summaryValue !== jsonValue) {
+      throw new Error(
+        `Summary Markdown Run ${fieldName} must match blocked results JSON ${fieldName}; ` +
+          `found "${summaryValue}" on line ${lineNumber}, expected "${jsonValue}".`
+      );
+    }
+  }
+}
+
 function validateSummarySection(markdown) {
   const overallRows = rowsInSection(markdown, 'Summary').filter(
     ({ cells }) => cells[0] === 'overallStatus'
@@ -227,16 +291,81 @@ function validateSummarySection(markdown) {
 function journeyColumnIndexes(headerCells) {
   const idIndex = headerCells.indexOf('id');
   const statusIndex = headerCells.indexOf('status');
+  const actualIndex = headerCells.indexOf('actual');
   const evidenceCountIndex = headerCells.indexOf('evidenceCount');
+  const blockerIndex = headerCells.indexOf('blocker');
+  const followUpIndex = headerCells.indexOf('followUp');
 
   if (idIndex === -1 || statusIndex === -1 || evidenceCountIndex === -1) {
     throw new Error('Summary Markdown journeys table must include id, status, and evidenceCount columns.');
   }
 
-  return { idIndex, statusIndex, evidenceCountIndex };
+  if (actualIndex === -1 || blockerIndex === -1 || followUpIndex === -1) {
+    throw new Error('Summary Markdown journeys table must include actual, blocker, and followUp columns.');
+  }
+
+  return { idIndex, statusIndex, actualIndex, evidenceCountIndex, blockerIndex, followUpIndex };
 }
 
-function validateJourneySection(markdown) {
+function assertCellContainsJsonFragment(cellValue, jsonValue, label, lineNumber) {
+  const expectedFragment = readableFragment(jsonValue, `Blocked results JSON ${targetJourneyId} ${label}`);
+
+  if (!comparisonText(cellValue).includes(expectedFragment.toLowerCase())) {
+    throw new Error(
+      `${targetJourneyId} summary row ${label} must include the matching JSON ${label} fragment ` +
+        `on line ${lineNumber}.`
+    );
+  }
+}
+
+function riskFragments(risks) {
+  const riskValues = Array.isArray(risks) ? risks : [risks];
+  const fragments = [];
+
+  for (const risk of riskValues) {
+    const normalized = normalizeReadableText(risk);
+
+    if (!normalized) {
+      continue;
+    }
+
+    fragments.push(normalized.slice(0, readableFragmentLength));
+
+    for (const phrase of normalized.split(/[.,;，。；]/)) {
+      const trimmed = phrase.trim();
+
+      if (trimmed.length >= 24) {
+        fragments.push(trimmed.slice(0, readableFragmentLength));
+      }
+    }
+  }
+
+  return fragments;
+}
+
+function validateBlockerCell(blockerCell, risks, lineNumber) {
+  const blockerText = normalizeReadableText(blockerCell);
+
+  if (!blockerText) {
+    throw new Error(`${targetJourneyId} summary row blocker must not be empty on line ${lineNumber}.`);
+  }
+
+  const fragments = riskFragments(risks);
+
+  if (fragments.length === 0) {
+    throw new Error(`Blocked results JSON ${targetJourneyId} risks must include at least one readable risk phrase.`);
+  }
+
+  const normalizedBlocker = blockerText.toLowerCase();
+
+  if (!fragments.some((fragment) => normalizedBlocker.includes(fragment.toLowerCase()))) {
+    throw new Error(
+      `${targetJourneyId} summary row blocker must include at least one JSON risk phrase on line ${lineNumber}.`
+    );
+  }
+}
+
+function validateJourneySection(markdown, targetJourney) {
   const journeyRows = rowsInSection(markdown, 'Journeys');
 
   if (journeyRows.length === 0) {
@@ -244,7 +373,8 @@ function validateJourneySection(markdown) {
   }
 
   const header = journeyRows[0].cells;
-  const { idIndex, statusIndex, evidenceCountIndex } = journeyColumnIndexes(header);
+  const { idIndex, statusIndex, actualIndex, evidenceCountIndex, blockerIndex, followUpIndex } =
+    journeyColumnIndexes(header);
   const targetRows = journeyRows.slice(1).filter(({ cells }) => cells[idIndex] === targetJourneyId);
 
   if (targetRows.length !== 1) {
@@ -253,7 +383,10 @@ function validateJourneySection(markdown) {
 
   const targetRow = targetRows[0];
   const status = targetRow.cells[statusIndex];
+  const actual = targetRow.cells[actualIndex] ?? '';
   const summaryEvidenceCount = targetRow.cells[evidenceCountIndex];
+  const blocker = targetRow.cells[blockerIndex] ?? '';
+  const followUp = targetRow.cells[followUpIndex] ?? '';
 
   if (status === 'passed') {
     throw new Error(`${targetJourneyId} summary row must not be passed; found passed on line ${targetRow.lineNumber}.`);
@@ -270,11 +403,16 @@ function validateJourneySection(markdown) {
       `${targetJourneyId} summary row evidenceCount must be 0; found "${summaryEvidenceCount}" on line ${targetRow.lineNumber}.`
     );
   }
+
+  assertCellContainsJsonFragment(actual, targetJourney.actual, 'actual', targetRow.lineNumber);
+  assertCellContainsJsonFragment(followUp, targetJourney.followUp, 'followUp', targetRow.lineNumber);
+  validateBlockerCell(blocker, targetJourney.risks, targetRow.lineNumber);
 }
 
-function validateMarkdown(markdown) {
+function validateMarkdown(markdown, results, targetJourney) {
   validateSummarySection(markdown);
-  validateJourneySection(markdown);
+  validateRunSection(markdown, results);
+  validateJourneySection(markdown, targetJourney);
 }
 
 try {
@@ -296,8 +434,9 @@ try {
   runGate('scripts/check-manual-evidence.mjs', [results]);
   runGate('scripts/check-evidence-hygiene.mjs');
 
-  validateResults(readJson(results));
-  validateMarkdown(readMarkdown(summary));
+  const resultsData = readJson(results);
+  const targetJourney = validateResults(resultsData);
+  validateMarkdown(readMarkdown(summary), resultsData, targetJourney);
 
   console.log('Map-list blocked summary checks passed.');
 } catch (error) {
