@@ -26,6 +26,32 @@
     <text class="list-fab-count">{{visiblePosts.length}}</text>
   </button>
 
+  <view wx:if="{{!showList && !selectedPost && nearbyPreviewPosts.length}}" class="nearby-preview panel">
+    <view class="nearby-preview-head">
+      <view class="nearby-title-block">
+        <view class="nearby-title">附近优先</view>
+        <view class="nearby-subtitle">{{activeCategoryText}} · 先看最近有效任务</view>
+      </view>
+      <button class="nearby-open-button" bindtap="showList">全部</button>
+    </view>
+    <scroll-view class="nearby-strip" scroll-x enable-flex>
+      <view
+        wx:for="{{nearbyPreviewPosts}}"
+        wx:key="id"
+        class="nearby-item {{item.isSelected ? 'selected' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="focusPost"
+      >
+        <view class="nearby-item-top">
+          <text class="nearby-hint">{{item.browseHint}}</text>
+          <text class="nearby-distance">{{item.distanceText}}</text>
+        </view>
+        <view class="nearby-item-title">{{item.previewTitle}}</view>
+        <view class="nearby-item-meta">{{item.categoryText}} · {{item.expiryText}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
   <cover-view wx:if="{{diagnosticVisible}}" class="diagnostic-panel">
     <cover-view class="diagnostic-title">{{diagnosticTitle}}</cover-view>
     <cover-view class="diagnostic-status">{{bootStatus}}</cover-view>
@@ -92,7 +118,7 @@
         <view class="muted">换个分类，或点“找一找”跳到附近内容。</view>
       </view>
 
-      <view wx:for="{{visiblePosts}}" wx:key="id" class="post-card panel" data-id="{{item.id}}" bindtap="focusPost">
+      <view wx:for="{{visiblePosts}}" wx:key="id" class="post-card panel {{item.isSelected ? 'selected' : ''}}" data-id="{{item.id}}" bindtap="focusPost">
         <view class="post-content">
           <view class="post-main {{item.coverImage ? 'with-thumb' : ''}}">
             <image wx:if="{{item.coverImage}}" class="post-thumb" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" />

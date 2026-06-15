@@ -1,0 +1,190 @@
+{
+  "schemaVersion": "manual-test-results.example.v1",
+  "exampleNotice": "This file is a fill-in example only. It is not evidence that manual WeChat DevTools or device testing has been completed.",
+  "branch": "codex/iter-manual-evidence-gate",
+  "commit": "<replace-with-tested-commit-sha>",
+  "testedAt": "<replace-with-ISO-8601-time-when-real-test-ran>",
+  "tester": "<replace-with-tester-name-or-handle>",
+  "statusAllowedValues": [
+    "not_covered",
+    "blocked",
+    "failed",
+    "passed"
+  ],
+  "environment": {
+    "wechatDevToolsVersion": "<replace-with-WeChat-DevTools-version>",
+    "baseLibraryVersion": "<replace-with-base-library-version>",
+    "device": "<replace-with-simulator-or-device-model>",
+    "isRealDevice": false,
+    "network": "<replace-with-network-profile-such-as-wifi-or-offline>",
+    "locationPermission": "<replace-with-allowed-denied-not_requested-or-unknown>",
+    "cloudBase": {
+      "enabled": false,
+      "environmentId": "<replace-with-env-id-or-none>",
+      "postsFunctionDeployed": false,
+      "storageReady": false,
+      "notes": "Example values only; replace after checking the actual test environment."
+    },
+    "storage": {
+      "localStorageSeeded": false,
+      "localStorageClearedBeforeRun": false,
+      "notes": "Example values only; record whether wx local storage was cleared, seeded, or reused."
+    }
+  },
+  "summary": {
+    "overallStatus": "not_covered",
+    "recommendation": "Do not treat this example as release evidence. Copy this structure into a real result file and replace every placeholder after manual execution.",
+    "notes": [
+      "No journey in this example is marked passed because no real manual test was run for this file.",
+      "Use blocked only when a concrete environment or tooling issue prevents completing the journey."
+    ]
+  },
+  "journeys": [
+    {
+      "id": "map-to-detail",
+      "title": "地图列表或标记进入任务详情",
+      "status": "not_covered",
+      "steps": [
+        "Open the project in WeChat DevTools on the tested branch and commit.",
+        "Compile the mini program and open the map tab.",
+        "Open the nearby task list or tap a visible map marker.",
+        "Tap a task detail entry and wait for the detail page to render."
+      ],
+      "expected": [
+        "The map page renders without a blocking blank screen.",
+        "A selected task opens the matching detail page.",
+        "The detail page shows title, body, publisher, place, time, trust actions, and comments area instead of the missing-task state."
+      ],
+      "actual": "Not covered in this example. Replace with observed behavior from the manual run.",
+      "evidence": [],
+      "risks": [
+        "Local-first map data and CloudBase detail lookup can diverge if fallback behavior regresses.",
+        "Known DevTools native map timeouts may be noisy; record whether they block the journey or are only console warnings."
+      ],
+      "followUp": "Run this journey in DevTools and at least one narrow device profile, then record the exact post id used."
+    },
+    {
+      "id": "map-list-visual-smoke",
+      "title": "地图信息列表真实视觉 smoke",
+      "status": "not_covered",
+      "steps": [
+        "Open the project in WeChat DevTools or on a real device using the tested branch and commit.",
+        "Compile the mini program and open the map tab with seeded or real posts that include long titles, long body text, image and no-image variants.",
+        "Open the map information list, scroll through several task cards, and observe the top, middle, and bottom of the drawer.",
+        "Tap a visible map marker, then tap a list card detail entry and wait for the matching detail page to render.",
+        "Repeat the visual check on at least one narrow simulator or real-device profile with safe area enabled."
+      ],
+      "expected": [
+        "Long titles, long body text, category/status tags, counts, time, distance, and the detail affordance remain readable without overlap or unexpected clipping.",
+        "Image and no-image cards keep stable spacing, and thumbnails do not push footer metadata out of view.",
+        "The list drawer respects safe area and tabBar boundaries, remains scrollable, and is not obscured by the native map layer.",
+        "Marker selection, list selection, and detail navigation point to the same task content.",
+        "Any native map timeout, cover-view layering issue, or safe-area problem is recorded as observed behavior rather than inferred from static checks."
+      ],
+      "actual": "Not covered in this example. Replace with observed visual behavior for long-title, long-body, image, no-image, safe-area, native-map-layer, scroll, marker/list, and detail-link checks.",
+      "evidence": [],
+      "risks": [
+        "Static WXML/WXSS guards cannot prove native map layering, cover-view rendering, image loading, or safe-area behavior.",
+        "Long content and image variants may only reveal clipping or overlap on specific simulator widths or real devices.",
+        "Marker, list, and detail data can diverge if local-first posts and CloudBase lookup fallback regress."
+      ],
+      "followUp": "Run this smoke journey manually after DevTools or real-device access is available; record tested device width, post ids, whether cards had images, and any screenshot or recording artifact only if it actually exists."
+    },
+    {
+      "id": "publish-readiness-location-retry",
+      "title": "发布准备度与定位失败重试",
+      "status": "blocked",
+      "steps": [
+        "Open the publish tab in WeChat DevTools.",
+        "Fill the minimum required title, body, category, and expiry fields.",
+        "Trigger current-location confirmation from the readiness action.",
+        "Deny, timeout, or otherwise fail location once, then retry and allow location."
+      ],
+      "expected": [
+        "The readiness checklist identifies location as the remaining blocker.",
+        "A failed location attempt shows retry-oriented copy and does not submit the post.",
+        "After retry succeeds, the primary action changes to publish."
+      ],
+      "actual": "Example blocked result: DevTools CLI service port was unavailable or returned wait IDE port timeout, so the tester could not automate/open the intended test target. Replace with the real blocker, or change status after manual UI execution.",
+      "evidence": [
+        "Example only: DevTools CLI open/preview blocked by service-port timeout; replace with actual command output or leave empty if no evidence artifact exists."
+      ],
+      "risks": [
+        "Location authorization behavior differs between simulator and real devices.",
+        "Keyboard and safe-area behavior still need a real-device check even if DevTools passes."
+      ],
+      "followUp": "Enable DevTools service port or run the journey manually in the DevTools UI; then repeat on a real device for allow, deny, and retry paths."
+    },
+    {
+      "id": "publish-success-to-detail",
+      "title": "发布成功后跳转任务详情",
+      "status": "not_covered",
+      "steps": [
+        "Prepare CloudBase or local fallback according to the test target.",
+        "Fill a valid publish form with current location confirmed.",
+        "Submit the task.",
+        "Observe success feedback and the destination page."
+      ],
+      "expected": [
+        "The post is created exactly once.",
+        "The app navigates to the created task detail page.",
+        "The detail page shows the new task content and non-empty publisher/location metadata."
+      ],
+      "actual": "Not covered in this example. Replace with observed behavior, created post id, and destination route.",
+      "evidence": [],
+      "risks": [
+        "CloudBase post creation and local fallback may produce different persistence behavior.",
+        "Duplicate taps during submission can create duplicate posts if submit locking regresses."
+      ],
+      "followUp": "Record the created post id, route, and whether the run used CloudBase or local storage."
+    },
+    {
+      "id": "detail-trust-insight-comments",
+      "title": "详情 TrustInsight 与评论入口",
+      "status": "not_covered",
+      "steps": [
+        "Open an active task detail page.",
+        "Inspect the TrustInsight panel and segmented metrics.",
+        "Tap confirm, stale, or report once with an eligible user.",
+        "Open the comment entry, submit a valid comment, and reload the detail page."
+      ],
+      "expected": [
+        "TrustInsight copy is cautious and reflects confirmation, stale, report, and comment signals.",
+        "Counts update after a trust action without allowing duplicate same-user action.",
+        "A valid comment appears in the list and remains after re-entering the detail page.",
+        "Resolved or expired tasks remain read-only where applicable."
+      ],
+      "actual": "Not covered in this example. Replace with state before/after each action and the comment text used for testing.",
+      "evidence": [],
+      "risks": [
+        "Comment persistence can differ between CloudBase comments and local post_comments storage.",
+        "Narrow screens may wrap TrustInsight metrics unexpectedly."
+      ],
+      "followUp": "Run active, stale, resolved, and expired detail variants; include a narrow-screen screenshot only if it actually exists."
+    },
+    {
+      "id": "image-cloud-paths",
+      "title": "图片上传、云端路径与跨用户可见性",
+      "status": "not_covered",
+      "steps": [
+        "Deploy the posts cloud function and confirm CloudBase Storage permissions before the run.",
+        "Publish a task with one or more valid images.",
+        "Verify the saved image references use cloud:// file IDs rather than local temp paths.",
+        "Open the task as another user or after clearing local storage."
+      ],
+      "expected": [
+        "Valid images upload before post creation finishes.",
+        "Post creation fails visibly if required cloud upload or cloud save fails.",
+        "Uploaded images are visible from the detail page outside the original local session.",
+        "Oversized or too many images are rejected with user-facing feedback."
+      ],
+      "actual": "Not covered in this example. Replace with observed upload result, file id pattern, and cross-user visibility result.",
+      "evidence": [],
+      "risks": [
+        "CloudBase Storage permissions and undeployed cloud functions can block this journey before UI assertions are meaningful.",
+        "Do not record private file IDs from production-like environments unless the team agrees they are safe to share."
+      ],
+      "followUp": "Before marking passed, include deployment status, storage permission status, and whether cross-user visibility was checked on real device or DevTools."
+    }
+  ]
+}
