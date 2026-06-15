@@ -6,9 +6,9 @@
 - 标准启动路径：在 WeChat DevTools 中打开仓库，使用 `project.config.json`，公开 appid 保持 `touristappid`
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
-- 当前最高优先级未完成功能：`admin-001`（本分支为多组迭代实验分支）
-- 当前正在实现的用户请求：第四组管理台风险处置实验；已补充产品/设计简报，管理台卡片新增处理原因、建议动作、处置中防重复点击、确认弹窗任务标题/ID 和成功/失败反馈
-- 当前 blocker：本分支自动验证和 WXML/WXSS 本地编译已通过，但尚未在 WeChat DevTools 中以普通用户和管理员身份手动验证权限、筛选、隐藏、关闭和普通列表隐藏效果
+- 当前最高优先级未完成功能：`map-feed-001`
+- 当前正在实现的用户请求：把已完成的地图、发布、详情、管理、个人中心和验证能力集合到主分支
+- 当前 blocker：自动验证可以覆盖 JSON、harness、发布状态机、TrustInsight、地图列表静态 guard、管理/个人中心 helper 和 DevTools 诊断入口；真实 WeChat DevTools UI smoke/真机验证仍受 9420 service port 与人工操作阻塞
 
 ## 会话记录
 
