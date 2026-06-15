@@ -156,6 +156,39 @@
 - 已知风险或未解决问题：DevTools 控制台仍显示既有的原生 `WAServiceMainContext timeout`，本轮观察该错误未阻断地图列表渲染；更长标题和带图卡片仍建议真机再看一次
 - 下一步最佳动作：在真机或 DevTools 不同机型宽度下打开信息列表，确认标题较长、正文较长和带图卡片都不挤压底部统计
 
+### Session 014Docs
+
+- 日期：2026-05-26
+- 本轮目标：总结当前项目并写出 Markdown 文档
+- 已完成：新增根目录 `PROJECT_SUMMARY.md`，从项目定位、核心用户场景、技术栈、页面结构、共享模块、数据模型、状态规则、云端/本地降级、设计系统、运行验证方式、当前状态和后续风险等维度总结 Street Tasks 小程序
+- 运行过的验证：`bash harness/init.sh`；`git diff --check`；`rg --files -g 'AGENT*'`
+- 已记录证据：`bash harness/init.sh` 完整跑通；当前无 npm 时基于 package-lock 无外部依赖跳过安装，随后 `node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`rg --files -g 'AGENT*'` 仅输出 `AGENTS.md`，确认误建的 `AGENT.MD` 已移除
+- 更新过的文件或工件：`PROJECT_SUMMARY.md`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮仅新增项目总结文档，没有改变小程序运行逻辑；既有 WeChat DevTools/真机验证缺口仍然存在
+- 下一步最佳动作：继续围绕 `map-feed-001` 做地图首页、定位授权、marker 详情链路和不同机型列表抽屉的手动验证
+
+### Session 015Docs
+
+- 日期：2026-05-26
+- 本轮目标：生成/更新根目录 `AGENTS.md`
+- 已完成：按用户纠正移除误建的 `AGENT.MD`；更新现有 `AGENTS.md`，补充当前项目快照、CloudBase/本地降级、图片发布约束、关键模块与页面、验证命令、评论/反馈/反应数据说明和收尾要求
+- 运行过的验证：`bash harness/init.sh`
+- 已记录证据：`bash harness/init.sh` 完整跑通；当前无 npm 时基于 package-lock 无外部依赖跳过安装，随后 `node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`
+- 更新过的文件或工件：`AGENTS.md`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮仅新增 agent 文档，没有改变小程序运行逻辑；既有 WeChat DevTools/真机验证缺口仍然存在
+- 下一步最佳动作：继续围绕 `map-feed-001` 做地图首页、定位授权、marker 详情链路和不同机型列表抽屉的手动验证
+
+### Session 016Understand
+
+- 日期：2026-05-28
+- 本轮目标：运行 `understand` skill，为当前仓库生成 Understand Anything 知识图谱
+- 已完成：构建本地 understand-anything core 依赖；生成并调整 `.understand-anything/.understandignore`，排除 `.agents/`、`log/`、本地私有配置和分析器临时目录；扫描 73 个项目文件；生成 `.understand-anything/knowledge-graph.json`、`meta.json` 和 `fingerprints.json`
+- 运行过的验证：`bash harness/init.sh`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`node` 解析 `.understand-anything/knowledge-graph.json`、`meta.json`、`fingerprints.json`；Understand inline graph validation
+- 已记录证据：图谱验证结果为 0 issues、0 warnings；图谱包含 164 个节点、188 条边、7 个架构层和 8 个 guided tour steps；`build-fingerprints.mjs` 输出 `Fingerprints baseline: 73 files`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`.understand-anything/.understandignore`，`.understand-anything/knowledge-graph.json`，`.understand-anything/meta.json`，`.understand-anything/fingerprints.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮仅生成代码理解图谱，没有改变小程序运行逻辑；WeChat DevTools/真机验证缺口仍沿用既有记录
+- 下一步最佳动作：需要浏览架构时打开 Understand dashboard；产品验证仍继续围绕 `map-feed-001` 的定位授权、marker 详情链路和列表抽屉做手动确认
+
 ### Session 014A
 
 - 日期：2026-06-12

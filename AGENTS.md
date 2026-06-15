@@ -4,9 +4,9 @@ Guidance for AI coding agents working on this repository.
 
 ## Project Overview
 
-Street Tasks is a native WeChat mini program for short-lived neighborhood tasks. The current product is intentionally small: a map-first feed, a publish flow, a task detail page, structured trust actions, and lightweight admin moderation. There is no fixed service area; users can browse and publish from any current location.
+Street Tasks is a native WeChat mini program for short-lived neighborhood tasks. The current product is intentionally small: a map-first feed, a publish flow, a task detail page, comments, structured trust actions, lightweight admin moderation, profile/activity surfaces, and feedback. There is no fixed service area; users can browse and publish from any current location.
 
-The app currently runs without a backend. Data is seeded from mock posts and persisted through `wx` local storage. Treat `utils/store.js` as the persistence boundary that can later be replaced by cloud functions or HTTP APIs.
+The app can run locally from mock data and `wx` local storage, and it also has CloudBase-backed paths for shared posts, reactions, comments, feedback, images, and admin role checks. Treat `utils/store.js` as the main persistence boundary; page code should not duplicate storage or cloud fallback logic.
 
 ## Harness Operating Loop
 
@@ -61,15 +61,27 @@ Session closeout:
 - `project.config.json`: public WeChat DevTools config. Keep `appid` as `touristappid` for GitHub.
 - `project.private.config.json`: local-only WeChat DevTools config. This may contain the real AppID and must stay ignored.
 - `utils/config.js`: nearby feed config, categories, and expiry options.
-- `utils/store.js`: mock/local data store and post mutation APIs.
+- `utils/store.js`: post, comment, reaction, image upload, local storage, and CloudBase fallback APIs.
+- `utils/auth.js`: local user, profile completion, admin role refresh, and permission helpers.
+- `utils/feedback.js`: user feedback creation and admin feedback listing.
 - `utils/geo.js`: distance calculation and map marker conversion.
 - `utils/format.js`: category and time display helpers.
+- `utils/post-presenter.js`: shared presentation helpers for profile/activity pages.
+- `utils/diagnostics.js`: runtime diagnostics used by map startup and fallback paths.
 - `utils/mock-posts.js`: seed data used when local storage is empty.
 - `harness/*`: agent harness state, verification, closeout, and quality tracking files.
+- `DESIGN_SYSTEM.md`: current visual design rules and native/TDesign-style component patterns.
+- `PROJECT_SUMMARY.md`: high-level project summary for humans and future agents.
 - `pages/map/*`: map feed, marker interactions, and list overlay.
 - `pages/publish/*`: task creation flow.
-- `pages/detail/*`: detail view and confirm/stale/report actions.
+- `pages/detail/*`: detail view, images, comments, confirm/stale/report actions, and resolve flow.
 - `pages/admin/*`: admin-lite moderation view.
+- `pages/me/*`: login, profile, admin entry, and personal stats.
+- `pages/my-posts/*`: current user's posts.
+- `pages/activities/*`: current user's trust-action history.
+- `pages/feedback/*`: user feedback form.
+- `cloudfunctions/posts/index.js`: CloudBase actions for posts, reactions, comments, feedback, and image upload preparation.
+- `cloudfunctions/getMyRole/index.js`: CloudBase admin role lookup from the `admins` collection.
 - `scripts/check-json.mjs`: JSON syntax check for project and page config files.
 
 ## Local Development
@@ -90,6 +102,26 @@ Session closeout:
 
 There is no general unit test suite yet.
 
+## Verification
+
+Use these baseline checks for most changes:
+
+```bash
+bash harness/init.sh
+node scripts/check-json.mjs
+node harness/check-harness.mjs
+git diff --check
+```
+
+After editing JavaScript, run targeted syntax checks, for example:
+
+```bash
+node --check pages/map/map.js
+node --check utils/store.js
+```
+
+User-visible mini program behavior still needs WeChat DevTools or real-device verification. Record any manual evidence, skipped checks, or remaining risks in `harness/claude-progress.md` or `harness/feature_list.json`.
+
 ## Data Model Notes
 
 Posts are plain objects with these important fields:
@@ -99,12 +131,15 @@ Posts are plain objects with these important fields:
 - `title`, `body`, `category`, `placeName`.
 - `intent`: optional subtype, currently used by `lost_found` as `lost` or `found`.
 - `latitude`, `longitude`.
+- `imageUrls`: optional image file IDs or URLs. Shared image posts should use `cloud://` file IDs.
 - `status`: `active`, `stale`, `resolved`, `expired`, or `hidden`.
 - `confirmations`, `lastConfirmedAt`, `staleCount`, `reportCount`.
 - `createdAt`, `expiresAt`: timestamps in milliseconds.
-- `publisher`: display name.
+- `publisherId`, `publisher`, `publisherAvatarUrl`: publisher identity and display metadata.
 
 `listPosts(center)` computes derived status and distance, filters hidden posts, sorts newest first, and caps results by `config.maxVisiblePosts`.
+
+Comments are stored locally under `post_comments` or in the CloudBase `post_comments` collection. Feedback is stored locally under `feedback_items` or in the CloudBase `feedback_items` collection. Trust reactions are stored locally under `post_reactions` or in the CloudBase `post_reactions` collection.
 
 ## Behavior Rules
 
@@ -115,6 +150,19 @@ Posts are plain objects with these important fields:
 - Resolving a post sets status to `resolved`.
 - Expired posts are marked as `expired` when listed.
 - Hidden posts should not appear in normal list results.
+- Closed posts (`hidden`, `resolved`) should not accept comments or trust actions.
+
+## CloudBase And Images
+
+CloudBase is optional for local development but required for shared multi-user data. Expected collections:
+
+- `posts`
+- `post_reactions`
+- `post_comments`
+- `feedback_items`
+- `admins`
+
+Text-only posts may fall back to local storage when cloud APIs are unavailable. Image posts are stricter: selected images are compressed, capped at 4 files under 1.5MB each, uploaded to CloudBase Storage, and saved as `cloud://` file IDs. If cloud upload or cloud post creation fails for an image post, fail explicitly instead of saving local-only temp image paths.
 
 ## Coding Conventions
 
