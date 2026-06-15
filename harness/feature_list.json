@@ -1,6 +1,6 @@
 {
   "project": "Street Tasks / 街区任务",
-  "last_updated": "2026-05-21",
+  "last_updated": "2026-06-15",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -99,9 +99,29 @@
         "2026-05-21: Re-ran node --check for utils/store.js and pages/detail/detail.js; node scripts/check-json.mjs; git diff --check; and bash harness/init.sh. All passed.",
         "2026-05-21: In WeChat DevTools, opened the map list and tapped a local `测试` task detail; the detail page showed the task content instead of the `任务不存在` state.",
         "2026-05-21: Reworked the map information list cards: full-height drawer layout, category/status chips moved beside the title, body shown under the title, simple bottom counts on the left, created time and distance on the right, and a lighter detail chevron.",
-        "2026-05-21: Re-ran node --check pages/map/map.js; node scripts/check-json.mjs; git diff --check; full WXML/WXSS DevTools compiler checks; node harness/check-harness.mjs; bash harness/init.sh; and WeChat DevTools visual check for the open list drawer. All passed except the known non-blocking native WAServiceMainContext timeout remains visible in DevTools console."
+        "2026-05-21: Re-ran node --check pages/map/map.js; node scripts/check-json.mjs; git diff --check; full WXML/WXSS DevTools compiler checks; node harness/check-harness.mjs; bash harness/init.sh; and WeChat DevTools visual check for the open list drawer. All passed except the known non-blocking native WAServiceMainContext timeout remains visible in DevTools console.",
+        "2026-06-14: Added scripts/check-map-list-resilience.mjs on the P iteration to statically guard the map list drawer, card, title/tag row, summary, thumbnail, footer, counts, and detail affordance WXML/WXSS structure.",
+        "2026-06-14: Q iteration wired the map list static guard into scripts/check-devtools-readiness.mjs so preflight now runs publish flow, trust insight, candidate flow, and map list resilience checks before manual DevTools or real-device acceptance.",
+        "2026-06-14: R iteration made scripts/prepare-manual-test-run.mjs explicitly announce that manual run preparation first runs readiness preflight, including the map list static guard, and that this still does not prove DevTools or real-device visual acceptance.",
+        "2026-06-14: S iteration added a dedicated map-list-visual-smoke journey to harness/manual-test-results.example.json plus product and QA guidance for recording long-title, long-body, image/no-image, safe-area, native map layer, scroll, marker/list, and detail-link observations without marking unrun visual checks as passed.",
+        "2026-06-14: T iteration updated scripts/check-manual-evidence.mjs so manual evidence files must contain exactly one map-list-visual-smoke journey, preventing the map list visual evidence slot from being deleted or duplicated silently.",
+        "2026-06-14: U iteration added scripts/prepare-map-list-blocked-evidence.mjs to create an ignored local blocked draft for map-list-visual-smoke when DevTools or device access prevents real visual smoke, while keeping passed=0 and warning that blocked evidence is not UI passed or failed evidence.",
+        "2026-06-14: V iteration added scripts/prepare-map-list-blocked-summary.mjs to chain the blocked local JSON helper with the sanitized manual summary generator, producing ignored local reviewer-readable blocked summaries while preserving map-list-visual-smoke=blocked, passed=0, and the warning that summaries are not UI passed evidence.",
+        "2026-06-14: W iteration added scripts/check-map-list-blocked-summary.mjs to verify ignored blocked result JSON and ignored manual summary markdown stay aligned on overallStatus=blocked, map-list-visual-smoke=blocked, passed=0, and target evidenceCount=0.",
+        "2026-06-14: X iteration enhanced scripts/check-map-list-blocked-summary.mjs to also verify blocked summary branch, commit, target actual, target followUp, and target blocker/risk content still trace back to the same ignored blocked result JSON.",
+        "2026-06-14: Y iteration wired scripts/check-map-list-blocked-summary.mjs into scripts/prepare-map-list-blocked-summary.mjs so blocked JSON and sanitized summary generation now automatically runs the status and source-integrity guard before reporting success.",
+        "2026-06-14: Z iteration updated scripts/prepare-map-list-blocked-summary.mjs to print a post-edit rerun guard command after wrapper success, so edited local blocked JSON/summary files must be rechecked with scripts/check-map-list-blocked-summary.mjs before review citation.",
+        "2026-06-14: AA iteration added scripts/check-map-list-blocked-summary-preflight.mjs to scan ignored local blocked summaries before review and rerun the blocked summary guard for each matching results/summary pair, while warning that preflight is not UI passed evidence.",
+        "2026-06-14: AB iteration wired scripts/check-map-list-blocked-summary-preflight.mjs into harness/init.sh and scripts/check-devtools-readiness.mjs so default startup/readiness checks now rerun ignored local blocked summary guards without implying UI passed evidence.",
+        "2026-06-14: AC iteration added npm-level check scripts so npm run check now runs JSON, harness, and readiness gates, with readiness carrying the ignored local blocked summary preflight while still warning that npm checks are not UI passed evidence.",
+        "2026-06-14: AD iteration added .github/workflows/readiness.yml so push and pull_request automation can run npm run check, bringing JSON, harness, readiness, and ignored local blocked-summary preflight gates into a minimal CI path without claiming UI passed evidence.",
+        "2026-06-14: AE iteration added a CI required-check runbook and stable workflow job display name so remote Actions triggering and branch protection required status checks can be verified without claiming they are already configured or that UI passed.",
+        "2026-06-14: AF iteration added explicit npm DevTools smoke and port diagnostic commands so the current 9420 service-port blocker can be checked manually without adding GUI-dependent checks to CI/default npm check; current strict smoke remains blocked with no listener and UI smoke was not executed.",
+        "2026-06-14: AG iteration added an explicit npm recovery dry-run command so DevTools service-port recovery can be previewed with before/actions/after/next-step evidence without quitting or reopening DevTools, while default npm check still avoids GUI side effects.",
+        "2026-06-15: AH iteration added ignored local DevTools recovery dry-run report generation plus a guard so before/actions/after/next-step recovery drafts can be handed off without claiming DevTools recovered or UI smoke passed.",
+        "2026-06-15: AI iteration added a manual preflight to scan ignored local DevTools recovery dry-run reports and rerun the report guard before handoff, without adding local report checks to default npm check or claiming UI passed."
       ],
-      "notes": "已有实现未等于 harness passing；需要手动小程序验证证据。2026-05-18 UI 刷新采用 TDesign 式设计 token 和原生小程序控件落地，未引入 tdesign-miniprogram npm 依赖，避免在当前无小程序 npm 构建链路下增加编译风险。底部 tabBar 已由悬浮胶囊改为贴底不透明导航栏。2026-05-19 发布页和地图抽屉已落地 design-ui-designer 组件化优化。2026-05-21 白屏排查未发现 WXML/WXSS/JS 语法错误，已移除 tabBar 中新增的空 cover-view 指示条以降低渲染兼容风险；同日继续排查确认 DevTools hot reload/getAppConfig 缓存会触发 subPackages 内部错误，清编译缓存并终止重编译后地图恢复，同时加入页面诊断和云读取 fallback；随后针对 `Error: timeout` 将地图首屏改为本地优先，定位、云函数列表和地图 region 读取都不再阻塞启动；详情页已补上本地 fallback，避免本地列表任务因云端不存在而显示“任务不存在”。信息列表已改为铺满抽屉、标题后置标签、底部轻量统计。仍需在 WeChat DevTools/真机中确认 safe area、键盘、地图抽屉、定位授权分支和多分类详情链路。"
+      "notes": "已有实现未等于 harness passing；需要手动小程序验证证据。2026-05-18 UI 刷新采用 TDesign 式设计 token 和原生小程序控件落地，未引入 tdesign-miniprogram npm 依赖，避免在当前无小程序 npm 构建链路下增加编译风险。底部 tabBar 已由悬浮胶囊改为贴底不透明导航栏。2026-05-19 发布页和地图抽屉已落地 design-ui-designer 组件化优化。2026-05-21 白屏排查未发现 WXML/WXSS/JS 语法错误，已移除 tabBar 中新增的空 cover-view 指示条以降低渲染兼容风险；同日继续排查确认 DevTools hot reload/getAppConfig 缓存会触发 subPackages 内部错误，清编译缓存并终止重编译后地图恢复，同时加入页面诊断和云读取 fallback；随后针对 `Error: timeout` 将地图首屏改为本地优先，定位、云函数列表和地图 region 读取都不再阻塞启动；详情页已补上本地 fallback，避免本地列表任务因云端不存在而显示“任务不存在”。信息列表已改为铺满抽屉、标题后置标签、底部轻量统计。2026-06-14 已新增地图列表静态韧性检查并接入 readiness/preflight，且手测准备 helper 会显式运行并提示该 preflight；这只降低结构、样式和执行漏跑风险，不代表 DevTools 或真机视觉验收通过。S 组补充了地图列表真实视觉 smoke 的模板 journey 和检查清单，T 组把该 journey 变成 manual evidence 必备项，U 组提供 blocked local draft helper，V 组把 blocked draft 与 sanitized summary 生成串联，W 组为 blocked JSON/summary 状态一致性增加自动 guard，X 组进一步守住 summary 与 JSON 的 branch/commit/blocker/followUp 同源完整性，Y 组把增强 guard 接入 wrapper 默认生成链路，Z 组又把生成后手工编辑必须复跑 guard 的命令直接打印到 wrapper 成功输出，AA 组新增评审前一键 preflight 扫描 ignored local blocked summaries 并逐对复跑 guard，AB 组把该 preflight 接入 harness/init.sh 和 DevTools readiness 默认检查，AC 组把 JSON/harness/readiness 门禁暴露为 npm 级 `check` 脚本，AD 组新增最小 GitHub Actions workflow 在 push/pull_request 上运行该检查，AE 组补充 required-check runbook 和稳定 job display name 以便远端 Actions/分支保护后续验证，AF 组补充 `inspect:devtools-port` 与 `check:devtools-smoke` 手动入口，明确当前 9420 service port blocker 可复查但不进入默认 CI/check，AG 组补充 `inspect:devtools-recovery` dry-run 入口，明确恢复动作前后的 before/actions/after/next-step 证据且不执行 quit/open 副作用，AH 组补充 ignored local recovery dry-run report 生成与 guard，降低交接草稿被改写成恢复成功或 UI passed 的风险，AI 组再补充手动 preflight 扫描所有 ignored local recovery reports 并逐份复跑 guard，降低多份本地草稿交接前漏检风险；这些仍只是在证据结构上预留、守护、演练阻塞记录并提升评审可读性。真实 safe area、地图抽屉、原生地图层、列表滚动、带图/无图和详情点击仍需 WeChat DevTools 或真机观察。仍需在 WeChat DevTools/真机中确认 safe area、键盘、地图抽屉、定位授权分支和多分类详情链路。"
     },
     {
       "id": "publish-001",
@@ -125,9 +145,19 @@
         "2026-05-15: git diff --check passed.",
         "2026-05-15: node scripts/check-json.mjs passed, output: Checked 11 JSON files.",
         "2026-05-15: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
-        "2026-05-15: bash harness/init.sh passed after npm-free fallback; package-lock has no external dependencies, then JSON and harness checks passed."
+        "2026-05-15: bash harness/init.sh passed after npm-free fallback; package-lock has no external dependencies, then JSON and harness checks passed.",
+        "2026-06-12: B 组发布迭代产品假设：用户在提交时才触发定位和校验会造成失败感；把发布准备度和位置确认前置，应提升表单完成率。",
+        "2026-06-12: Added pages/publish/publish-state.js and scripts/check-publish-flow.mjs to model identity/content/category/location readiness before submission.",
+        "2026-06-12: Publish page now shows a readiness checklist, title/body counters, explicit current-location confirmation, direct expiry buttons, and a bottom action that names the next missing step.",
+        "2026-06-12: node --check passed for pages/publish/publish.js and pages/publish/publish-state.js; node --no-warnings scripts/check-publish-flow.mjs passed with Publish flow checks passed.",
+        "2026-06-12: Second B-group iteration refined publish readiness states for locating, failed location retry, only-location-missing submission, and lost/found intent completion.",
+        "2026-06-12: node --no-warnings scripts/check-publish-flow.mjs passed after adding coverage for locating, needs-location, failed-location retry, lost-found missing direction, and ready lost-found states.",
+        "2026-06-12: Third B-group iteration added primaryAction to buildPublishState so publish submit behavior is driven by an explicit state-machine action instead of re-inferring missing fields in the page.",
+        "2026-06-12: node --no-warnings scripts/check-publish-flow.mjs first failed because primaryAction was missing, then passed after covering login, fill, confirmLocation, waitLocation, and publish states.",
+        "2026-06-12: WeChat DevTools local compilers passed for B publish branch after third iteration: wcc compiled all WXML and wcsc -lc compiled all WXSS with exit code 0 and no output.",
+        "2026-06-12: Attempted WeChat DevTools CLI open and preview for B publish branch after enabling the service port prompt, but both failed with wait IDE port timeout against port 9420; no preview QR/info was produced."
       ],
-      "notes": "图片发布已改为云端必需；仍需部署更新后的 posts 云函数，并在 WeChat DevTools/真机中验证上传、跨用户浏览和过大图片拦截。"
+      "notes": "图片发布已改为云端必需；仍需部署更新后的 posts 云函数，并在 WeChat DevTools/真机中验证上传、跨用户浏览和过大图片拦截。 2026-06-12 B 组发布迭代新增发布准备度、位置确认和有效期按钮；尚未在 WeChat DevTools/真机验证定位授权、键盘遮挡、图片上传和真实发布闭环。 第二轮 B 组已收敛定位失败/重试路径和 readiness 文案；定位授权弹窗、键盘、图片上传和真实发布仍需 DevTools/真机验证。 第三轮 B 组已将发布主动作显式化为 primaryAction；仍需 DevTools/真机验证真实定位授权、键盘安全区、图片上传和跳转。 DevTools CLI open/preview 当前被 9420 服务端口超时阻塞，需在 DevTools UI 中确认服务端口并手动重开项目。"
     },
     {
       "id": "detail-trust-001",
@@ -163,9 +193,16 @@
         "2026-05-14: Re-ran node --check for detail/store/cloud function, npm run check:json, node harness/check-harness.mjs, and bash harness/init.sh after compacting the detail layout; all passed.",
         "2026-05-14: Re-ran the same syntax, JSON, harness, and init checks after moving comment publishing into the floating-button dialog; all passed.",
         "2026-05-21: Added a publisher meta row to the detail hero: avatar/name on the left, place/distance/created time right-aligned on the same line.",
-        "2026-05-21: Re-ran node --check pages/detail/detail.js; node scripts/check-json.mjs; git diff --check; full WXML/WXSS DevTools compiler checks; node harness/check-harness.mjs; and WeChat DevTools detail rendering. All passed except the known non-blocking native WAServiceMainContext timeout remains visible in DevTools console."
+        "2026-05-21: Re-ran node --check pages/detail/detail.js; node scripts/check-json.mjs; git diff --check; full WXML/WXSS DevTools compiler checks; node harness/check-harness.mjs; and WeChat DevTools detail rendering. All passed except the known non-blocking native WAServiceMainContext timeout remains visible in DevTools console.",
+        "2026-06-12: C 组详情迭代产品假设：详情页已有评论和信任动作，但用户仍需从原始计数自行判断可信度；信任判断摘要应让下一步行动更清楚。",
+        "2026-06-12: Added formatTrustInsight in utils/format.js and wired detail rendering to refresh insight after post load, comment load, and comment submit.",
+        "2026-06-12: Added a TrustInsight panel before confirm/stale/report actions, with segmented metrics for confirmations, stale reports, reports, and comments plus an inline comment entry in the comments header.",
+        "2026-06-12: node --check passed for pages/detail/detail.js and utils/format.js; a Node import check for formatTrustInsight passed with Trust insight checks passed.",
+        "2026-06-12: Second C-group iteration changed TrustInsight confirmation copy from an absolute validity claim to cautious confirmation-signal wording, and changed comments-only title to guide users to read comments first.",
+        "2026-06-12: Added harness/check-trust-insight.mjs; it first failed on the old confirmation wording, then passed after covering report-over-confirm, stale-over-confirm, resolved/expired, comments-only, and short metric notes.",
+        "2026-06-12: WeChat DevTools local compilers passed for C detail branch: wcc compiled all WXML and wcsc -lc compiled all WXSS with exit code 0 and no output."
       ],
-      "notes": "评论与信任动作都涉及本地 storage 和 CloudBase 两条路径；当前代码实现已推进，仍需要 WeChat DevTools 手动验证后才能标记 passing。2026-05-21 详情头部已补充发布者头像/名称与右侧地址时间同排展示。当前会话转向发布图片云存储修复，避免同时存在多个 in_progress 功能。"
+      "notes": "评论与信任动作都涉及本地 storage 和 CloudBase 两条路径；当前代码实现已推进，仍需要 WeChat DevTools 手动验证后才能标记 passing。2026-05-21 详情头部已补充发布者头像/名称与右侧地址时间同排展示。当前会话转向发布图片云存储修复，避免同时存在多个 in_progress 功能。 2026-06-12 C 组详情迭代新增 TrustInsight 信任判断面板和评论头部入口；尚未在 WeChat DevTools/真机验证窄屏布局、信任动作刷新、游客登录评论引导和云端评论路径。 第二轮 C 组已收敛 TrustInsight 谨慎文案和冲突优先级自动检查；窄屏密度、信任动作刷新和云端评论仍需 DevTools/真机验证。"
     },
     {
       "id": "admin-001",

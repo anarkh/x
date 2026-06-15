@@ -14,3 +14,9 @@ skills-lock.json
 # Runtime logs
 log/
 *.log
+
+# Local manual-test evidence artifacts
+harness/manual-test-results.local*.json
+harness/manual-test-summary.local*.md
+harness/manual-evidence-artifacts/
+harness/devtools-recovery-report.local*.md

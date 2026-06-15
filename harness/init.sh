@@ -9,6 +9,7 @@ cd "$ROOT_DIR"
 VERIFY_CMDS=(
   "node scripts/check-json.mjs"
   "node harness/check-harness.mjs"
+  "node scripts/check-map-list-blocked-summary-preflight.mjs"
 )
 START_NOTE="Open this repository in WeChat DevTools and use project.config.json with appid touristappid."
 

@@ -2,6 +2,7 @@ import config from '../../utils/config.js';
 import { getCurrentUser } from '../../utils/auth.js';
 import { createPost, preparePostImageUpload } from '../../utils/store.js';
 import { syncTabBar } from '../../utils/tab-bar.js';
+import { buildPublishState } from './publish-state.js';
 
 const MAX_IMAGE_COUNT = 4;
 const MAX_IMAGE_SIZE_BYTES = 1536 * 1024;
@@ -9,6 +10,10 @@ const MAX_IMAGE_SIZE_TEXT = '1.5MB';
 const IMAGE_COMPRESS_QUALITY = 70;
 const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const CLOUD_FILE_ID_PREFIX = 'cloud://';
+const LOCATION_IDLE_SUMMARY = '发布前确认一次当前位置，附近的人会按这个位置看到任务。';
+const LOCATION_LOCATING_SUMMARY = '正在确认当前位置，请停留在当前页面。';
+const LOCATION_READY_SUMMARY = '已确认当前位置，需要更换时可重新确认。';
+const LOCATION_FAILED_SUMMARY = '还没拿到当前位置，请检查微信定位授权，或点重试定位。';
 
 function defaultForm() {
   return {
@@ -136,13 +141,49 @@ Page({
     maxImageSizeText: MAX_IMAGE_SIZE_TEXT,
     canAddImage: true,
     imageItems: [],
-    form: defaultForm()
+    locationStatus: 'idle',
+    locationSummary: LOCATION_IDLE_SUMMARY,
+    draftLocation: null,
+    form: defaultForm(),
+    readiness: buildPublishState({
+      form: defaultForm(),
+      isGuest: true,
+      hasLocation: false,
+      locationStatus: 'idle'
+    })
   },
 
   onShow() {
     syncTabBar(this, '/pages/publish/publish');
+    const isGuest = getCurrentUser().isGuest;
     this.setData({
-      isGuest: getCurrentUser().isGuest
+      isGuest,
+      readiness: this.buildReadiness({ isGuest })
+    });
+  },
+
+  buildReadiness(overrides = {}) {
+    const has = (key) => Object.prototype.hasOwnProperty.call(overrides, key);
+    const form = has('form') ? overrides.form : this.data.form;
+    const imageItems = has('imageItems') ? overrides.imageItems : this.data.imageItems;
+    const draftLocation = has('draftLocation') ? overrides.draftLocation : this.data.draftLocation;
+    const locationStatus = has('locationStatus') ? overrides.locationStatus : this.data.locationStatus;
+    const isGuest = has('isGuest') ? overrides.isGuest : this.data.isGuest;
+    const submitting = has('submitting') ? overrides.submitting : this.data.submitting;
+    return buildPublishState({
+      form,
+      isGuest,
+      hasLocation: Boolean(draftLocation),
+      locationStatus,
+      imageCount: imageItems.length,
+      submitting
+    });
+  },
+
+  setPublishData(patch = {}) {
+    this.setData({
+      ...patch,
+      readiness: this.buildReadiness(patch)
     });
   },
 
@@ -162,20 +203,26 @@ Page({
 
   onInput(event) {
     const field = event.currentTarget.dataset.field;
-    this.setData({
-      [`form.${field}`]: event.detail.value
-    });
+    const form = {
+      ...this.data.form,
+      [field]: event.detail.value
+    };
+    this.setPublishData({ form });
   },
 
   resetForm() {
-    this.setData({
+    const form = defaultForm();
+    this.setPublishData({
       activeGuide: config.publishGuides[config.categories[0].value],
       categoryIndex: 0,
       expiryIndex: 1,
       intentIndex: -1,
       imageItems: [],
       canAddImage: true,
-      form: defaultForm()
+      locationStatus: 'idle',
+      locationSummary: LOCATION_IDLE_SUMMARY,
+      draftLocation: null,
+      form
     });
   },
 
@@ -215,7 +262,7 @@ Page({
         status: 'local'
       }));
       const imageItems = [...this.data.imageItems, ...nextItems].slice(0, MAX_IMAGE_COUNT);
-      this.setData({
+      this.setPublishData({
         imageItems,
         canAddImage: imageItems.length < MAX_IMAGE_COUNT
       });
@@ -247,7 +294,7 @@ Page({
   removeImage(event) {
     const index = Number(event.currentTarget.dataset.index);
     const imageItems = this.data.imageItems.filter((_, itemIndex) => itemIndex !== index);
-    this.setData({
+    this.setPublishData({
       imageItems,
       canAddImage: imageItems.length < MAX_IMAGE_COUNT
     });
@@ -271,7 +318,7 @@ Page({
         ? { ...item, storedPath: '', status: 'local' }
         : item
     ));
-    this.setData({ imageItems });
+    this.setPublishData({ imageItems });
   },
 
   async persistImages() {
@@ -322,7 +369,7 @@ Page({
       await cleanupCloudFiles(uploadedFileIds);
       throw error;
     }
-    this.setData({
+    this.setPublishData({
       imageItems,
       canAddImage: imageItems.length < MAX_IMAGE_COUNT
     });
@@ -341,29 +388,79 @@ Page({
 
   applyCategoryIndex(index) {
     const category = this.data.categories[index].value;
-    this.setData({
+    const form = {
+      ...this.data.form,
+      category,
+      intent: ''
+    };
+    this.setPublishData({
       categoryIndex: index,
       activeGuide: config.publishGuides[category],
       intentIndex: -1,
-      'form.category': category,
-      'form.intent': ''
+      form
     });
   },
 
   onIntentChange(event) {
     const index = Number(event.currentTarget.dataset.index);
-    this.setData({
+    const form = {
+      ...this.data.form,
+      intent: this.data.lostFoundIntents[index].value
+    };
+    this.setPublishData({
       intentIndex: index,
-      'form.intent': this.data.lostFoundIntents[index].value
+      form
     });
   },
 
   onExpiryChange(event) {
     const index = Number(event.detail.value);
-    this.setData({
+    this.applyExpiryIndex(index);
+  },
+
+  onExpiryTap(event) {
+    const index = Number(event.currentTarget.dataset.index);
+    this.applyExpiryIndex(index);
+  },
+
+  applyExpiryIndex(index) {
+    const form = {
+      ...this.data.form,
+      expiryHours: this.data.expiryOptions[index].value
+    };
+    this.setPublishData({
       expiryIndex: index,
-      'form.expiryHours': this.data.expiryOptions[index].value
+      form
     });
+  },
+
+  async confirmLocation() {
+    if (this.data.locationStatus === 'locating') {
+      return null;
+    }
+    this.setPublishData({
+      locationStatus: 'locating',
+      locationSummary: LOCATION_LOCATING_SUMMARY
+    });
+    try {
+      const location = await getCurrentLocation();
+      this.setPublishData({
+        locationStatus: 'ready',
+        locationSummary: LOCATION_READY_SUMMARY,
+        draftLocation: location
+      });
+      wx.showToast({ title: '位置已确认', icon: 'success' });
+      return location;
+    } catch (error) {
+      console.warn('[publish] failed to confirm location', error);
+      this.setPublishData({
+        locationStatus: 'failed',
+        locationSummary: LOCATION_FAILED_SUMMARY,
+        draftLocation: null
+      });
+      wx.showToast({ title: '无法获取当前位置', icon: 'none' });
+      return null;
+    }
   },
 
   async submit() {
@@ -372,30 +469,34 @@ Page({
       return;
     }
     if (getCurrentUser().isGuest) {
-      this.setData({ isGuest: true });
+      this.setPublishData({ isGuest: true });
       this.promptLogin();
       return;
     }
-    if (!form.title.trim() || !form.body.trim()) {
-      wx.showToast({ title: '请补全标题和详情', icon: 'none' });
+    const readiness = this.data.readiness;
+    if (readiness.primaryAction === 'confirmLocation') {
+      await this.confirmLocation();
       return;
     }
-    if (form.category === 'lost_found' && !form.intent) {
-      wx.showToast({ title: '请选择丢失或捡到', icon: 'none' });
+    if (readiness.actionDisabled || readiness.primaryAction !== 'publish') {
+      wx.showToast({ title: readiness.title, icon: 'none' });
+      return;
+    }
+    if (!this.data.draftLocation) {
+      wx.showToast({ title: '请先确认当前位置', icon: 'none' });
       return;
     }
 
-    this.setData({ submitting: true });
+    this.setPublishData({ submitting: true });
     let imageUrls = [];
     let postCreated = false;
     try {
-      const currentLocation = await getCurrentLocation();
       imageUrls = await this.persistImages();
       const post = await createPost({
         ...form,
         imageUrls,
         requireCloud: imageUrls.length > 0,
-        ...currentLocation
+        ...this.data.draftLocation
       });
       postCreated = true;
       wx.showToast({ title: '已发布', icon: 'success' });
@@ -409,7 +510,7 @@ Page({
         this.resetUploadedImages(imageUrls);
       }
       if (error && error.code === 'AUTH_REQUIRED') {
-        this.setData({ isGuest: true });
+        this.setPublishData({ isGuest: true });
         this.promptLogin();
         return;
       }
@@ -421,7 +522,7 @@ Page({
         : (message.indexOf('getLocation') >= 0 ? '无法获取当前位置' : '发布失败，请稍后再试');
       wx.showToast({ title, icon: 'none' });
     } finally {
-      this.setData({ submitting: false });
+      this.setPublishData({ submitting: false });
     }
   }
 });
