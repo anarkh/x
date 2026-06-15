@@ -10,6 +10,7 @@
     "check:harness": "node harness/check-harness.mjs",
     "check:json": "node scripts/check-json.mjs",
     "check:readiness": "node --no-warnings scripts/check-devtools-readiness.mjs",
-    "inspect:devtools-port": "node scripts/inspect-devtools-port-state.mjs"
+    "inspect:devtools-port": "node scripts/inspect-devtools-port-state.mjs",
+    "inspect:devtools-recovery": "node scripts/recover-devtools-service-port.mjs --dry-run"
   }
 }

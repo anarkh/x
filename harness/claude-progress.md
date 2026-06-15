@@ -535,3 +535,15 @@
 - 更新过的文件或工件：`package.json`，`harness/devtools-smoke-command-product-brief.md`，`harness/devtools-smoke-command-design-note.md`，`harness/devtools-smoke-command-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：AF 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只把端口诊断和 strict smoke 入口变成显式手动命令。`check:devtools-smoke` 当前 blocked 是环境阻塞证据，不是地图、列表、发布或详情 UI 失败；真实 DevTools UI smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed
 - 下一步最佳动作：提交 AF 组并启动用户评测 agent，评估 AF 相比 AE 是否更直接暴露当前真实 DevTools blocker；若继续推进，优先在有用户操作配合时启用 WeChat DevTools Service Port 并复跑 strict smoke，或围绕 blocked/ready 转换补充更高层恢复准入说明
+
+### Session 044AG
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-recovery-command`
+- 本轮目标：第三十三组 DevTools recovery dry-run 手动入口实验，在 AF 已能明确诊断和 strict smoke blocked 后，把已有 recovery helper 的无副作用干跑模式暴露为 npm 命令，帮助执行者看到 before/actions/after/next steps，但不默认退出或重新打开 DevTools
+- 已完成：产品 agent 新增 `harness/devtools-recovery-command-product-brief.md`，定义 recovery dry-run 的用户价值、非目标、使用场景和当前 blocked 预期；设计 agent 新增 `harness/devtools-recovery-command-design-note.md`，定义 before status、actions attempted/skipped、after status、next steps 四段报告结构和 side-effect 文案边界；QA agent 新增 `harness/devtools-recovery-command-checklist.md`，覆盖 package script、dry-run 输出、显式 side-effect 恢复复测和证据格式；开发 agent 更新 `package.json`，新增 `inspect:devtools-recovery` 并保持默认 `check` 不运行 recovery dry-run 或 `--quit-reopen`；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node scripts/check-json.mjs`；`npm run inspect:devtools-recovery`；`npm run check`；`git diff --check`；检查未写入错误日期
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/devtools-recovery-command`，对应约定 `/tmp/street-tasks-iter-worktrees/devtools-recovery-command`；当前分支为 `codex/iter-devtools-recovery-command`；`bash harness/init.sh` 完整跑通，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`npm run inspect:devtools-recovery` 退出 0 并输出 `WeChat DevTools service port recovery report`、`mode: dry-run diagnostics`、`Before status: status: blocked`、`Actions attempted/skipped` 中 DevTools quit、reopen wait、DevTools open 均为 `skipped because --dry-run was requested`、`After status: status: blocked`、`Next steps` 提示如需恢复须显式 `--quit-reopen` 且实际 UI journey 需另行手测；`npm run check` 仍只串联 JSON、harness 和 readiness/default preflight 并通过；`git diff --check` 通过
+- 更新过的文件或工件：`package.json`，`harness/devtools-recovery-command-product-brief.md`，`harness/devtools-recovery-command-design-note.md`，`harness/devtools-recovery-command-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AG 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只提供无副作用 recovery dry-run 报告入口。dry-run before/after blocked 是环境仍阻塞且恢复未执行的证据，不是恢复失败的产品 bug，也不是地图、列表、发布或详情 UI 失败。真实 DevTools UI smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed
+- 下一步最佳动作：提交 AG 组并启动用户评测 agent，评估 AG 相比 AF 是否降低“诊断 blocked 后不知道恢复动作边界”的风险；若继续推进，优先由用户在 WeChat DevTools UI 中启用 Service Port 后复跑 AF/AG 命令，或在明确接受 side effect 时直接运行带 `--quit-reopen` 的 node 命令并记录 side effects
