@@ -7,6 +7,7 @@
     "check": "npm run check:json && npm run check:harness && npm run check:readiness",
     "check:blocked-summary": "node scripts/check-map-list-blocked-summary-preflight.mjs",
     "check:devtools-recovery-report": "node scripts/check-devtools-recovery-report.mjs",
+    "check:devtools-recovery-report-preflight": "node scripts/check-devtools-recovery-report-preflight.mjs",
     "check:devtools-smoke": "node scripts/check-devtools-smoke-access.mjs --strict",
     "check:harness": "node harness/check-harness.mjs",
     "check:json": "node scripts/check-json.mjs",
