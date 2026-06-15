@@ -6,11 +6,13 @@
   "scripts": {
     "check": "npm run check:json && npm run check:harness && npm run check:readiness",
     "check:blocked-summary": "node scripts/check-map-list-blocked-summary-preflight.mjs",
+    "check:devtools-recovery-report": "node scripts/check-devtools-recovery-report.mjs",
     "check:devtools-smoke": "node scripts/check-devtools-smoke-access.mjs --strict",
     "check:harness": "node harness/check-harness.mjs",
     "check:json": "node scripts/check-json.mjs",
     "check:readiness": "node --no-warnings scripts/check-devtools-readiness.mjs",
     "inspect:devtools-port": "node scripts/inspect-devtools-port-state.mjs",
-    "inspect:devtools-recovery": "node scripts/recover-devtools-service-port.mjs --dry-run"
+    "inspect:devtools-recovery": "node scripts/recover-devtools-service-port.mjs --dry-run",
+    "prepare:devtools-recovery-report": "node scripts/prepare-devtools-recovery-report.mjs"
   }
 }

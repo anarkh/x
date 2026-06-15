@@ -19,3 +19,4 @@ log/
 harness/manual-test-results.local*.json
 harness/manual-test-summary.local*.md
 harness/manual-evidence-artifacts/
+harness/devtools-recovery-report.local*.md
