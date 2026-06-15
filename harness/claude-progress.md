@@ -594,3 +594,14 @@
 - 更新过的文件或工件：`package.json`，`scripts/check-devtools-recovery-report-preflight.mjs`，`harness/devtools-recovery-report-preflight-product-brief.md`，`harness/devtools-recovery-report-preflight-design-note.md`，`harness/devtools-recovery-report-preflight-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：AI 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；preflight 通过只证明当前 ignored local recovery dry-run 草稿逐份通过 guard，不代表 UI passed、DevTools recovered、真机 passed、地图列表视觉通过或 service port 已恢复。真实 DevTools UI smoke 仍未执行
 - 下一步最佳动作：按用户要求本轮运行完后生成结论并终止；若未来恢复工作，应优先由有 UI 权限的执行者恢复 WeChat DevTools service port，再复跑 AF/AG/AH/AI 手动命令并单独执行真实 UI smoke
+
+### Session 047Integration
+
+- 日期：2026-06-15
+- 分支：`codex/integrate-all-capabilities`
+- 本轮目标：按用户要求把已探索完成的产品能力和验证能力集合到主分支候选中
+- 已完成：从 `main` 新建独立集成 worktree，合并 `codex/iter-devtools-recovery-report-preflight`、`codex/iter-map-ux`、`codex/iter-detail-trust`、`codex/iter-admin-risk` 和 `codex/iter-profile-activity`；保留发布准备度、详情 TrustInsight、地图 NearbyPreview、地图列表静态 guard、管理风险处理、个人中心状态面板、manual evidence/readiness/DevTools 诊断/recovery report 等能力；解决 DESIGN_SYSTEM 和 harness 记录冲突
+- 运行过的验证：合并前后运行 `bash harness/init.sh`；地图合并后运行 `node --check pages/map/map.js`、`node --check utils/post-presenter.js`、`node --check utils/geo.js`、`node harness/check-map-feed.mjs`；详情合并后运行 `node --check pages/detail/detail.js`、`node --check utils/format.js`、`node harness/check-trust-insight.mjs`；管理合并后运行 `node --check pages/admin/admin.js`、`node --check pages/admin/admin-review.js`、`node scripts/check-admin-review.mjs`；个人中心合并后运行 `node --check pages/me/me.js`、`node --check pages/me/me-state.js`、`node scripts/check-me-state.mjs`；后续还需跑完整候选验证
+- 已记录证据：各功能 helper 均已通过；`node scripts/check-json.mjs` 和 `node harness/check-harness.mjs` 在冲突解决后通过；项目既有 `MODULE_TYPELESS_PACKAGE_JSON` ESM warning 仍只影响 Node 检查输出，不影响退出码
+- 已知风险或未解决问题：本集成仍未完成真实 WeChat DevTools UI smoke 或真机验证；9420 service port blocker 仍需用户在 DevTools UI 中处理。集成进入 main 后仍不能把 map-feed 或其他用户可见旅程标记为 passing
+- 下一步最佳动作：运行完整候选验证，通过后把 `codex/integrate-all-capabilities` 合入 `main`，同时保护 `/Users/bytedance/git/x` 当前未提交的本地文件
