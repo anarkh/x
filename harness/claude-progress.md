@@ -6,9 +6,9 @@
 - 标准启动路径：在 WeChat DevTools 中打开仓库，使用 `project.config.json`，公开 appid 保持 `touristappid`
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
-- 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：优化地图信息列表卡片布局；已改为列表抽屉铺满、标题后展示分类/状态、标题下展示详情、底部左侧展示简单统计、右侧展示时间和距离
-- 当前 blocker：任务详情不存在问题在 DevTools 中已验证缓解；地图原生层仍会偶发输出 `WAServiceMainContext timeout`，但页面可显示且详情链路可用；定位按钮、真机授权、云端数据、图片跨用户可见性仍需要真机或部署后验证
+- 当前最高优先级未完成功能：`admin-001`（本分支为多组迭代实验分支）
+- 当前正在实现的用户请求：第四组管理台风险处置实验；已补充产品/设计简报，管理台卡片新增处理原因、建议动作、处置中防重复点击、确认弹窗任务标题/ID 和成功/失败反馈
+- 当前 blocker：本分支自动验证和 WXML/WXSS 本地编译已通过，但尚未在 WeChat DevTools 中以普通用户和管理员身份手动验证权限、筛选、隐藏、关闭和普通列表隐藏效果
 
 ## 会话记录
 

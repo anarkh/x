@@ -221,8 +221,20 @@
         "对任务执行关闭，确认详情状态同步为 resolved。",
         "验证 admins 集合缺失时不会导致小程序崩溃。"
       ],
-      "evidence": [],
-      "notes": "管理员身份依赖 getMyRole 云函数和本地 fallback。"
+      "evidence": [
+        "2026-06-13 admin iteration branch: Added product and design briefs for risk handling, focused on risk explanation, suggested next actions, and misoperation prevention.",
+        "2026-06-13 admin iteration branch: Extracted admin review presentation logic into pages/admin/admin-review.js with risk reason text, suggested action text, filter counts, stats, search matching, and busy action state.",
+        "2026-06-13 admin iteration branch: Updated admin task cards to show 处理原因 and 建议动作, disabled busy action buttons during hide/resolve, added task title and ID to confirmation modals, and showed success/failure toasts.",
+        "2026-06-13 admin iteration branch: node --check passed for pages/admin/admin.js and pages/admin/admin-review.js.",
+        "2026-06-13 admin iteration branch: node scripts/check-admin-review.mjs passed, output: Admin review helper checks passed. Node emitted the existing MODULE_TYPELESS_PACKAGE_JSON warning for ESM files.",
+        "2026-06-13 admin iteration branch: node scripts/check-json.mjs passed, output: Checked 11 JSON files.",
+        "2026-06-13 admin iteration branch: node harness/check-harness.mjs passed, output: Harness OK: 6 features checked.",
+        "2026-06-13 admin iteration branch: git diff --check passed with no output.",
+        "2026-06-13 admin iteration branch: WeChat DevTools local wcc compiled all WXML files with exit code 0.",
+        "2026-06-13 admin iteration branch: WeChat DevTools local wcsc -lc compiled all WXSS files with exit code 0.",
+        "2026-06-13 admin iteration branch: bash harness/init.sh passed; npm install reported up to date, then JSON and harness checks passed."
+      ],
+      "notes": "管理员身份依赖 getMyRole 云函数和本地 fallback。本实验分支已补充风险解释、建议动作、处置中防重复点击和确认弹窗信息，但尚未在 WeChat DevTools 中以普通用户/管理员身份手动验证，因此不标记 passing。"
     },
     {
       "id": "profile-activity-001",
