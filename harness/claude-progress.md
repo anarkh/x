@@ -156,6 +156,29 @@
 - 已知风险或未解决问题：DevTools 控制台仍显示既有的原生 `WAServiceMainContext timeout`，本轮观察该错误未阻断地图列表渲染；更长标题和带图卡片仍建议真机再看一次
 - 下一步最佳动作：在真机或 DevTools 不同机型宽度下打开信息列表，确认标题较长、正文较长和带图卡片都不挤压底部统计
 
+### Session 014A
+
+- 日期：2026-06-12
+- 分支：`codex/iter-map-ux`
+- 本轮目标：A 组产品/设计/开发探索地图首页附近任务浏览迭代
+- 产品假设：地图首屏虽然有列表入口，但用户进入后仍需要打开抽屉才知道最近可处理任务；新增附近优先预览应降低首次浏览成本
+- 已完成：新增 `NearbyPreview` 首屏横向预览，按距离优先展示 active/stale 任务；地图任务装饰抽到 `utils/post-presenter.js`；marker、预览和列表选中态联动；选中 marker callout 使用深色强调；新增 `harness/check-map-feed.mjs`
+- 运行过的验证：`node --check pages/map/map.js`；`node --check utils/post-presenter.js`；`node --check utils/geo.js`；`node harness/check-map-feed.mjs`
+- 已记录证据：三条 `node --check` 通过；`node harness/check-map-feed.mjs` 输出 `Map feed checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证地图原生层、首屏预览是否遮挡地图工具、窄屏文案省略、marker 点击和详情链路
+- 下一步最佳动作：在 WeChat DevTools 打开地图页，观察 NearbyPreview、点击预览/marker/列表之间的选中联动，再决定是否合入主线
+
+### Session 015A
+
+- 日期：2026-06-12
+- 分支：`codex/iter-map-ux`
+- 本轮目标：按用户评测报告收敛 NearbyPreview 遮挡和长标题风险
+- 已完成：NearbyPreview 改用 `previewTitle` 短标题；`buildNearbyPreviewPosts` 为预览卡生成截断标题；检查脚本覆盖长标题截断，避免首屏预览被超长标题撑开
+- 运行过的验证：`node harness/check-map-feed.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`node harness/check-map-feed.mjs` 先因 `previewTitle` 缺失按预期失败，补实现后输出 `Map feed checks passed.`；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证真实地图覆盖层、横向滚动和 marker callout 渲染
+- 下一步最佳动作：跑完整自动验证后，用 DevTools 验证窄屏首屏遮挡关系
+
 ### Session 014B
 
 - 日期：2026-06-12
