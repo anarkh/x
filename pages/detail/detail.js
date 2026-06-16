@@ -182,7 +182,8 @@ Page({
       return null;
     }
     return buildShareReceiverGuide(post, commentCount, {
-      entryFrom: this.data.entryQuery.from
+      entryFrom: this.data.entryQuery.from,
+      source: this.data.entryQuery.source
     });
   },
 

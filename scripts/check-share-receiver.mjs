@@ -8,7 +8,7 @@ process.on('warning', (warning) => {
 
 const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 
-function guide(overrides = {}, commentCount = 0, entryFrom = 'share') {
+function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '') {
   return buildShareReceiverGuide(
     {
       id: 'post_001',
@@ -22,7 +22,7 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share') {
       ...overrides
     },
     commentCount,
-    { entryFrom }
+    { entryFrom, source }
   );
 }
 
@@ -46,6 +46,26 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share') {
   assert.match(result.summary, /举报/);
   assert.match(result.rows[1].value, /评论|确认/);
   assert.match(result.note, /别把旧判断继续传开/);
+}
+
+{
+  const result = guide({}, 1, 'share', 'comment');
+  assert.ok(result);
+  assert.equal(result.title, '有人刚补了线索');
+  assert.equal(result.tone, 'good');
+  assert.match(result.summary, /最新评论|刚在评论区补了新线索/);
+  assert.match(result.rows[0].value, /最新评论|评论接力/);
+  assert.match(result.rows[1].value, /最新评论|评论/);
+  assert.match(result.note, /最新评论/);
+}
+
+{
+  const result = guide({ reportCount: 2 }, 2, 'share', 'comment');
+  assert.ok(result);
+  assert.equal(result.title, '先谨慎核对');
+  assert.equal(result.tone, 'danger');
+  assert.match(result.summary, /举报/);
+  assert.doesNotMatch(result.summary, /最新评论/);
 }
 
 {

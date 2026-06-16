@@ -18,7 +18,7 @@ function buildTone(post, counts) {
   return 'good';
 }
 
-function buildSummary(post, counts) {
+function buildSummary(post, counts, sourceComment) {
   if (post.status === 'hidden') {
     return '这条记录已隐藏，只适合给发布者或管理员看历史处理。';
   }
@@ -37,13 +37,16 @@ function buildSummary(post, counts) {
   if (counts.confirmations > 0) {
     return '已经有确认信号，先看现有线索，再决定确认、评论或转发。';
   }
+  if (sourceComment) {
+    return '有人刚在评论区补了新线索，先看最新评论，再决定要不要确认、补充或转给更可能路过的人。';
+  }
   if (counts.comments > 0) {
     return `评论里已有${counts.comments}条补充，先看一眼再决定下一步。`;
   }
   return '这条任务被转给你，多半是因为你更可能看见现场或补上线索。';
 }
 
-function buildReason(post, counts) {
+function buildReason(post, counts, sourceComment) {
   if (post.status === 'hidden') {
     return '内容已被隐藏，只保留给发布者或管理员处理。';
   }
@@ -62,13 +65,16 @@ function buildReason(post, counts) {
   if (counts.confirmations > 0) {
     return '已经有人确认过，适合继续补核对或补线索。';
   }
+  if (sourceComment) {
+    return '这条分享来自评论接力，先看最新评论会更完整。';
+  }
   if (counts.comments > 0) {
     return '评论里已有补充，转给你是为了接着看这些线索。';
   }
   return '你更可能在附近看见现场、知道最新变化，或者补上一条有用评论。';
 }
 
-function buildNextStep(post, counts) {
+function buildNextStep(post, counts, sourceComment) {
   if (post.status === 'hidden') {
     return '只看历史，不要继续公开扩散。';
   }
@@ -84,13 +90,16 @@ function buildNextStep(post, counts) {
   if (counts.confirmations > 0) {
     return '先看已有确认，再决定确认、评论或转发。';
   }
+  if (sourceComment) {
+    return '先看最新评论，再决定确认、补充或继续转给更可能路过的人。';
+  }
   if (counts.comments > 0) {
     return '先看评论，再补一句你知道的情况。';
   }
   return '先看任务内容，能确认就确认，知道更多就补评论。';
 }
 
-function buildIfNotOnSite(post, counts) {
+function buildIfNotOnSite(post, counts, sourceComment) {
   if (post.status === 'hidden') {
     return '只当历史记录看，不要继续公开转。';
   }
@@ -99,6 +108,9 @@ function buildIfNotOnSite(post, counts) {
   }
   if (counts.reportCount >= 2 || counts.staleCount >= 3) {
     return '先别盲转，最好交给更熟悉现场的人。';
+  }
+  if (sourceComment) {
+    return '不在现场也可以先看最新评论，再决定要不要继续转给别人。';
   }
   return '不在现场也可以先补评论，或者转给更可能路过的人。';
 }
@@ -115,6 +127,7 @@ export function buildShareReceiverGuide(post = {}, commentCount = 0, options = {
     reportCount: normalizeCount(currentPost.reportCount),
     comments: normalizeCount(commentCount)
   };
+  const sourceComment = options.source === 'comment';
 
   let title = '先看评论再决定';
   if (currentPost.status === 'hidden') {
@@ -129,24 +142,26 @@ export function buildShareReceiverGuide(post = {}, commentCount = 0, options = {
     title = '先看最新情况';
   } else if (counts.confirmations > 0) {
     title = '已有确认信号';
+  } else if (sourceComment) {
+    title = '有人刚补了线索';
   }
 
   return {
     kicker: '来自转发',
     title,
-    summary: buildSummary(currentPost, counts),
+    summary: buildSummary(currentPost, counts, sourceComment),
     rows: [
       {
         label: '为什么到你这',
-        value: buildReason(currentPost, counts)
+        value: buildReason(currentPost, counts, sourceComment)
       },
       {
         label: '先做什么',
-        value: buildNextStep(currentPost, counts)
+        value: buildNextStep(currentPost, counts, sourceComment)
       },
       {
         label: '不在现场',
-        value: buildIfNotOnSite(currentPost, counts)
+        value: buildIfNotOnSite(currentPost, counts, sourceComment)
       }
     ],
     note:
@@ -158,6 +173,8 @@ export function buildShareReceiverGuide(post = {}, commentCount = 0, options = {
             ? '有较多举报时，先核对再转，别把旧判断继续传开。'
             : counts.staleCount >= 3
               ? '有过时反馈时，先确认最新情况，再决定是否继续转发。'
+              : sourceComment
+                ? '评论区刚补了线索，先看最新评论再转会更完整。'
               : counts.comments > 0
                 ? '评论里已有补充，转发前先看一眼会更完整。'
                 : '如果你知道更多现场信息，也可以先补一条评论。',

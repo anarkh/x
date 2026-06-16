@@ -791,3 +791,16 @@
 - 更新过的文件或工件：`pages/detail/detail.wxml`，`scripts/check-viral-candidate.mjs`，`scripts/check-comment-relay.mjs`，`harness/viral-loop-candidate-product-brief.md`，`harness/viral-loop-candidate-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证发布成功页、分享接收页、普通详情页和评论成功页四种入口的实际视觉层级、分享按钮触发、窄屏换行和真实用户转化
 - 下一步最佳动作：运行完整验证后提交候选，并发送给用户评测 agent 与 F=98 的结果比较
+
+### Session 060CommentSource
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-comment-source`
+- 本轮目标：在评论接力分享链路上补一个最小来源标识，让接收侧能明确区分“有人刚补了线索”的二跳入口，同时不回退普通分享面板互斥规则
+- 产品假设：如果评论接力路径携带 `source=comment`，接收侧就能把“先看最新评论/评论区已有新线索”说得更明确，二跳用户更容易继续确认或补充，而不是只看到泛化的 `from=share` 提示
+- 已完成：新增 `harness/viral-comment-source-product-brief.md` 和 `harness/viral-comment-source-design-checklist.md`；`utils/comment-relay.js` 的分享路径新增 `source=comment`；`utils/share-receiver.js` 在 `entryFrom === 'share' && source === 'comment'` 时强化“有人刚补了线索/先看最新评论”的接收文案，同时对 `stale`、高举报、已关闭、已过期、已隐藏继续保持谨慎；`pages/detail/detail.js` 继续传递 `entryQuery.source` 给接收侧 helper；`scripts/check-comment-relay.mjs`、`scripts/check-share-receiver.mjs` 和 `scripts/check-viral-candidate.mjs` 更新了来源与互斥检查
+- 运行过的验证：`bash harness/init.sh`；`node --check utils/comment-relay.js`；`node --check utils/share-receiver.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-comment-relay.mjs`；`node --check scripts/check-share-receiver.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`
+- 已记录证据：`node --no-warnings scripts/check-comment-relay.mjs` 输出 `Comment relay checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node --no-warnings scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 通过且 readiness 里继续包含 publish flow、publish spread、comment relay、share receiver、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight；`bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/comment-relay.js`，`utils/share-receiver.js`，`pages/detail/detail.js`，`scripts/check-comment-relay.mjs`，`scripts/check-share-receiver.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-comment-source-product-brief.md`，`harness/viral-comment-source-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 `source=comment` 的实际分享接收文案、窄屏换行、系统分享面板和真实二跳行为；自动检查只能证明路径和字符串没有回退
+- 下一步最佳动作：在 WeChat DevTools 中打开一条从评论接力进入的详情页，确认接收侧真的展示“有人刚补了线索/先看最新评论”，再观察高举报和过时状态是否仍保持谨慎

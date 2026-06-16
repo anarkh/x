@@ -45,7 +45,7 @@ function prompt(overrides = {}, commentBody = '我刚路过，保安说可能在
   assert.match(result.rows[1].value, /附近|路过|物业|保安/);
   assert.match(result.actionText, /接力|转发/);
   assert.match(result.shareTitle, /新线索|门禁卡/);
-  assert.equal(result.sharePath, '/pages/detail/detail?id=post_comment_1&from=share');
+  assert.equal(result.sharePath, '/pages/detail/detail?id=post_comment_1&from=share&source=comment');
 }
 
 {
@@ -117,6 +117,7 @@ assert.doesNotMatch(loadCommentsBody, /commentRelayPrompt:\s*buildCommentRelayPr
 assert.match(detailWxml, /commentRelayPrompt/, 'detail page should render comment relay panel');
 assert.match(detailWxml, /open-type="share"/, 'comment relay panel should offer a share button when safe');
 assert.match(detailWxml, /commentRelayPrompt\.shouldEncourageRelay/, 'risky states should avoid public relay CTA');
+assert.match(detailJs, /source:\s*this\.data\.entryQuery\.source/, 'detail page should pass share source into share receiver helper');
 assert.match(
   detailWxml,
   /!showPublishSuccess && !shareReceiverGuide && !commentRelayPrompt && shareMessage/,

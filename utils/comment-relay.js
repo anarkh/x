@@ -178,6 +178,6 @@ export function buildCommentRelayPrompt(post = {}, comment = {}, commentCount = 
     shouldEncourageRelay,
     tone: buildTone(currentPost, counts),
     shareTitle: `新线索：${titleText}`,
-    sharePath: `/pages/detail/detail?id=${encodeURIComponent(currentPost.id)}&from=share`
+    sharePath: `/pages/detail/detail?id=${encodeURIComponent(currentPost.id)}&from=share&source=${encodeURIComponent('comment')}`
   };
 }

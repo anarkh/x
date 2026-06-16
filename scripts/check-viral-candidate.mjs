@@ -54,12 +54,30 @@ assert.ok(shareReceiverGuide);
 assert.match(shareReceiverGuide.summary, /评论|现场/);
 assert.equal(buildShareReceiverGuide(activePost, 0, { entryFrom: 'detail' }), null);
 
+const commentSourceReceiverGuide = buildShareReceiverGuide(activePost, 2, {
+  entryFrom: 'share',
+  source: 'comment'
+});
+assert.ok(commentSourceReceiverGuide);
+assert.equal(commentSourceReceiverGuide.title, '有人刚补了线索');
+assert.match(commentSourceReceiverGuide.summary, /最新评论|新线索/);
+assert.match(commentSourceReceiverGuide.rows[0].value, /最新评论|评论接力/);
+assert.match(commentSourceReceiverGuide.note, /最新评论/);
+
+const riskyCommentSourceGuide = buildShareReceiverGuide({ ...activePost, reportCount: 2 }, 2, {
+  entryFrom: 'share',
+  source: 'comment'
+});
+assert.ok(riskyCommentSourceGuide);
+assert.equal(riskyCommentSourceGuide.title, '先谨慎核对');
+assert.match(riskyCommentSourceGuide.summary, /举报/);
+
 const commentRelayPrompt = buildCommentRelayPrompt(activePost, {
   body: '我刚路过，东门保安说有人见过这张门禁卡。'
 }, 1);
 assert.ok(commentRelayPrompt);
 assert.equal(commentRelayPrompt.shouldEncourageRelay, true);
-assert.match(commentRelayPrompt.sharePath, /from=share/);
+assert.match(commentRelayPrompt.sharePath, /from=share&source=comment/);
 assert.match(commentRelayPrompt.summary, /最新线索|路过的人/);
 
 const riskyRelayPrompt = buildCommentRelayPrompt({ ...activePost, reportCount: 2 }, {
