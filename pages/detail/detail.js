@@ -4,6 +4,7 @@ import {
   buildPublishSpreadPlan,
   buildPublishSpreadSharePath
 } from '../../utils/publish-spread.js';
+import { buildCommentRelayPrompt } from '../../utils/comment-relay.js';
 import { buildShareReceiverGuide } from '../../utils/share-receiver.js';
 import {
   createPostComment,
@@ -88,6 +89,7 @@ Page({
     commentSubmitting: false,
     showCommentDialog: false,
     maxCommentLength: MAX_COMMENT_LENGTH,
+    commentRelayPrompt: null,
     shareMessage: null
   },
 
@@ -119,7 +121,8 @@ Page({
   async loadPost() {
     this.setData({
       loading: true,
-      isGuest: getCurrentUser().isGuest
+      isGuest: getCurrentUser().isGuest,
+      commentRelayPrompt: null
     });
     let raw = null;
     try {
@@ -137,6 +140,7 @@ Page({
         trustInsight: null,
         publishSpreadPlan: null,
         shareReceiverGuide: null,
+        commentRelayPrompt: null,
         shareMessage: null
       });
     }
@@ -148,6 +152,7 @@ Page({
         post: null,
         trustInsight: null,
         shareReceiverGuide: null,
+        commentRelayPrompt: null,
         shareMessage: null,
         loading: false
       });
@@ -299,6 +304,7 @@ Page({
           : null,
         shareReceiverGuide: this.buildShareReceiverGuide(this.data.post, nextComments.length),
         shareMessage: this.buildShareMessage(this.data.post, nextComments.length),
+        commentRelayPrompt: buildCommentRelayPrompt(this.data.post, comment, nextComments.length),
         commentDraft: '',
         commentDraftLength: 0,
         showCommentDialog: false
@@ -363,12 +369,23 @@ Page({
     });
   },
 
-  onShareAppMessage() {
+  onShareAppMessage(event = {}) {
     const post = this.data.post;
     if (!post) {
       return {
         title: config.appInfo.shareTitle,
         path: '/pages/map/map?from=share'
+      };
+    }
+    const shareContext = event.target && event.target.dataset && event.target.dataset.shareContext;
+    if (
+      shareContext === 'commentRelay' &&
+      this.data.commentRelayPrompt &&
+      this.data.commentRelayPrompt.shouldEncourageRelay
+    ) {
+      return {
+        title: this.data.commentRelayPrompt.shareTitle,
+        path: this.data.commentRelayPrompt.sharePath
       };
     }
     const shareMessage = this.data.shareMessage || this.buildShareMessage(post, this.data.comments.length);

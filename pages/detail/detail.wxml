@@ -161,6 +161,30 @@
     <button class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
   </view>
 
+  <view wx:if="{{commentRelayPrompt}}" class="panel comment-relay {{commentRelayPrompt.tone}}">
+    <view class="comment-relay-head">
+      <view class="comment-relay-kicker">{{commentRelayPrompt.kicker}}</view>
+      <view class="section-title">{{commentRelayPrompt.title}}</view>
+      <view class="comment-relay-summary">{{commentRelayPrompt.summary}}</view>
+    </view>
+    <view class="comment-relay-rows">
+      <view wx:for="{{commentRelayPrompt.rows}}" wx:key="label" class="comment-relay-row">
+        <text class="comment-relay-label">{{item.label}}</text>
+        <text class="comment-relay-value">{{item.value}}</text>
+      </view>
+    </view>
+    <view class="comment-relay-actions">
+      <button
+        wx:if="{{commentRelayPrompt.shouldEncourageRelay}}"
+        class="share-button comment-relay-button"
+        open-type="share"
+        data-share-context="commentRelay"
+      >{{commentRelayPrompt.actionText}}</button>
+      <button wx:else class="ghost-button comment-relay-button comment-relay-safe" disabled="{{true}}">{{commentRelayPrompt.actionText}}</button>
+      <view class="comment-relay-note">{{commentRelayPrompt.note}}</view>
+    </view>
+  </view>
+
   <view class="panel comments-panel stack">
     <view class="row between comments-head">
       <view>

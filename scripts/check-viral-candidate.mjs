@@ -9,6 +9,7 @@ process.on('warning', (warning) => {
 
 const { buildDetailShareMessage } = await import('../utils/share-message.js');
 const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
+const { buildCommentRelayPrompt } = await import('../utils/comment-relay.js');
 const {
   buildPublishSpreadPlan,
   buildPublishSpreadSharePath
@@ -19,11 +20,13 @@ const detailWxml = readFileSync('pages/detail/detail.wxml', 'utf8');
 
 assert.match(detailJs, /buildDetailShareMessage/, 'detail page should use share-message helper');
 assert.match(detailJs, /buildShareReceiverGuide/, 'detail page should use share-receiver helper');
+assert.match(detailJs, /buildCommentRelayPrompt/, 'detail page should use comment-relay helper');
 assert.match(detailJs, /buildPublishSpreadPlan/, 'detail page should use publish-spread helper');
 assert.match(detailJs, /buildPublishSpreadSharePath\(post\.id, this\.data\.entryQuery\)/, 'publish share path should strip publisher-only context');
 assert.match(detailWxml, /showPublishSuccess && publishSpreadPlan/, 'publish context should render spread plan');
 assert.match(detailWxml, /!showPublishSuccess && shareMessage/, 'ordinary context should render share guidance');
 assert.match(detailWxml, /share-receiver/, 'share entry should render receiver guidance');
+assert.match(detailWxml, /commentRelayPrompt/, 'comment success should render relay prompt when present');
 
 const activePost = {
   id: 'post_candidate',
@@ -46,6 +49,21 @@ const shareReceiverGuide = buildShareReceiverGuide(activePost, 2, { entryFrom: '
 assert.ok(shareReceiverGuide);
 assert.match(shareReceiverGuide.summary, /评论|现场/);
 assert.equal(buildShareReceiverGuide(activePost, 0, { entryFrom: 'detail' }), null);
+
+const commentRelayPrompt = buildCommentRelayPrompt(activePost, {
+  body: '我刚路过，东门保安说有人见过这张门禁卡。'
+}, 1);
+assert.ok(commentRelayPrompt);
+assert.equal(commentRelayPrompt.shouldEncourageRelay, true);
+assert.match(commentRelayPrompt.sharePath, /from=share/);
+assert.match(commentRelayPrompt.summary, /最新线索|路过的人/);
+
+const riskyRelayPrompt = buildCommentRelayPrompt({ ...activePost, reportCount: 2 }, {
+  body: '现场对不上。'
+}, 2);
+assert.ok(riskyRelayPrompt);
+assert.equal(riskyRelayPrompt.shouldEncourageRelay, false);
+assert.match(riskyRelayPrompt.note, /盲转|误传/);
 
 const spreadPlan = buildPublishSpreadPlan(activePost, 0);
 assert.equal(spreadPlan.shouldEncourageSpread, true);

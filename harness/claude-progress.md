@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：详情页分享接收侧转化最小可验证迭代
-- 当前 blocker：自动验证可以覆盖 JSON、harness、接收侧文案 helper、分享路径和代码静态检查；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认 `from=share` 接收提示的文案、换行、按钮层级，以及分享菜单实际行为
+- 当前正在实现的用户请求：评论成功后接力提示最小可验证迭代
+- 当前 blocker：自动验证可以覆盖 JSON、harness、评论接力 helper、分享路径和代码静态检查；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认评论成功后的 panel、`open-type="share"`、风险态按钮、窄屏换行，以及分享菜单实际行为
 
 ## 会话记录
 
@@ -765,3 +765,16 @@
 - 更新过的文件或工件：`utils/share-receiver.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-receiver.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-receiver-product-brief.md`，`harness/viral-receiver-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：真实 WeChat DevTools/真机仍需手动确认 `from=share` 提示模块的文案、换行、按钮层级以及二次转发行为；当前自动验证只能证明静态结构和 Node 逻辑正确，不能证明实际分享转化提升
 - 下一步最佳动作：在 WeChat DevTools 中打开一条从分享进入的 active、stale、resolved 和 expired 任务，确认接收侧提示、普通分享提示和信任/评论区域没有互相挤压
+
+### Session 058F
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-comment-relay`
+- 本轮目标：F 组产品/设计/开发围绕“评论成功后的二次接力”做最小可验证迭代，让用户刚补充线索后知道可以把最新线索转给更可能路过的人
+- 产品假设：用户刚在任务详情补充评论/线索时参与意愿最高；如果评论成功后给出轻量接力提示，并在高风险或关闭状态下不鼓励公开扩散，可能把一次评论转化为一次更谨慎的二次传播
+- 已完成：新增 `harness/viral-comment-relay-product-brief.md` 和 `harness/viral-comment-relay-design-checklist.md`；新增 `utils/comment-relay.js` 生成评论成功后的接力提示；详情页新增 `commentRelayPrompt`，页面加载/重新进入默认隐藏，只在评论提交成功后显示轻量 panel；active 低风险任务显示 `open-type="share"` 接力按钮，`stale`、高举报、`resolved`、`expired`、`hidden` 只显示谨慎提醒；新增 `scripts/check-comment-relay.mjs` 并接入 `scripts/check-devtools-readiness.mjs` 与 `scripts/check-viral-candidate.mjs`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --no-warnings scripts/check-comment-relay.mjs` 红灯确认缺少 `utils/comment-relay.js`；`node --check utils/comment-relay.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-comment-relay.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/viral-comment-relay`，对应约定 `/tmp/street-tasks-iter-worktrees/viral-comment-relay`；当前分支为 `codex/iter-viral-comment-relay`；新增检查先因缺少 `utils/comment-relay.js` 按预期失败，补实现和详情接入后输出 `Comment relay checks passed.`；五条 `node --check` 均通过；既有 `Share message checks passed.`、`Publish spread checks passed.`、`Share receiver checks passed.`、`Viral candidate checks passed.` 均通过；readiness 输出包含 `Comment relay checks passed.`，随后 publish flow、publish spread、share receiver、Trust insight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 通过且默认 readiness 包含评论接力检查；最后一次 `bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/comment-relay.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-comment-relay.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-comment-relay-product-brief.md`，`harness/viral-comment-relay-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证真实评论成功后的 panel 插入位置、分享按钮触发、系统分享卡片、风险态无公开转发 CTA、窄屏换行、键盘/安全区和云端评论路径；自动检查不能证明真实分享转化提升
+- 下一步最佳动作：在 WeChat DevTools 中登录后对 active、stale、高举报、resolved/expired 任务分别提交或模拟评论成功状态，确认评论接力 panel 只在成功后出现，active 能打开分享面板，风险态只提示不盲转
