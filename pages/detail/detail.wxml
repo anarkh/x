@@ -60,6 +60,24 @@
     <view class="share-receiver-note">{{shareReceiverGuide.note}}</view>
   </view>
 
+  <view wx:if="{{receiverConversionPrompt}}" class="panel receiver-conversion {{receiverConversionPrompt.tone}}">
+    <view class="receiver-conversion-head">
+      <view class="receiver-conversion-kicker">{{receiverConversionPrompt.kicker}}</view>
+      <view class="receiver-conversion-title">{{receiverConversionPrompt.title}}</view>
+      <view class="receiver-conversion-body">{{receiverConversionPrompt.body}}</view>
+    </view>
+    <view class="receiver-conversion-actions">
+      <button
+        wx:if="{{receiverConversionPrompt.shouldRelay}}"
+        class="share-button receiver-conversion-button"
+        open-type="share"
+        data-share-context="receiverConversion"
+      >{{receiverConversionPrompt.buttonText}}</button>
+      <button wx:else class="ghost-button receiver-conversion-button receiver-conversion-safe" disabled>{{receiverConversionPrompt.buttonText}}</button>
+      <view class="receiver-conversion-note">{{receiverConversionPrompt.note}}</view>
+    </view>
+  </view>
+
   <view wx:if="{{showPublishSuccess && publishSpreadPlan}}" class="panel publish-spread {{publishSpreadPlan.tone}}">
     <view class="spread-head">
       <view class="spread-kicker">已发布到{{appInfo.shortName}}</view>
@@ -103,7 +121,7 @@
     </view>
   </view>
 
-  <view wx:if="{{!showPublishSuccess && !shareReceiverGuide && !actionRelayPrompt && !commentRelayPrompt && shareMessage}}" class="panel share-panel stack">
+  <view wx:if="{{!showPublishSuccess && !shareReceiverGuide && !receiverConversionPrompt && !actionRelayPrompt && !commentRelayPrompt && shareMessage}}" class="panel share-panel stack">
     <view class="row between share-head">
       <view class="share-head-copy">
         <view class="share-kicker">转发给会帮忙的人</view>

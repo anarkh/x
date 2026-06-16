@@ -111,16 +111,21 @@ const loadCommentsBody = detailJs.slice(loadCommentsStart, loadCommentsEnd);
 
 assert.match(detailJs, /buildCommentRelayPrompt/, 'detail page should import and use comment relay helper');
 assert.match(detailJs, /commentRelayPrompt: null/, 'comment relay prompt should default to hidden');
-assert.match(detailJs, /commentRelayPrompt:\s*buildCommentRelayPrompt\(/, 'comment submit success should create the relay prompt');
+assert.match(detailJs, /receiverConversionPrompt: null/, 'receiver conversion prompt should default to hidden');
+assert.match(detailJs, /commentRelayPrompt: receiverConversionPrompt\s*\?\s*null\s*:\s*buildCommentRelayPrompt\(/, 'comment submit success should create the relay prompt when receiver conversion is absent');
+assert.match(detailJs, /const receiverConversionPrompt = buildReceiverConversionPrompt\(this\.data\.post, 'comment'/, 'comment submit success should build the receiver conversion prompt');
+assert.match(detailJs, /commentRelayPrompt: receiverConversionPrompt\s*\?\s*null/, 'receiver conversion should suppress comment relay prompt');
 assert.match(detailJs, /shareContext === 'commentRelay'/, 'comment relay share button should have its own share payload');
+assert.match(detailJs, /shareContext === 'receiverConversion'/, 'receiver conversion share button should have its own share payload');
 assert.doesNotMatch(loadCommentsBody, /commentRelayPrompt:\s*buildCommentRelayPrompt\(/, 'loading comments should not show the relay prompt by default');
 assert.match(detailWxml, /commentRelayPrompt/, 'detail page should render comment relay panel');
+assert.match(detailWxml, /receiverConversionPrompt/, 'detail page should render receiver conversion panel');
 assert.match(detailWxml, /open-type="share"/, 'comment relay panel should offer a share button when safe');
 assert.match(detailWxml, /commentRelayPrompt\.shouldEncourageRelay/, 'risky states should avoid public relay CTA');
 assert.match(detailJs, /source:\s*this\.data\.entryQuery\.source/, 'detail page should pass share source into share receiver helper');
 assert.match(
   detailWxml,
-  /!showPublishSuccess && !shareReceiverGuide && !actionRelayPrompt && !commentRelayPrompt && shareMessage/,
+  /!showPublishSuccess && !shareReceiverGuide && !receiverConversionPrompt && !actionRelayPrompt && !commentRelayPrompt && shareMessage/,
   'ordinary share panel should hide while receiver, action relay, or comment relay prompts are active'
 );
 assert.match(detailWxss, /\.comment-relay\b/, 'detail styles should include the relay panel');

@@ -109,14 +109,19 @@ const loadPostBody = detailJs.slice(loadPostStart, loadPostEnd);
 
 assert.match(detailJs, /buildActionRelayPrompt/, 'detail page should import action relay helper');
 assert.match(detailJs, /actionRelayPrompt: null/, 'action relay prompt should default to hidden');
+assert.match(detailJs, /receiverConversionPrompt: null/, 'receiver conversion prompt should default to hidden');
 assert.match(loadPostBody, /actionRelayPrompt: null/, 'loading post should reset action relay prompt');
-assert.match(detailJs, /actionRelayPrompt:\s*buildActionRelayPrompt\(post, action\)/, 'react success should create action relay prompt');
+assert.match(loadPostBody, /receiverConversionPrompt: null/, 'loading post should reset receiver conversion prompt');
+assert.match(detailJs, /const receiverConversionPrompt = buildReceiverConversionPrompt\(post, action/, 'react success should build receiver conversion prompt');
+assert.match(detailJs, /actionRelayPrompt: receiverConversionPrompt \? null : buildActionRelayPrompt\(post, action\)/, 'receiver conversion should suppress action relay prompt');
 assert.match(detailJs, /shareContext === 'actionRelay'/, 'action relay share button should have its own share payload');
+assert.match(detailJs, /shareContext === 'receiverConversion'/, 'receiver conversion share button should have its own share payload');
 assert.match(detailWxml, /actionRelayPrompt/, 'detail page should render action relay prompt');
+assert.match(detailWxml, /receiverConversionPrompt/, 'detail page should render receiver conversion prompt');
 assert.match(detailWxml, /data-share-context="actionRelay"/, 'action relay share button should identify share context');
 assert.match(
   detailWxml,
-  /!showPublishSuccess && !shareReceiverGuide && !actionRelayPrompt && !commentRelayPrompt && shareMessage/,
+  /!showPublishSuccess && !shareReceiverGuide && !receiverConversionPrompt && !actionRelayPrompt && !commentRelayPrompt && shareMessage/,
   'ordinary share panel should hide while receiver, action relay, or comment relay prompts are active'
 );
 assert.match(detailWxss, /\.comment-relay\b/, 'action relay panel should reuse relay panel styles');

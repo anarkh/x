@@ -6,6 +6,7 @@ import {
 } from '../../utils/publish-spread.js';
 import { buildActionRelayPrompt } from '../../utils/action-relay.js';
 import { buildCommentRelayPrompt } from '../../utils/comment-relay.js';
+import { buildReceiverConversionPrompt } from '../../utils/receiver-conversion.js';
 import { buildShareReceiverGuide } from '../../utils/share-receiver.js';
 import {
   createPostComment,
@@ -84,6 +85,7 @@ Page({
     trustInsight: null,
     publishSpreadPlan: null,
     shareReceiverGuide: null,
+    receiverConversionPrompt: null,
     entryQuery: {},
     commentDraft: '',
     commentDraftLength: 0,
@@ -100,7 +102,8 @@ Page({
       id: query.id || '',
       entryQuery: query || {},
       showPublishSuccess: query.from === 'publish',
-      showShareReceiverGuide: query.from === 'share'
+      showShareReceiverGuide: query.from === 'share',
+      receiverConversionPrompt: null
     });
     if (wx.showShareMenu) {
       wx.showShareMenu({
@@ -125,7 +128,8 @@ Page({
       loading: true,
       isGuest: getCurrentUser().isGuest,
       actionRelayPrompt: null,
-      commentRelayPrompt: null
+      commentRelayPrompt: null,
+      receiverConversionPrompt: null
     });
     let raw = null;
     try {
@@ -145,6 +149,7 @@ Page({
         shareReceiverGuide: null,
         actionRelayPrompt: null,
         commentRelayPrompt: null,
+        receiverConversionPrompt: null,
         shareMessage: null
       });
     }
@@ -158,6 +163,7 @@ Page({
         shareReceiverGuide: null,
         actionRelayPrompt: null,
         commentRelayPrompt: null,
+        receiverConversionPrompt: null,
         shareMessage: null,
         loading: false
       });
@@ -172,6 +178,7 @@ Page({
         : null,
       shareReceiverGuide: this.buildShareReceiverGuide(post, this.data.comments.length),
       actionRelayPrompt: null,
+      receiverConversionPrompt: null,
       shareMessage: this.buildShareMessage(post, this.data.comments.length),
       loading: false
     });
@@ -303,6 +310,9 @@ Page({
         decorateComment(comment),
         ...this.data.comments.filter((item) => item.id !== comment.id)
       ];
+      const receiverConversionPrompt = buildReceiverConversionPrompt(this.data.post, 'comment', {
+        entryFrom: this.data.entryQuery.from
+      });
       this.setData({
         comments: nextComments,
         trustInsight: formatTrustInsight(this.data.post, nextComments.length),
@@ -312,7 +322,10 @@ Page({
         shareReceiverGuide: this.buildShareReceiverGuide(this.data.post, nextComments.length),
         shareMessage: this.buildShareMessage(this.data.post, nextComments.length),
         actionRelayPrompt: null,
-        commentRelayPrompt: buildCommentRelayPrompt(this.data.post, comment, nextComments.length),
+        commentRelayPrompt: receiverConversionPrompt
+          ? null
+          : buildCommentRelayPrompt(this.data.post, comment, nextComments.length),
+        receiverConversionPrompt,
         commentDraft: '',
         commentDraftLength: 0,
         showCommentDialog: false
@@ -349,9 +362,13 @@ Page({
       icon: 'success'
     });
     this.renderPost(post);
+    const receiverConversionPrompt = buildReceiverConversionPrompt(post, action, {
+      entryFrom: this.data.entryQuery.from
+    });
     this.setData({
-      actionRelayPrompt: buildActionRelayPrompt(post, action),
-      commentRelayPrompt: null
+      actionRelayPrompt: receiverConversionPrompt ? null : buildActionRelayPrompt(post, action),
+      commentRelayPrompt: null,
+      receiverConversionPrompt
     });
   },
 
@@ -408,6 +425,16 @@ Page({
       return {
         title: this.data.actionRelayPrompt.shareTitle,
         path: this.data.actionRelayPrompt.sharePath
+      };
+    }
+    if (
+      shareContext === 'receiverConversion' &&
+      this.data.receiverConversionPrompt &&
+      this.data.receiverConversionPrompt.shouldRelay
+    ) {
+      return {
+        title: this.data.receiverConversionPrompt.shareTitle,
+        path: this.data.receiverConversionPrompt.sharePath
       };
     }
     const shareMessage = this.data.shareMessage || this.buildShareMessage(post, this.data.comments.length);
