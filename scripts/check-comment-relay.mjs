@@ -117,6 +117,11 @@ assert.doesNotMatch(loadCommentsBody, /commentRelayPrompt:\s*buildCommentRelayPr
 assert.match(detailWxml, /commentRelayPrompt/, 'detail page should render comment relay panel');
 assert.match(detailWxml, /open-type="share"/, 'comment relay panel should offer a share button when safe');
 assert.match(detailWxml, /commentRelayPrompt\.shouldEncourageRelay/, 'risky states should avoid public relay CTA');
+assert.match(
+  detailWxml,
+  /!showPublishSuccess && !shareReceiverGuide && !commentRelayPrompt && shareMessage/,
+  'ordinary share panel should hide while receiver or comment relay prompts are active'
+);
 assert.match(detailWxss, /\.comment-relay\b/, 'detail styles should include the relay panel');
 
 console.log('Comment relay checks passed.');

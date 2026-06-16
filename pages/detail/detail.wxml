@@ -103,7 +103,7 @@
     </view>
   </view>
 
-  <view wx:if="{{!showPublishSuccess && shareMessage}}" class="panel share-panel stack">
+  <view wx:if="{{!showPublishSuccess && !shareReceiverGuide && !commentRelayPrompt && shareMessage}}" class="panel share-panel stack">
     <view class="row between share-head">
       <view class="share-head-copy">
         <view class="share-kicker">转发给会帮忙的人</view>

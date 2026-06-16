@@ -24,7 +24,11 @@ assert.match(detailJs, /buildCommentRelayPrompt/, 'detail page should use commen
 assert.match(detailJs, /buildPublishSpreadPlan/, 'detail page should use publish-spread helper');
 assert.match(detailJs, /buildPublishSpreadSharePath\(post\.id, this\.data\.entryQuery\)/, 'publish share path should strip publisher-only context');
 assert.match(detailWxml, /showPublishSuccess && publishSpreadPlan/, 'publish context should render spread plan');
-assert.match(detailWxml, /!showPublishSuccess && shareMessage/, 'ordinary context should render share guidance');
+assert.match(
+  detailWxml,
+  /!showPublishSuccess && !shareReceiverGuide && !commentRelayPrompt && shareMessage/,
+  'ordinary context should render share guidance only when receiver and comment relay prompts are absent'
+);
 assert.match(detailWxml, /share-receiver/, 'share entry should render receiver guidance');
 assert.match(detailWxml, /commentRelayPrompt/, 'comment success should render relay prompt when present');
 

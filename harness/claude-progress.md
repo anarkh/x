@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：评论成功后接力提示最小可验证迭代
-- 当前 blocker：自动验证可以覆盖 JSON、harness、评论接力 helper、分享路径和代码静态检查；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认评论成功后的 panel、`open-type="share"`、风险态按钮、窄屏换行，以及分享菜单实际行为
+- 当前正在实现的用户请求：详情页传播闭环候选节制迭代
+- 当前 blocker：自动验证可以覆盖 JSON、harness、发布/分享接收/评论接力互斥结构、分享路径和代码静态检查；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认四种入口的视觉层级、`open-type="share"`、风险态按钮、窄屏换行，以及分享菜单实际行为
 
 ## 会话记录
 
@@ -778,3 +778,16 @@
 - 更新过的文件或工件：`utils/comment-relay.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-comment-relay.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-comment-relay-product-brief.md`，`harness/viral-comment-relay-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证真实评论成功后的 panel 插入位置、分享按钮触发、系统分享卡片、风险态无公开转发 CTA、窄屏换行、键盘/安全区和云端评论路径；自动检查不能证明真实分享转化提升
 - 下一步最佳动作：在 WeChat DevTools 中登录后对 active、stale、高举报、resolved/expired 任务分别提交或模拟评论成功状态，确认评论接力 panel 只在成功后出现，active 能打开分享面板，风险态只提示不盲转
+
+### Session 059LoopCandidate
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-loop-candidate`
+- 本轮目标：把发布后扩散、分享接收侧引导、评论后接力三段高分能力收敛为一个更克制的传播闭环候选，避免同一屏出现多个主要传播 CTA
+- 产品假设：发布者、分享接收者、刚评论的用户处在不同意图时刻；如果普通分享面板、接收侧引导和评论接力提示同时堆叠，会稀释下一步行动，因此同一时刻只保留一个主要传播行动更适合作为合入候选
+- 已完成：新增 `harness/viral-loop-candidate-product-brief.md` 和 `harness/viral-loop-candidate-design-checklist.md`；详情页普通分享面板改为仅在非发布、非分享接收、非评论接力状态下显示；`scripts/check-viral-candidate.mjs` 和 `scripts/check-comment-relay.mjs` 增加互斥展示 guard
+- 运行过的验证：`node --check pages/detail/detail.js`；`node --check scripts/check-viral-candidate.mjs`；`node --check scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node --no-warnings scripts/check-comment-relay.mjs` 输出 `Comment relay checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node --no-warnings scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 通过且 readiness 包含 publish spread、comment relay、share receiver、candidate flow、map list 等检查；`bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`pages/detail/detail.wxml`，`scripts/check-viral-candidate.mjs`，`scripts/check-comment-relay.mjs`，`harness/viral-loop-candidate-product-brief.md`，`harness/viral-loop-candidate-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证发布成功页、分享接收页、普通详情页和评论成功页四种入口的实际视觉层级、分享按钮触发、窄屏换行和真实用户转化
+- 下一步最佳动作：运行完整验证后提交候选，并发送给用户评测 agent 与 F=98 的结果比较
