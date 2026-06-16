@@ -15,6 +15,10 @@ const requiredFiles = [
   'scripts/check-viral-journey-evidence.mjs',
   'scripts/check-viral-journey-manual-evidence.mjs',
   'scripts/prepare-viral-journey-manual-evidence.mjs',
+  'scripts/prepare-viral-journey-devtools-run.mjs',
+  'scripts/inspect-devtools-port-state.mjs',
+  'scripts/check-devtools-smoke-access.mjs',
+  'scripts/recover-devtools-service-port.mjs',
   'scripts/check-share-receiver.mjs',
   'scripts/check-share-receiver-action.mjs',
   'harness/check-trust-insight.mjs',
@@ -27,7 +31,9 @@ const requiredFiles = [
   'harness/map-list-resilience-product-brief.md',
   'harness/map-list-resilience-checklist.md',
   'harness/viral-journey-manual-evidence-product-brief.md',
-  'harness/viral-journey-manual-evidence-checklist.md'
+  'harness/viral-journey-manual-evidence-checklist.md',
+  'harness/viral-devtools-journey-run-product-brief.md',
+  'harness/viral-devtools-journey-run-checklist.md'
 ];
 
 const readinessDocs = [
@@ -36,7 +42,9 @@ const readinessDocs = [
   'harness/map-list-resilience-product-brief.md',
   'harness/map-list-resilience-checklist.md',
   'harness/viral-journey-manual-evidence-product-brief.md',
-  'harness/viral-journey-manual-evidence-checklist.md'
+  'harness/viral-journey-manual-evidence-checklist.md',
+  'harness/viral-devtools-journey-run-product-brief.md',
+  'harness/viral-devtools-journey-run-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -105,6 +113,9 @@ runCheck('scripts/check-viral-journey-evidence.mjs', 'viral journey evidence mod
 console.log('Running viral journey manual evidence gate. This scans ignored local result files only when they exist.');
 runCheck('scripts/check-viral-journey-manual-evidence.mjs', 'viral journey manual evidence gate');
 console.log('Viral journey manual evidence gate passed structurally; this does not prove DevTools or real-device UI passed.');
+console.log('Running viral journey DevTools manual-run preparation. This is no-side-effect environment diagnostics and does not prove UI passed.');
+runCheck('scripts/prepare-viral-journey-devtools-run.mjs', 'viral journey DevTools manual-run preparation');
+console.log('Viral journey DevTools manual-run preparation completed; port/smoke blockers remain manual execution blockers, not UI passed evidence.');
 runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
 runCheck('scripts/check-share-receiver-action.mjs', 'share receiver action strip check');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');

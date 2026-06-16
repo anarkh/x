@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：N 组传播链路真实可验证性证据框架
-- 当前 blocker：自动场景证据可以覆盖首跳 `from=share`、接收侧说明/action strip、普通 share panel 互斥、confirm/comment 后 `receiverConversionPrompt` 优先级、二跳 `from=share&source=receiver` 和 `source=receiver` 接收语境；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认点击、系统分享面板、真实二跳路径、窄屏换行和云端评论路径
+- 当前正在实现的用户请求：P 组传播链路真实手测 DevTools 启动诊断包
+- 当前 blocker：`prepare:viral-journey-run` 当前只读诊断显示 DevTools port status 为 `unknown`、smoke access 为 `blocked`，9420 无 listener 且无进程声明目标 ide-http-port；真实 WeChat DevTools UI smoke/真机验证仍未执行，五条 viral journey 仍需要手动确认点击、系统分享面板、真实二跳 payload、窄屏换行和云端评论路径
 
 ## 会话记录
 
@@ -871,3 +871,17 @@
 - 更新过的文件或工件：`scripts/check-viral-journey-manual-evidence.mjs`，`scripts/prepare-viral-journey-manual-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-journey-evidence.mjs`，`harness/viral-journey-manual-evidence-product-brief.md`，`harness/viral-journey-manual-evidence-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：没有执行 WeChat DevTools 或真机真实链路手测；当前无真实 local viral journey result 文件，因此新 gate 只验证了无文件语义、schema gate 和临时样例，不产生 UI passed；没有提交截图、录屏、payload 或日志；`harness/local-viral-journey-results*.json` 只有在本地 git ignore/exclude 后才会被 readiness 扫描，默认 prepare 使用现有 ignored 的 `harness/manual-test-results.local-viral-journey*.json`
 - 下一步最佳动作：主 agent 复核后，用 `node --no-warnings scripts/prepare-viral-journey-manual-evidence.mjs --dry-run` 预览，真实手测时生成 ignored local draft，打开 DevTools/真机执行五条 required journey，填入 evidence 和 share payload/无法检查说明，再运行 `node --no-warnings scripts/check-viral-journey-manual-evidence.mjs <local-json>` 与 `node --no-warnings scripts/check-devtools-readiness.mjs`
+
+### Session 066ViralDevToolsJourneyLaunch
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-devtools-journey-launch`
+- 本轮目标：P 组产品/设计/开发围绕“传播链真实手测启动前置诊断”补一个单命令运行包，把 DevTools port/smoke blocker、viral journey evidence draft、existing local evidence scan 和五条必跑 journey 下一步收拢在一起
+- 产品假设：N/O 已能建模和校验传播链 evidence，但真实手测仍容易卡在 DevTools service port、草稿路径、payload 记录和 journey 顺序上；把启动前诊断做成无副作用单入口，可以让后续执行者更快判断当前是环境 blocked、证据 blocked、产品 failed，还是可进入真实 UI 手测
+- 已完成：产品 agent 新增 `harness/viral-devtools-journey-run-product-brief.md`；设计/QA agent 新增 `harness/viral-devtools-journey-run-checklist.md`；开发 agent 新增 `scripts/prepare-viral-journey-devtools-run.mjs`；主线程补齐 no-side-effect smoke access probe、recovery dry-run hint、`--strict` 环境 blocker 失败语义、`npm run prepare:viral-journey-run` 入口，并把新启动包接入 `scripts/check-devtools-readiness.mjs`
+- 运行包行为：默认不写文件、不 quit/open DevTools、不 preview、不清缓存、不杀进程；依次运行 `scripts/inspect-devtools-port-state.mjs`、无副作用 `scripts/check-devtools-smoke-access.mjs`、`scripts/prepare-viral-journey-manual-evidence.mjs --dry-run`、`scripts/check-viral-journey-manual-evidence.mjs`，再从 `harness/viral-journey-manual-results.example.json` 输出五条 required journeys 和 share payload 注意事项
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/prepare-viral-journey-devtools-run.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`npm run prepare:viral-journey-run`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/prepare-viral-journey-devtools-run.mjs --strict` 负向；`npm run check`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`
+- 已记录证据：`npm run prepare:viral-journey-run` 输出 port status `unknown`、diagnosis `connect_refused`，smoke access `blocked`，service port 9420 无 listener 且无 matching ide-http-port declaration；同一输出确认没有 quit/open/preview/cache/process 副作用，没有写 local draft，并列出五条 journeys 与 `from=share&source=receiver` payload 要求；readiness 输出包含新启动包且最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；strict 负向按预期 exit 1 并提示 port status `unknown`、smoke access `blocked`；`npm run check`、`bash harness/init.sh`、JSON、harness 和 `git diff --check` 均通过
+- 更新过的文件或工件：`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/viral-devtools-journey-run-product-brief.md`，`harness/viral-devtools-journey-run-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：P 组仍未执行 WeChat DevTools 或真机真实链路手测；当前 9420 service port blocker 只是环境阻塞，不是 UI failed；没有真实 local viral journey result 文件，也没有截图、录屏、payload 或日志 evidence；readiness/diagnostic/dry-run/checker-passed 均不能写成 UI passed
+- 下一步最佳动作：若要进入真实手测，先在 WeChat DevTools UI 启用 Settings -> Security Settings -> Service Port 并确认端口匹配 9420，重新运行 `npm run prepare:viral-journey-run` 直到 port/smoke ready；随后生成 ignored local draft，执行五条 viral journey，填入 evidence 和 share payload/无法检查说明，再运行 manual evidence checker 与 readiness

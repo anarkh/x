@@ -14,6 +14,7 @@
     "check:readiness": "node --no-warnings scripts/check-devtools-readiness.mjs",
     "inspect:devtools-port": "node scripts/inspect-devtools-port-state.mjs",
     "inspect:devtools-recovery": "node scripts/recover-devtools-service-port.mjs --dry-run",
-    "prepare:devtools-recovery-report": "node scripts/prepare-devtools-recovery-report.mjs"
+    "prepare:devtools-recovery-report": "node scripts/prepare-devtools-recovery-report.mjs",
+    "prepare:viral-journey-run": "node --no-warnings scripts/prepare-viral-journey-devtools-run.mjs"
   }
 }
