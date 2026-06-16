@@ -120,8 +120,8 @@ assert.match(detailWxml, /commentRelayPrompt\.shouldEncourageRelay/, 'risky stat
 assert.match(detailJs, /source:\s*this\.data\.entryQuery\.source/, 'detail page should pass share source into share receiver helper');
 assert.match(
   detailWxml,
-  /!showPublishSuccess && !shareReceiverGuide && !commentRelayPrompt && shareMessage/,
-  'ordinary share panel should hide while receiver or comment relay prompts are active'
+  /!showPublishSuccess && !shareReceiverGuide && !actionRelayPrompt && !commentRelayPrompt && shareMessage/,
+  'ordinary share panel should hide while receiver, action relay, or comment relay prompts are active'
 );
 assert.match(detailWxss, /\.comment-relay\b/, 'detail styles should include the relay panel');
 

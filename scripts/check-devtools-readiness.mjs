@@ -10,6 +10,7 @@ const requiredFiles = [
   'scripts/check-publish-flow.mjs',
   'scripts/check-publish-spread.mjs',
   'scripts/check-comment-relay.mjs',
+  'scripts/check-action-relay.mjs',
   'scripts/check-share-receiver.mjs',
   'harness/check-trust-insight.mjs',
   'scripts/check-candidate-flow.mjs',
@@ -89,6 +90,7 @@ function runCheck(scriptPath, label) {
 runCheck('scripts/check-publish-flow.mjs', 'publish flow model check');
 runCheck('scripts/check-publish-spread.mjs', 'post-publish spread plan check');
 runCheck('scripts/check-comment-relay.mjs', 'comment relay prompt check');
+runCheck('scripts/check-action-relay.mjs', 'action relay prompt check');
 runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');

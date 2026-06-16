@@ -4,6 +4,7 @@ import {
   buildPublishSpreadPlan,
   buildPublishSpreadSharePath
 } from '../../utils/publish-spread.js';
+import { buildActionRelayPrompt } from '../../utils/action-relay.js';
 import { buildCommentRelayPrompt } from '../../utils/comment-relay.js';
 import { buildShareReceiverGuide } from '../../utils/share-receiver.js';
 import {
@@ -89,6 +90,7 @@ Page({
     commentSubmitting: false,
     showCommentDialog: false,
     maxCommentLength: MAX_COMMENT_LENGTH,
+    actionRelayPrompt: null,
     commentRelayPrompt: null,
     shareMessage: null
   },
@@ -122,6 +124,7 @@ Page({
     this.setData({
       loading: true,
       isGuest: getCurrentUser().isGuest,
+      actionRelayPrompt: null,
       commentRelayPrompt: null
     });
     let raw = null;
@@ -140,6 +143,7 @@ Page({
         trustInsight: null,
         publishSpreadPlan: null,
         shareReceiverGuide: null,
+        actionRelayPrompt: null,
         commentRelayPrompt: null,
         shareMessage: null
       });
@@ -152,6 +156,7 @@ Page({
         post: null,
         trustInsight: null,
         shareReceiverGuide: null,
+        actionRelayPrompt: null,
         commentRelayPrompt: null,
         shareMessage: null,
         loading: false
@@ -166,6 +171,7 @@ Page({
         ? buildPublishSpreadPlan(post, this.data.comments.length)
         : null,
       shareReceiverGuide: this.buildShareReceiverGuide(post, this.data.comments.length),
+      actionRelayPrompt: null,
       shareMessage: this.buildShareMessage(post, this.data.comments.length),
       loading: false
     });
@@ -305,6 +311,7 @@ Page({
           : null,
         shareReceiverGuide: this.buildShareReceiverGuide(this.data.post, nextComments.length),
         shareMessage: this.buildShareMessage(this.data.post, nextComments.length),
+        actionRelayPrompt: null,
         commentRelayPrompt: buildCommentRelayPrompt(this.data.post, comment, nextComments.length),
         commentDraft: '',
         commentDraftLength: 0,
@@ -342,6 +349,10 @@ Page({
       icon: 'success'
     });
     this.renderPost(post);
+    this.setData({
+      actionRelayPrompt: buildActionRelayPrompt(post, action),
+      commentRelayPrompt: null
+    });
   },
 
   resolve() {
@@ -387,6 +398,16 @@ Page({
       return {
         title: this.data.commentRelayPrompt.shareTitle,
         path: this.data.commentRelayPrompt.sharePath
+      };
+    }
+    if (
+      shareContext === 'actionRelay' &&
+      this.data.actionRelayPrompt &&
+      this.data.actionRelayPrompt.shouldEncourageRelay
+    ) {
+      return {
+        title: this.data.actionRelayPrompt.shareTitle,
+        path: this.data.actionRelayPrompt.sharePath
       };
     }
     const shareMessage = this.data.shareMessage || this.buildShareMessage(post, this.data.comments.length);

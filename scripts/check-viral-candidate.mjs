@@ -10,6 +10,7 @@ process.on('warning', (warning) => {
 const { buildDetailShareMessage } = await import('../utils/share-message.js');
 const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 const { buildCommentRelayPrompt } = await import('../utils/comment-relay.js');
+const { buildActionRelayPrompt } = await import('../utils/action-relay.js');
 const {
   buildPublishSpreadPlan,
   buildPublishSpreadSharePath
@@ -21,16 +22,18 @@ const detailWxml = readFileSync('pages/detail/detail.wxml', 'utf8');
 assert.match(detailJs, /buildDetailShareMessage/, 'detail page should use share-message helper');
 assert.match(detailJs, /buildShareReceiverGuide/, 'detail page should use share-receiver helper');
 assert.match(detailJs, /buildCommentRelayPrompt/, 'detail page should use comment-relay helper');
+assert.match(detailJs, /buildActionRelayPrompt/, 'detail page should use action-relay helper');
 assert.match(detailJs, /buildPublishSpreadPlan/, 'detail page should use publish-spread helper');
 assert.match(detailJs, /buildPublishSpreadSharePath\(post\.id, this\.data\.entryQuery\)/, 'publish share path should strip publisher-only context');
 assert.match(detailWxml, /showPublishSuccess && publishSpreadPlan/, 'publish context should render spread plan');
 assert.match(
   detailWxml,
-  /!showPublishSuccess && !shareReceiverGuide && !commentRelayPrompt && shareMessage/,
-  'ordinary context should render share guidance only when receiver and comment relay prompts are absent'
+  /!showPublishSuccess && !shareReceiverGuide && !actionRelayPrompt && !commentRelayPrompt && shareMessage/,
+  'ordinary context should render share guidance only when receiver and relay prompts are absent'
 );
 assert.match(detailWxml, /share-receiver/, 'share entry should render receiver guidance');
 assert.match(detailWxml, /commentRelayPrompt/, 'comment success should render relay prompt when present');
+assert.match(detailWxml, /actionRelayPrompt/, 'trust action success should render relay prompt when present');
 
 const activePost = {
   id: 'post_candidate',
@@ -64,6 +67,14 @@ assert.match(commentSourceReceiverGuide.summary, /最新评论|新线索/);
 assert.match(commentSourceReceiverGuide.rows[0].value, /最新评论|评论接力/);
 assert.match(commentSourceReceiverGuide.note, /最新评论/);
 
+const confirmSourceReceiverGuide = buildShareReceiverGuide({ ...activePost, confirmations: 2 }, 1, {
+  entryFrom: 'share',
+  source: 'confirm'
+});
+assert.ok(confirmSourceReceiverGuide);
+assert.equal(confirmSourceReceiverGuide.title, '有人刚确认过');
+assert.match(confirmSourceReceiverGuide.summary, /确认信号|评论/);
+
 const riskyCommentSourceGuide = buildShareReceiverGuide({ ...activePost, reportCount: 2 }, 2, {
   entryFrom: 'share',
   source: 'comment'
@@ -86,6 +97,17 @@ const riskyRelayPrompt = buildCommentRelayPrompt({ ...activePost, reportCount: 2
 assert.ok(riskyRelayPrompt);
 assert.equal(riskyRelayPrompt.shouldEncourageRelay, false);
 assert.match(riskyRelayPrompt.note, /盲转|误传/);
+
+const actionRelayPrompt = buildActionRelayPrompt({ ...activePost, confirmations: 1 }, 'confirm');
+assert.ok(actionRelayPrompt);
+assert.equal(actionRelayPrompt.shouldEncourageRelay, true);
+assert.match(actionRelayPrompt.sharePath, /from=share&source=confirm/);
+assert.match(actionRelayPrompt.summary, /确认信号|路过的人/);
+
+const riskyActionRelayPrompt = buildActionRelayPrompt({ ...activePost, reportCount: 2 }, 'confirm');
+assert.ok(riskyActionRelayPrompt);
+assert.equal(riskyActionRelayPrompt.shouldEncourageRelay, false);
+assert.match(riskyActionRelayPrompt.note, /举报|误传/);
 
 const spreadPlan = buildPublishSpreadPlan(activePost, 0);
 assert.equal(spreadPlan.shouldEncourageSpread, true);

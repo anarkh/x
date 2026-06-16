@@ -103,7 +103,7 @@
     </view>
   </view>
 
-  <view wx:if="{{!showPublishSuccess && !shareReceiverGuide && !commentRelayPrompt && shareMessage}}" class="panel share-panel stack">
+  <view wx:if="{{!showPublishSuccess && !shareReceiverGuide && !actionRelayPrompt && !commentRelayPrompt && shareMessage}}" class="panel share-panel stack">
     <view class="row between share-head">
       <view class="share-head-copy">
         <view class="share-kicker">转发给会帮忙的人</view>
@@ -159,6 +159,30 @@
 
   <view wx:if="{{post.canShowResolve}}" class="resolve-row">
     <button class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
+  </view>
+
+  <view wx:if="{{actionRelayPrompt}}" class="panel comment-relay action-relay {{actionRelayPrompt.tone}}">
+    <view class="comment-relay-head">
+      <view class="comment-relay-kicker">{{actionRelayPrompt.kicker}}</view>
+      <view class="section-title">{{actionRelayPrompt.title}}</view>
+      <view class="comment-relay-summary">{{actionRelayPrompt.summary}}</view>
+    </view>
+    <view class="comment-relay-rows">
+      <view wx:for="{{actionRelayPrompt.rows}}" wx:key="label" class="comment-relay-row">
+        <text class="comment-relay-label">{{item.label}}</text>
+        <text class="comment-relay-value">{{item.value}}</text>
+      </view>
+    </view>
+    <view class="comment-relay-actions">
+      <button
+        wx:if="{{actionRelayPrompt.shouldEncourageRelay}}"
+        class="share-button comment-relay-button"
+        open-type="share"
+        data-share-context="actionRelay"
+      >{{actionRelayPrompt.actionText}}</button>
+      <button wx:else class="ghost-button comment-relay-button comment-relay-safe" disabled="{{true}}">{{actionRelayPrompt.actionText}}</button>
+      <view class="comment-relay-note">{{actionRelayPrompt.note}}</view>
+    </view>
   </view>
 
   <view wx:if="{{commentRelayPrompt}}" class="panel comment-relay {{commentRelayPrompt.tone}}">

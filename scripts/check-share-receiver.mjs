@@ -60,6 +60,17 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '
 }
 
 {
+  const result = guide({ confirmations: 2 }, 1, 'share', 'confirm');
+  assert.ok(result);
+  assert.equal(result.title, '有人刚确认过');
+  assert.equal(result.tone, 'good');
+  assert.match(result.summary, /确认信号|评论/);
+  assert.match(result.rows[0].value, /确认接力|确认和评论/);
+  assert.match(result.rows[1].value, /确认|评论/);
+  assert.match(result.note, /确认和评论/);
+}
+
+{
   const result = guide({ reportCount: 2 }, 2, 'share', 'comment');
   assert.ok(result);
   assert.equal(result.title, '先谨慎核对');
