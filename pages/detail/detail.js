@@ -1,6 +1,10 @@
 import config from '../../utils/config.js';
 import { getCurrentUser, isAdmin } from '../../utils/auth.js';
 import {
+  buildPublishSpreadPlan,
+  buildPublishSpreadSharePath
+} from '../../utils/publish-spread.js';
+import {
   createPostComment,
   getPost,
   hasReactedToPost,
@@ -73,6 +77,8 @@ Page({
     comments: [],
     commentsLoading: false,
     trustInsight: null,
+    publishSpreadPlan: null,
+    entryQuery: {},
     commentDraft: '',
     commentDraftLength: 0,
     commentSubmitting: false,
@@ -83,6 +89,7 @@ Page({
   onLoad(query) {
     this.setData({
       id: query.id || '',
+      entryQuery: query || {},
       showPublishSuccess: query.from === 'publish'
     });
     if (wx.showShareMenu) {
@@ -121,7 +128,8 @@ Page({
       this.setData({
         comments: [],
         commentsLoading: false,
-        trustInsight: null
+        trustInsight: null,
+        publishSpreadPlan: null
       });
     }
   },
@@ -139,6 +147,9 @@ Page({
     this.setData({
       post,
       trustInsight: formatTrustInsight(post, this.data.comments.length),
+      publishSpreadPlan: this.data.showPublishSuccess
+        ? buildPublishSpreadPlan(post, this.data.comments.length)
+        : null,
       loading: false
     });
   },
@@ -154,6 +165,9 @@ Page({
       this.setData({
         comments: nextComments,
         trustInsight: formatTrustInsight(this.data.post, nextComments.length),
+        publishSpreadPlan: this.data.showPublishSuccess && this.data.post
+          ? buildPublishSpreadPlan(this.data.post, nextComments.length)
+          : null,
         commentsLoading: false
       });
     } catch (error) {
@@ -251,6 +265,9 @@ Page({
       this.setData({
         comments: nextComments,
         trustInsight: formatTrustInsight(this.data.post, nextComments.length),
+        publishSpreadPlan: this.data.showPublishSuccess
+          ? buildPublishSpreadPlan(this.data.post, nextComments.length)
+          : null,
         commentDraft: '',
         commentDraftLength: 0,
         showCommentDialog: false
@@ -325,7 +342,7 @@ Page({
     }
     return {
       title: `${post.title} · ${post.placeName}`,
-      path: `/pages/detail/detail?id=${post.id}`
+      path: buildPublishSpreadSharePath(post.id, this.data.entryQuery)
     };
   },
 

@@ -45,13 +45,46 @@
     </view>
   </view>
 
-  <view wx:if="{{showPublishSuccess}}" class="panel publish-success">
-    <view>
-      <view class="success-title">已发布到{{appInfo.shortName}}</view>
-      <view class="muted">转发给附近的人，能更快获得确认、更新或关闭。</view>
+  <view wx:if="{{showPublishSuccess && publishSpreadPlan}}" class="panel publish-spread {{publishSpreadPlan.tone}}">
+    <view class="spread-head">
+      <view class="spread-kicker">已发布到{{appInfo.shortName}}</view>
+      <view class="spread-title">{{publishSpreadPlan.title}}</view>
+      <view class="spread-body">{{publishSpreadPlan.body}}</view>
     </view>
-    <view class="row success-actions">
-      <button class="share-button" open-type="share">转发</button>
+
+    <view class="spread-steps">
+      <view class="spread-step">
+        <text class="spread-index">1</text>
+        <view class="spread-copy">
+          <view class="spread-label">先转给</view>
+          <view class="spread-text">{{publishSpreadPlan.audience}}</view>
+        </view>
+      </view>
+      <view class="spread-step">
+        <text class="spread-index">2</text>
+        <view class="spread-copy">
+          <view class="spread-label">想得到</view>
+          <view class="spread-text">{{publishSpreadPlan.signalGoal}}</view>
+        </view>
+      </view>
+      <view class="spread-step">
+        <text class="spread-index">3</text>
+        <view class="spread-copy">
+          <view class="spread-label">稍后回访</view>
+          <view class="spread-text">{{publishSpreadPlan.followUp}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="spread-notes">
+      <view>{{publishSpreadPlan.imageHint}}</view>
+      <view>{{publishSpreadPlan.commentHint}}</view>
+    </view>
+
+    <view class="spread-actions">
+      <button wx:if="{{publishSpreadPlan.shouldEncourageSpread}}" class="share-button spread-share-button" open-type="share">{{publishSpreadPlan.actionText}}</button>
+      <button wx:else class="ghost-button spread-map-button" bindtap="goHome">{{publishSpreadPlan.actionText}}</button>
+      <view class="spread-action-note">{{publishSpreadPlan.sharePrompt}}</view>
     </view>
   </view>
 

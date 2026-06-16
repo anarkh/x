@@ -715,3 +715,16 @@
 - 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
 - 已知风险或未解决问题：自动检查不能替代真实原生地图层视觉验收；需要用户在 WeChat DevTools 中重新编译后确认“列表 6”同一行居中对齐，并且点击仍打开列表抽屉
 - 下一步最佳动作：用户在 WeChat DevTools 重新编译地图页，观察右上角白色“列表 N”按钮内文字和数字是否齐平
+
+### Session 055C
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-publish`
+- 本轮目标：C 组产品/设计/开发围绕“发布成功后的扩散闭环”做最小可验证迭代，让发布者在刚发布任务后知道转给谁、想获得什么信号、稍后如何回访
+- 产品假设：发布者刚创建任务时动机最强，如果在 `from=publish` 详情上下文给出清晰扩散对象、确认/线索目标和回访动作，会更愿意转发到附近群或让朋友确认
+- 已完成：新增 `harness/viral-publish-product-brief.md` 和 `harness/viral-publish-design-checklist.md`；新增 `utils/publish-spread.js` 生成分类/意图/图片/评论/状态相关的谨慎扩散计划；详情页仅在 `from=publish` 时把原发布成功卡升级为三步扩散计划；`resolved`、`expired`、`hidden` 不鼓励扩散；分享 path 保留非发布来源参数但移除 `from=publish`；新增 `scripts/check-publish-spread.mjs` 并接入 `scripts/check-devtools-readiness.mjs`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/publish-spread.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-publish-spread.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`npm run check`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/viral-publish`，对应约定 `/tmp/street-tasks-iter-worktrees/viral-publish`；当前分支为 `codex/iter-viral-publish`；新增检查先因缺少 `utils/publish-spread.js` 按预期失败，补实现后输出 `Publish spread checks passed.`；四条 `node --check` 均通过；readiness 输出 `Publish flow checks passed.`、`Publish spread checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`Admin auth error checks passed.`、`Map list resilience checks passed.` 和 `DevTools readiness checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`bash harness/init.sh` 完整跑通；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出；`npm run check` 通过
+- 更新过的文件或工件：`utils/publish-spread.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-publish-spread.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-publish-product-brief.md`，`harness/viral-publish-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中完成真实发布、发布后详情跳转、open-type share 系统面板、分享接收路径、窄屏扩散计划布局、图片任务渲染和 resolved/expired 非扩散视觉验证；自动检查不能证明转发率提升或真实分享面板可用
+- 下一步最佳动作：在 WeChat DevTools 中用一条带图和一条无图任务走完整发布成功链路，确认扩散计划出现、普通详情入口不出现、转发路径不带 `from=publish`，再用真机观察分享卡片和窄屏布局
