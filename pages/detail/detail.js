@@ -12,6 +12,7 @@ import {
   reactToPost,
   resolvePost
 } from '../../utils/store.js';
+import { buildDetailShareMessage } from '../../utils/share-message.js';
 import {
   categoryLabel,
   formatCreatedAt,
@@ -83,7 +84,8 @@ Page({
     commentDraftLength: 0,
     commentSubmitting: false,
     showCommentDialog: false,
-    maxCommentLength: MAX_COMMENT_LENGTH
+    maxCommentLength: MAX_COMMENT_LENGTH,
+    shareMessage: null
   },
 
   onLoad(query) {
@@ -129,7 +131,8 @@ Page({
         comments: [],
         commentsLoading: false,
         trustInsight: null,
-        publishSpreadPlan: null
+        publishSpreadPlan: null,
+        shareMessage: null
       });
     }
   },
@@ -139,6 +142,7 @@ Page({
       this.setData({
         post: null,
         trustInsight: null,
+        shareMessage: null,
         loading: false
       });
       return;
@@ -150,7 +154,14 @@ Page({
       publishSpreadPlan: this.data.showPublishSuccess
         ? buildPublishSpreadPlan(post, this.data.comments.length)
         : null,
+      shareMessage: this.buildShareMessage(post, this.data.comments.length),
       loading: false
+    });
+  },
+
+  buildShareMessage(post, commentCount = 0) {
+    return buildDetailShareMessage(post, commentCount, {
+      surface: this.data.showPublishSuccess ? 'publish' : 'detail'
     });
   },
 
@@ -168,6 +179,7 @@ Page({
         publishSpreadPlan: this.data.showPublishSuccess && this.data.post
           ? buildPublishSpreadPlan(this.data.post, nextComments.length)
           : null,
+        shareMessage: this.buildShareMessage(this.data.post, nextComments.length),
         commentsLoading: false
       });
     } catch (error) {
@@ -268,6 +280,7 @@ Page({
         publishSpreadPlan: this.data.showPublishSuccess
           ? buildPublishSpreadPlan(this.data.post, nextComments.length)
           : null,
+        shareMessage: this.buildShareMessage(this.data.post, nextComments.length),
         commentDraft: '',
         commentDraftLength: 0,
         showCommentDialog: false
@@ -337,12 +350,15 @@ Page({
     if (!post) {
       return {
         title: config.appInfo.shareTitle,
-        path: '/pages/map/map'
+        path: '/pages/map/map?from=share'
       };
     }
+    const shareMessage = this.data.shareMessage || this.buildShareMessage(post, this.data.comments.length);
     return {
-      title: `${post.title} · ${post.placeName}`,
-      path: buildPublishSpreadSharePath(post.id, this.data.entryQuery)
+      title: shareMessage.title,
+      path: this.data.showPublishSuccess
+        ? buildPublishSpreadSharePath(post.id, this.data.entryQuery)
+        : shareMessage.path
     };
   },
 

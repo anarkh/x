@@ -88,6 +88,24 @@
     </view>
   </view>
 
+  <view wx:if="{{!showPublishSuccess && shareMessage}}" class="panel share-panel stack">
+    <view class="row between share-head">
+      <view class="share-head-copy">
+        <view class="share-kicker">转发给会帮忙的人</view>
+        <view class="section-title">{{shareMessage.heading}}</view>
+        <view class="muted">{{shareMessage.summary}}</view>
+      </view>
+      <button class="share-button" open-type="share">转发</button>
+    </view>
+    <view class="share-guide">
+      <view wx:for="{{shareMessage.rows}}" wx:key="label" class="share-guide-row">
+        <text class="share-guide-label">{{item.label}}</text>
+        <text class="share-guide-value">{{item.value}}</text>
+      </view>
+    </view>
+    <view class="share-note">{{shareMessage.note}}</view>
+  </view>
+
   <view wx:if="{{trustInsight}}" class="trust-panel stack">
     <view class="trust-insight {{trustInsight.tone}}">
       <view class="trust-eyebrow">信任判断</view>

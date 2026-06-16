@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：修复地图右上角列表按钮内“列表”和数量没有对齐的问题
-- 当前 blocker：自动验证可以覆盖 JSON、harness、发布状态机、TrustInsight、地图列表静态 guard、管理/个人中心 helper、管理员错误格式和 DevTools 诊断入口；真实 WeChat DevTools UI smoke/真机验证仍受 9420 service port 与人工操作阻塞，地图右上角“列表 N”单行居中按钮、右下角定位/找一找按钮和选中任务卡避让关系仍需用户在 DevTools 重新编译后肉眼确认
+- 当前正在实现的用户请求：详情页任务转发最小可验证迭代
+- 当前 blocker：自动验证可以覆盖 JSON、harness、详情页分享文案 helper、分享路径和代码静态检查；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认详情页分享模块的文案、按钮和换行表现，以及分享菜单实际行为
 
 ## 会话记录
 
@@ -728,3 +728,27 @@
 - 更新过的文件或工件：`utils/publish-spread.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-publish-spread.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-publish-product-brief.md`，`harness/viral-publish-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中完成真实发布、发布后详情跳转、open-type share 系统面板、分享接收路径、窄屏扩散计划布局、图片任务渲染和 resolved/expired 非扩散视觉验证；自动检查不能证明转发率提升或真实分享面板可用
 - 下一步最佳动作：在 WeChat DevTools 中用一条带图和一条无图任务走完整发布成功链路，确认扩散计划出现、普通详情入口不出现、转发路径不带 `from=publish`，再用真机观察分享卡片和窄屏布局
+
+### Session 055Share
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-share`
+- 本轮目标：围绕详情页任务转发做一版能提升用户自发裂变的最小可验证迭代
+- 已完成：新增 `utils/share-message.js`，把详情页分享标题、路径和说明文案统一收敛到单一 helper；新增 `scripts/check-share-message.mjs` 覆盖 active、stale、report、resolved、expired、hidden 和无任务边界；详情页改为展示轻量分享提示层，明确告诉用户转给谁、为什么转、转出去能帮什么，并让 `onShareAppMessage` 直接复用同一 helper 输出动态 title/path
+- 运行过的验证：`node --check utils/share-message.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-share-message.mjs`；`node scripts/check-share-message.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`bash harness/init.sh`
+- 已记录证据：`node --check` 三项均通过；`node scripts/check-share-message.mjs` 首次命中 expired 断言后已按更谨慎的文案调整通过；`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`bash harness/init.sh` 完整跑通并再次通过 JSON 和 harness 自检
+- 更新过的文件或工件：`utils/share-message.js`，`scripts/check-share-message.mjs`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`harness/viral-share-product-brief.md`，`harness/viral-share-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：分享模块的实际视觉表现、按钮触发和系统分享菜单仍需在 WeChat DevTools 中手动确认；当前只验证了静态结构和 Node 逻辑
+- 下一步最佳动作：在 WeChat DevTools 中打开一条 active、resolved、expired 和高举报详情，逐个点开分享菜单确认 title/path 与页面提示一致
+
+### Session 056ViralCandidate
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-candidate`
+- 本轮目标：组合 C 组发布后扩散计划和 A 组普通详情分享提示，形成更接近合入候选的大版本
+- 已完成：从 `codex/iter-viral-publish` 创建候选分支并合入 `codex/iter-viral-share`；详情页现在在 `from=publish` 场景展示发布者专属三步扩散计划，在普通详情入口展示“转给谁 / 为什么转 / 能帮什么”的通用分享提示；`onShareAppMessage` 使用 A 组谨慎标题，发布成功场景继续用 C 组接收侧普通详情 path，避免把发布者专属卡转给接收者
+- 运行过的验证：`node --check pages/detail/detail.js`；`node --check utils/share-message.js`；`node --check utils/publish-spread.js`；`node --check scripts/check-share-message.mjs`；`node --check scripts/check-publish-spread.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`bash harness/init.sh`；`npm run check`
+- 已记录证据：`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node --no-warnings scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通；`npm run check` 输出 JSON、harness、publish flow、publish spread、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 更新过的文件或工件：`utils/share-message.js`，`utils/publish-spread.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-message.mjs`，`scripts/check-publish-spread.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机中验证组合后的发布成功页、普通详情页、分享面板、接收路径、窄屏布局和带图任务渲染
+- 下一步最佳动作：提交组合候选，再把该大版本发送给用户评测 agent 追加评分
