@@ -15,6 +15,20 @@ const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 const { buildShareReceiverActionStrip } = await import('../utils/share-receiver-actions.js');
 
 const manualExample = JSON.parse(readFileSync('harness/viral-journey-manual-results.example.json', 'utf8'));
+const forbiddenShareReasonTerms = [
+  '属实',
+  '已验证',
+  '可靠',
+  '放心转发',
+  '官方确认',
+  '官方验证',
+  '平台验证',
+  '证明',
+  '必须',
+  '马上',
+  '扩散起来'
+];
+const forbiddenShareReasonPattern = new RegExp(forbiddenShareReasonTerms.join('|'));
 
 for (const requiredManualEvidenceFile of [
   'scripts/check-viral-journey-manual-evidence.mjs',
@@ -44,6 +58,25 @@ function post(overrides = {}) {
   };
 }
 
+function assertShareReason(prompt, action, message) {
+  assert.ok(prompt.shareReason, `${message}: should include a short share reason`);
+  assert.equal(prompt.shareReason.label, '转给下一位时可以说', `${message}: share reason label should stay compact`);
+  assert.equal(typeof prompt.shareReason.text, 'string', `${message}: share reason text should be a string`);
+  assert.ok(prompt.shareReason.text.length >= 10, `${message}: share reason should be readable`);
+  assert.ok(prompt.shareReason.text.length <= 28, `${message}: share reason should stay short`);
+  assert.doesNotMatch(
+    prompt.shareReason.text,
+    forbiddenShareReasonPattern,
+    `${message}: share reason should avoid guarantee or pressure wording`
+  );
+
+  if (action === 'comment') {
+    assert.match(prompt.shareReason.text, /线索|评论/, `${message}: comment reason should mention clue/comment context`);
+  } else {
+    assert.match(prompt.shareReason.text, /确认|核对/, `${message}: confirm reason should mention confirmation/checking`);
+  }
+}
+
 function assertNoEncouragingReceiverSurface(overrides, message) {
   const currentPost = post(overrides);
   assert.equal(
@@ -57,6 +90,7 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
   });
   assert.ok(conversion, `${message}: receiver conversion still gives cautious feedback`);
   assert.equal(conversion.shouldRelay, false, `${message}: receiver conversion should not expose public relay CTA`);
+  assert.equal(conversion.shareReason, null, `${message}: receiver conversion should not expose encouraging share reason`);
   assert.doesNotMatch(conversion.sharePath, /receiverAction=/, `${message}: risky conversion path should not carry receiverAction`);
 }
 
@@ -105,6 +139,7 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
   assert.match(confirmConversion.targetRows[0].value, /丢失|门卫|前台|核对/);
   assert.match(confirmConversion.targetRows[1].value, /确认|评论|线索/);
   assert.match(confirmConversion.targetRows[2].value, /物品|评论|地点/);
+  assertShareReason(confirmConversion, 'confirm', 'receiver confirm conversion');
 
   const commentConversion = buildReceiverConversionPrompt(post(), 'comment', {
     entryFrom: 'share'
@@ -119,6 +154,12 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
   assert.match(commentConversion.shareTitle, /已补充线索/);
   assert.ok(Array.isArray(commentConversion.targetRows), 'comment receiver conversion should include targeted relay rows');
   assert.equal(commentConversion.targetRows.length, 3, 'comment receiver conversion should keep 3 target rows');
+  assertShareReason(commentConversion, 'comment', 'receiver comment conversion');
+  assert.notEqual(
+    confirmConversion.shareReason.text,
+    commentConversion.shareReason.text,
+    'confirm and comment share reasons should be distinct'
+  );
 
   const actionRelay = buildActionRelayPrompt({ ...post(), confirmations: 1 }, 'confirm');
   const commentRelay = buildCommentRelayPrompt(post(), { body: '刚路过，保安说有人见过。' }, 1);
@@ -243,6 +284,7 @@ const receiverBlockStart = detailWxml.indexOf('wx:if="{{shareReceiverGuide}}"');
 const receiverBlockEnd = detailWxml.indexOf('<view wx:if="{{receiverConversionPrompt}}"', receiverBlockStart);
 const receiverBlock = detailWxml.slice(receiverBlockStart, receiverBlockEnd);
 const receiverConversionIndex = detailWxml.indexOf('wx:if="{{receiverConversionPrompt}}"');
+const shareReasonIndex = detailWxml.indexOf('class="receiver-conversion-share-reason"');
 const actionRelayIndex = detailWxml.indexOf('wx:if="{{actionRelayPrompt}}"');
 const commentRelayIndex = detailWxml.indexOf('wx:if="{{commentRelayPrompt}}"');
 
@@ -300,6 +342,12 @@ assert.ok(
   receiverConversionIndex >= 0 && receiverConversionIndex < actionRelayIndex && receiverConversionIndex < commentRelayIndex,
   'receiver conversion panel should render before action/comment relay panels'
 );
+assert.ok(shareReasonIndex > receiverConversionIndex, 'share reason should render inside receiver conversion panel');
+assert.ok(
+  detailWxml.indexOf('class="receiver-conversion-targets"') < shareReasonIndex &&
+    shareReasonIndex < detailWxml.indexOf('class="receiver-conversion-actions"'),
+  'share reason should render after targetRows and before actions'
+);
 
 assert.equal(
   manualExample.exampleNotice,
@@ -316,6 +364,19 @@ assert.match(
   manualExample.summary.recommendation,
   /Do not treat this example as release evidence/,
   'manual evidence example should warn against release evidence use'
+);
+
+const confirmManualJourney = manualExample.journeys.find((journey) => journey.id === 'receiver-confirm-conversion');
+const commentManualJourney = manualExample.journeys.find((journey) => journey.id === 'receiver-comment-conversion');
+assert.ok(confirmManualJourney, 'manual evidence template should include receiver confirm conversion journey');
+assert.ok(commentManualJourney, 'manual evidence template should include receiver comment conversion journey');
+assert.ok(
+  confirmManualJourney.expected.some((item) => /share reason|确认|re-check/.test(item)),
+  'manual confirm journey should ask testers to observe the confirm share reason'
+);
+assert.ok(
+  commentManualJourney.expected.some((item) => /share reason|线索|latest comments/.test(item)),
+  'manual comment journey should ask testers to observe the comment share reason'
 );
 for (const journey of manualExample.journeys) {
   assert.equal(journey.status, 'not_run', `manual journey ${journey.id} should start as not_run`);

@@ -36,6 +36,15 @@ function buildSafeBody(action) {
     : '刚确认过这条后继续转给更可能路过的人，能更快补全现场信息。';
 }
 
+function buildShareReason(action) {
+  return {
+    label: '转给下一位时可以说',
+    text: action === 'comment'
+      ? '我刚补了线索，你先看最新评论'
+      : '我刚确认过，帮忙再核对一下'
+  };
+}
+
 function targetAudienceForPost(post) {
   if (post.category === 'lost_found') {
     if (post.intent === 'found') {
@@ -187,6 +196,7 @@ export function buildReceiverConversionPrompt(post = {}, action = '', options = 
     buttonText: shouldRelay ? '继续接力' : '先看确认和评论',
     note: buildNote(currentPost, counts, shouldRelay),
     targetRows: shouldRelay ? buildTargetRows(currentPost, normalizedAction) : [],
+    shareReason: shouldRelay ? buildShareReason(normalizedAction) : null,
     shareTitle: shouldRelay
       ? `${normalizedAction === 'comment' ? '已补充线索' : '已确认接力'}：${titleText(currentPost)}`
       : `附近任务：${titleText(currentPost)}`,

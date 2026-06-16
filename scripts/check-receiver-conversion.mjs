@@ -10,6 +10,21 @@ process.on('warning', (warning) => {
 const { buildReceiverConversionPrompt } = await import('../utils/receiver-conversion.js');
 const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 
+const forbiddenShareReasonTerms = [
+  '属实',
+  '已验证',
+  '可靠',
+  '放心转发',
+  '官方确认',
+  '官方验证',
+  '平台验证',
+  '证明',
+  '必须',
+  '马上',
+  '扩散起来'
+];
+const forbiddenShareReasonPattern = new RegExp(forbiddenShareReasonTerms.join('|'));
+
 function post(overrides = {}) {
   return {
     id: 'post_receiver_1',
@@ -23,6 +38,27 @@ function post(overrides = {}) {
     placeName: '东门地铁口',
     ...overrides
   };
+}
+
+function assertShareReason(prompt, action, message) {
+  assert.ok(prompt.shareReason, `${message}: should include a short share reason`);
+  assert.equal(prompt.shareReason.label, '转给下一位时可以说', `${message}: share reason should keep a compact label`);
+  assert.equal(typeof prompt.shareReason.text, 'string', `${message}: share reason text should be a string`);
+  assert.ok(prompt.shareReason.text.length >= 10, `${message}: share reason should be readable`);
+  assert.ok(prompt.shareReason.text.length <= 28, `${message}: share reason should stay short`);
+  assert.doesNotMatch(
+    prompt.shareReason.text,
+    forbiddenShareReasonPattern,
+    `${message}: share reason should avoid guarantee or pressure wording`
+  );
+
+  if (action === 'comment') {
+    assert.match(prompt.shareReason.text, /线索|评论/, `${message}: comment reason should mention clue/comment context`);
+    assert.doesNotMatch(prompt.shareReason.text, /确认过/, `${message}: comment reason should differ from confirm copy`);
+  } else {
+    assert.match(prompt.shareReason.text, /确认|核对/, `${message}: confirm reason should mention confirmation/checking`);
+    assert.doesNotMatch(prompt.shareReason.text, /最新评论/, `${message}: confirm reason should differ from comment copy`);
+  }
 }
 
 function assertTargetRows(prompt, message) {
@@ -55,6 +91,7 @@ function assertTargetRows(prompt, message) {
   assert.match(confirmed.targetRows[0].value, /丢失|路过|门卫|前台/);
   assert.match(confirmed.targetRows[1].value, /刚确认|确认/);
   assert.match(confirmed.targetRows[2].value, /物品|地点|评论/);
+  assertShareReason(confirmed, 'confirm', 'low-risk confirm');
 
   const commented = buildReceiverConversionPrompt(post(), 'comment', { entryFrom: 'share' });
   assert.ok(commented);
@@ -68,6 +105,12 @@ function assertTargetRows(prompt, message) {
   );
   assertTargetRows(commented, 'low-risk comment');
   assert.match(commented.targetRows[1].value, /刚补|线索|评论/);
+  assertShareReason(commented, 'comment', 'low-risk comment');
+  assert.notEqual(
+    confirmed.shareReason.text,
+    commented.shareReason.text,
+    'confirm and comment should expose different share reasons'
+  );
 }
 
 {
@@ -107,6 +150,7 @@ function assertTargetRows(prompt, message) {
 
   for (const risky of [weakStale, weakReport, stale, report, resolved]) {
     assert.ok(!risky.targetRows || risky.targetRows.length === 0, 'risk/closed prompts should not include encouraging target rows');
+    assert.equal(risky.shareReason, null, 'risk/closed prompts should not include encouraging share reason');
     assert.doesNotMatch(risky.buttonText, /接力|转发/, 'risk/closed prompt should not expose public relay copy');
     assert.doesNotMatch(risky.sharePath, /receiverAction=/, 'risk/closed prompt should not carry receiver action source');
   }
@@ -232,6 +276,7 @@ assert.match(detailJs, /actionRelayPrompt: receiverConversionPrompt \? null : bu
 assert.match(detailJs, /shareContext === 'receiverConversion'/, 'receiver conversion share button should have its own share payload');
 assert.match(detailWxml, /receiverConversionPrompt/, 'detail page should render receiver conversion panel');
 assert.match(detailWxml, /receiverConversionPrompt\.targetRows && receiverConversionPrompt\.targetRows\.length/, 'receiver conversion panel should safely render target rows');
+assert.match(detailWxml, /receiverConversionPrompt\.shareReason/, 'detail page should render the receiver conversion share reason');
 assert.match(
   detailWxml,
   /wx:if="\{\{receiverConversionPrompt\.shouldRelay\}\}"[\s\S]*?open-type="share"/,
@@ -243,6 +288,20 @@ assert.match(
   /!showPublishSuccess && !shareReceiverGuide && !receiverConversionPrompt && !actionRelayPrompt && !commentRelayPrompt && shareMessage/,
   'ordinary share panel should hide while receiver conversion or relay prompts are active'
 );
+{
+  const targetsIndex = detailWxml.indexOf('class="receiver-conversion-targets"');
+  const shareReasonIndex = detailWxml.indexOf('class="receiver-conversion-share-reason"');
+  const actionsIndex = detailWxml.indexOf('class="receiver-conversion-actions"');
+  assert.ok(targetsIndex >= 0, 'receiver conversion target rows should render before share reason');
+  assert.ok(shareReasonIndex > targetsIndex, 'share reason should render after targetRows');
+  assert.ok(actionsIndex > shareReasonIndex, 'share reason should render before receiver conversion actions');
+  assert.doesNotMatch(
+    detailWxml.slice(shareReasonIndex, actionsIndex),
+    /receiver-conversion-target-row/,
+    'share reason should not be rendered as a fourth target row'
+  );
+}
 assert.match(detailWxss, /\.receiver-conversion\b/, 'detail styles should include receiver conversion panel');
+assert.match(detailWxss, /\.receiver-conversion-share-reason\b/, 'detail styles should include low-density share reason styling');
 
 console.log('Receiver conversion checks passed.');

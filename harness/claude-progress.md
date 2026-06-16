@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：S 组接收者二跳 action 来源语义
-- 当前 blocker：S 组自动检查已覆盖低风险 receiverConversionPrompt 二跳 path 保持 `from=share&source=receiver` 并区分 `receiverAction=confirm/comment`，下一位 `source=receiver` 接收文案能区分上一位刚确认或刚补线索，未知 action/非 receiver source/风险态安全回退；但真实 WeChat DevTools UI smoke/真机验证仍未执行，系统分享面板是否保留 `receiverAction`、真实二跳打开、窄屏换行和云端评论路径仍待手动验证
+- 当前正在实现的用户请求：T 组接收者二跳可转述理由
+- 当前 blocker：T 组自动检查已覆盖低风险 `from=share` 接收者完成 confirm/comment 后的 `shareReason`、三行 `targetRows`、`receiverAction=confirm/comment` 二跳 path 和风险/关闭/弱 stale/report 互斥；但真实 WeChat DevTools UI smoke/真机验证仍未执行，系统分享面板、真实二跳打开、窄屏换行、云端评论路径和用户是否会手动转述该理由仍待手动或数据验证
 
 ## 会话记录
 
@@ -933,3 +933,18 @@
 - 更新过的文件或工件：`utils/receiver-conversion.js`，`utils/share-receiver.js`，`pages/detail/detail.js`，`scripts/check-receiver-conversion.mjs`，`scripts/check-share-receiver.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-viral-journey-manual-evidence.mjs`，`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-devtools-journey-run-product-brief.md`，`harness/viral-devtools-journey-run-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`，`harness/viral-receiver-action-source-product-brief.md`；产品/设计 agent 并行新增的 `harness/viral-receiver-action-source-design-checklist.md` 保持原样
 - 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证真实系统分享面板是否保留 `receiverAction` query、二跳路径真实打开后的 UI、confirm/comment 差异文案窄屏表现、云端评论成功后 path 生成、状态瞬间变风险时的真实 UI，以及 action 来源语义是否提升转化；当前 DevTools service port 9420 仍是环境 blocker
 - 下一步最佳动作：恢复 DevTools service port 后，用 active 低风险任务分别从 `/pages/detail/detail?id=<id>&from=share` 完成 confirm 和 comment，触发系统分享并记录实际 path；再分别打开 `source=receiver&receiverAction=confirm/comment`、未知 action、普通入口和风险态，确认接收文案与互斥规则符合预期
+
+### Session 070ViralShareReason
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-share-reason`
+- 本轮目标：T 组产品/设计/开发在 R/S 的目标化二跳基础上增加“可转述理由”，让 `from=share` 接收者完成低风险 confirm/comment 后能直接看到一句可说给下一位的话，降低二次分享表达成本
+- 产品假设：继续增加 query 参数主要帮助下一位页面解析，但无法解决发送者在微信聊天里“我为什么转给你”的表达问题；一条短、克制、可转述的理由更贴近真实用户侧裂变，不依赖系统分享面板预填聊天文本
+- 已完成：产品 agent 新增 `harness/viral-share-reason-product-brief.md`；设计/QA agent 新增 `harness/viral-share-reason-design-checklist.md`；开发 agent 在 `utils/receiver-conversion.js` 中为低风险 `receiverConversionPrompt.shouldRelay` 返回 `shareReason`，confirm 文案为“我刚确认过，帮忙再核对一下”，comment 文案为“我刚补了线索，你先看最新评论”；风险/关闭/弱 stale/report 下 `shareReason` 为 `null`
+- 页面变化：`pages/detail/detail.wxml` 在 receiver conversion 的三行 `targetRows` 后、actions 前渲染 `shareReason`，不作为第四行 target row；`pages/detail/detail.wxss` 增加低密度 label/value 样式，保证短理由可换行且不挤压主分享按钮
+- 检查变化：`scripts/check-receiver-conversion.mjs` 覆盖低风险 confirm/comment shareReason 存在、长度、禁用词、文案差异、风险态为空、WXML 顺序和非第四行 target row；`scripts/check-viral-journey-evidence.mjs` 覆盖端到端模型中的 shareReason、禁用词、风险态互斥和手测模板必须提示观察 shareReason；`harness/viral-journey-manual-results.example.json` 的 confirm/comment journey 已加入页面内 share reason 观察点；`scripts/check-devtools-readiness.mjs` 把 T 组产品/设计文档纳入 required files 和 readiness docs
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/receiver-conversion.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-receiver-conversion.mjs`；`node --check scripts/check-viral-journey-evidence.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：`node --check` 语法检查均通过且无输出；`node --no-warnings scripts/check-receiver-conversion.mjs` 输出 `Receiver conversion checks passed.`；`node --no-warnings scripts/check-viral-journey-evidence.mjs` 输出 `Viral journey evidence checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral journey evidence checks passed.` 和 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，同时仍报告 DevTools 9420 `connect_refused`/smoke `blocked`，这不是 UI passed；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；manual evidence gate 输出没有本地结果文件且不是 UI passed evidence；`npm run check` 完整跑通并在 manual run package 中列出 confirm/comment share reason 观察点；最终 `bash harness/init.sh` 完整跑通；产品/设计/开发 agent 均完成且未提交 commit
+- 更新过的文件或工件：`utils/receiver-conversion.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-receiver-conversion.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-share-reason-product-brief.md`，`harness/viral-share-reason-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 shareReason 的真实布局、系统分享面板关系、真实 `from=share&source=receiver&receiverAction=confirm/comment` payload、云端评论成功后提示、窄屏换行，以及用户是否会在聊天里手动转述该理由；当前 DevTools service port 9420 仍是环境 blocker
+- 下一步最佳动作：提交 T 组，并发送给用户评测 agent 与 R/S=99 的结果比较，重点看“可转述理由”是否比 S 的参数语义更接近真实自发裂变

@@ -83,6 +83,10 @@
         <text class="receiver-conversion-target-value">{{item.value}}</text>
       </view>
     </view>
+    <view wx:if="{{receiverConversionPrompt.shareReason}}" class="receiver-conversion-share-reason">
+      <text class="receiver-conversion-share-label">{{receiverConversionPrompt.shareReason.label}}</text>
+      <text class="receiver-conversion-share-text">{{receiverConversionPrompt.shareReason.text}}</text>
+    </view>
     <view class="receiver-conversion-actions">
       <button
         wx:if="{{receiverConversionPrompt.shouldRelay}}"

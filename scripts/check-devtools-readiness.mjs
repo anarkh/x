@@ -40,7 +40,9 @@ const requiredFiles = [
   'harness/viral-targeted-relay-product-brief.md',
   'harness/viral-targeted-relay-design-checklist.md',
   'harness/viral-receiver-action-source-product-brief.md',
-  'harness/viral-receiver-action-source-design-checklist.md'
+  'harness/viral-receiver-action-source-design-checklist.md',
+  'harness/viral-share-reason-product-brief.md',
+  'harness/viral-share-reason-design-checklist.md'
 ];
 
 const readinessDocs = [
@@ -57,7 +59,9 @@ const readinessDocs = [
   'harness/viral-targeted-relay-product-brief.md',
   'harness/viral-targeted-relay-design-checklist.md',
   'harness/viral-receiver-action-source-product-brief.md',
-  'harness/viral-receiver-action-source-design-checklist.md'
+  'harness/viral-receiver-action-source-design-checklist.md',
+  'harness/viral-share-reason-product-brief.md',
+  'harness/viral-share-reason-design-checklist.md'
 ];
 
 function readProjectFile(relativePath) {

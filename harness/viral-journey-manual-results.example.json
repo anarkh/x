@@ -80,6 +80,7 @@
       ],
       "expected": [
         "receiverConversionPrompt is visible after confirm.",
+        "The share reason is visible between targetRows and the share button, and the copy says the sender just confirmed or can help re-check.",
         "actionRelayPrompt is not competing as the primary CTA.",
         "The share path contains from=share&source=receiver&receiverAction=confirm."
       ],
@@ -103,6 +104,7 @@
       ],
       "expected": [
         "receiverConversionPrompt is visible after comment submit.",
+        "The share reason is visible between targetRows and the share button, and the copy says the sender just added a clue or the next receiver should read latest comments.",
         "commentRelayPrompt is not competing as the primary CTA.",
         "The share path contains from=share&source=receiver&receiverAction=comment."
       ],
