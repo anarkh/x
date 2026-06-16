@@ -13,6 +13,8 @@ const requiredFiles = [
   'scripts/check-action-relay.mjs',
   'scripts/check-receiver-conversion.mjs',
   'scripts/check-viral-journey-evidence.mjs',
+  'scripts/check-viral-journey-manual-evidence.mjs',
+  'scripts/prepare-viral-journey-manual-evidence.mjs',
   'scripts/check-share-receiver.mjs',
   'scripts/check-share-receiver-action.mjs',
   'harness/check-trust-insight.mjs',
@@ -23,14 +25,18 @@ const requiredFiles = [
   'harness/devtools-readiness-product-brief.md',
   'harness/devtools-readiness-checklist.md',
   'harness/map-list-resilience-product-brief.md',
-  'harness/map-list-resilience-checklist.md'
+  'harness/map-list-resilience-checklist.md',
+  'harness/viral-journey-manual-evidence-product-brief.md',
+  'harness/viral-journey-manual-evidence-checklist.md'
 ];
 
 const readinessDocs = [
   'harness/devtools-readiness-product-brief.md',
   'harness/devtools-readiness-checklist.md',
   'harness/map-list-resilience-product-brief.md',
-  'harness/map-list-resilience-checklist.md'
+  'harness/map-list-resilience-checklist.md',
+  'harness/viral-journey-manual-evidence-product-brief.md',
+  'harness/viral-journey-manual-evidence-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -96,6 +102,9 @@ runCheck('scripts/check-comment-relay.mjs', 'comment relay prompt check');
 runCheck('scripts/check-action-relay.mjs', 'action relay prompt check');
 runCheck('scripts/check-receiver-conversion.mjs', 'receiver conversion relay check');
 runCheck('scripts/check-viral-journey-evidence.mjs', 'viral journey evidence model check');
+console.log('Running viral journey manual evidence gate. This scans ignored local result files only when they exist.');
+runCheck('scripts/check-viral-journey-manual-evidence.mjs', 'viral journey manual evidence gate');
+console.log('Viral journey manual evidence gate passed structurally; this does not prove DevTools or real-device UI passed.');
 runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
 runCheck('scripts/check-share-receiver-action.mjs', 'share receiver action strip check');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');

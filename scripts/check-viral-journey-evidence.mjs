@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 process.on('warning', (warning) => {
   if (warning.code !== 'MODULE_TYPELESS_PACKAGE_JSON') {
@@ -15,6 +15,18 @@ const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 const { buildShareReceiverActionStrip } = await import('../utils/share-receiver-actions.js');
 
 const manualExample = JSON.parse(readFileSync('harness/viral-journey-manual-results.example.json', 'utf8'));
+
+for (const requiredManualEvidenceFile of [
+  'scripts/check-viral-journey-manual-evidence.mjs',
+  'scripts/prepare-viral-journey-manual-evidence.mjs',
+  'harness/viral-journey-manual-evidence-product-brief.md',
+  'harness/viral-journey-manual-evidence-checklist.md'
+]) {
+  assert.ok(
+    existsSync(requiredManualEvidenceFile),
+    `viral journey manual evidence gate file should exist: ${requiredManualEvidenceFile}`
+  );
+}
 
 function post(overrides = {}) {
   return {
