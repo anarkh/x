@@ -8,6 +8,7 @@ process.on('warning', (warning) => {
 });
 
 const { buildDetailShareMessage } = await import('../utils/share-message.js');
+const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 const {
   buildPublishSpreadPlan,
   buildPublishSpreadSharePath
@@ -17,10 +18,12 @@ const detailJs = readFileSync('pages/detail/detail.js', 'utf8');
 const detailWxml = readFileSync('pages/detail/detail.wxml', 'utf8');
 
 assert.match(detailJs, /buildDetailShareMessage/, 'detail page should use share-message helper');
+assert.match(detailJs, /buildShareReceiverGuide/, 'detail page should use share-receiver helper');
 assert.match(detailJs, /buildPublishSpreadPlan/, 'detail page should use publish-spread helper');
 assert.match(detailJs, /buildPublishSpreadSharePath\(post\.id, this\.data\.entryQuery\)/, 'publish share path should strip publisher-only context');
 assert.match(detailWxml, /showPublishSuccess && publishSpreadPlan/, 'publish context should render spread plan');
 assert.match(detailWxml, /!showPublishSuccess && shareMessage/, 'ordinary context should render share guidance');
+assert.match(detailWxml, /share-receiver/, 'share entry should render receiver guidance');
 
 const activePost = {
   id: 'post_candidate',
@@ -38,6 +41,11 @@ const activePost = {
 const shareMessage = buildDetailShareMessage(activePost, 0);
 assert.equal(shareMessage.path, '/pages/detail/detail?id=post_candidate&from=share');
 assert.match(shareMessage.title, /失物招领|东门蓝色门禁卡/);
+
+const shareReceiverGuide = buildShareReceiverGuide(activePost, 2, { entryFrom: 'share' });
+assert.ok(shareReceiverGuide);
+assert.match(shareReceiverGuide.summary, /评论|现场/);
+assert.equal(buildShareReceiverGuide(activePost, 0, { entryFrom: 'detail' }), null);
 
 const spreadPlan = buildPublishSpreadPlan(activePost, 0);
 assert.equal(spreadPlan.shouldEncourageSpread, true);

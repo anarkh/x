@@ -45,6 +45,21 @@
     </view>
   </view>
 
+  <view wx:if="{{shareReceiverGuide}}" class="panel share-receiver {{shareReceiverGuide.tone}}">
+    <view class="share-receiver-head">
+      <view class="share-receiver-kicker">{{shareReceiverGuide.kicker}}</view>
+      <view class="section-title">{{shareReceiverGuide.title}}</view>
+      <view class="share-receiver-summary">{{shareReceiverGuide.summary}}</view>
+    </view>
+    <view class="share-receiver-rows">
+      <view wx:for="{{shareReceiverGuide.rows}}" wx:key="label" class="share-receiver-row">
+        <text class="share-receiver-label">{{item.label}}</text>
+        <text class="share-receiver-value">{{item.value}}</text>
+      </view>
+    </view>
+    <view class="share-receiver-note">{{shareReceiverGuide.note}}</view>
+  </view>
+
   <view wx:if="{{showPublishSuccess && publishSpreadPlan}}" class="panel publish-spread {{publishSpreadPlan.tone}}">
     <view class="spread-head">
       <view class="spread-kicker">已发布到{{appInfo.shortName}}</view>

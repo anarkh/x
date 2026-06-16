@@ -9,6 +9,7 @@ const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const requiredFiles = [
   'scripts/check-publish-flow.mjs',
   'scripts/check-publish-spread.mjs',
+  'scripts/check-share-receiver.mjs',
   'harness/check-trust-insight.mjs',
   'scripts/check-candidate-flow.mjs',
   'scripts/check-admin-auth-errors.mjs',
@@ -86,6 +87,7 @@ function runCheck(scriptPath, label) {
 
 runCheck('scripts/check-publish-flow.mjs', 'publish flow model check');
 runCheck('scripts/check-publish-spread.mjs', 'post-publish spread plan check');
+runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');

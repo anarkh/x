@@ -220,9 +220,11 @@
         "2026-06-12: WeChat DevTools local compilers passed for C detail branch: wcc compiled all WXML and wcsc -lc compiled all WXSS with exit code 0 and no output.",
         "2026-06-16: Detail page now derives a publishSpreadPlan only when entered with from=publish, keeping ordinary detail entries focused on task content, trust insight, comments, and trust actions.",
         "2026-06-16: Added utils/share-message.js plus scripts/check-share-message.mjs so detail share copy is generated from category, status, comments, confirmations, stale counts, and report counts with a cautious path that preserves the post id and adds from=share.",
-        "2026-06-16: Detail page candidate combines the from=publish spread plan with the ordinary detail share guidance panel; publish shares keep receiver context on a normal detail page while ordinary shares use cautious status/category copy."
+        "2026-06-16: Detail page candidate combines the from=publish spread plan with the ordinary detail share guidance panel; publish shares keep receiver context on a normal detail page while ordinary shares use cautious status/category copy.",
+        "2026-06-16: Added utils/share-receiver.js plus scripts/check-share-receiver.mjs so from=share detail entries can explain why the task was sent, what to do first, and how to help when not on site, with cautious handling for hidden/resolved/expired/stale/high-report cases.",
+        "2026-06-16: Detail page now renders a lightweight receiver guidance panel only when from=share, while from=publish still shows the spread plan and ordinary detail entries keep the existing share prompt."
       ],
-      "notes": "评论与信任动作都涉及本地 storage 和 CloudBase 两条路径；当前代码实现已推进，仍需要 WeChat DevTools 手动验证后才能标记 passing。2026-05-21 详情头部已补充发布者头像/名称与右侧地址时间同排展示。当前会话转向发布图片云存储修复，避免同时存在多个 in_progress 功能。 2026-06-12 C 组详情迭代新增 TrustInsight 信任判断面板和评论头部入口；尚未在 WeChat DevTools/真机验证窄屏布局、信任动作刷新、游客登录评论引导和云端评论路径。 第二轮 C 组已收敛 TrustInsight 谨慎文案和冲突优先级自动检查；2026-06-16 组合候选同时保留发布成功扩散计划和普通详情分享提示，但仍未执行 DevTools/真机视觉、分享面板、接收路径、窄屏密度、信任动作刷新和云端评论验证。"
+      "notes": "评论与信任动作都涉及本地 storage 和 CloudBase 两条路径；当前代码实现已推进，仍需要 WeChat DevTools 手动验证后才能标记 passing。2026-05-21 详情头部已补充发布者头像/名称与右侧地址时间同排展示。当前会话转向发布图片云存储修复，避免同时存在多个 in_progress 功能。 2026-06-12 C 组详情迭代新增 TrustInsight 信任判断面板和评论头部入口；尚未在 WeChat DevTools/真机验证窄屏布局、信任动作刷新、游客登录评论引导和云端评论路径。 第二轮 C 组已收敛 TrustInsight 谨慎文案和冲突优先级自动检查；2026-06-16 组合候选同时保留发布成功扩散计划和普通详情分享提示，并新增接收侧转化提示，但仍未执行 DevTools/真机视觉、分享面板、接收路径、窄屏密度、信任动作刷新和云端评论验证。"
     },
     {
       "id": "admin-001",

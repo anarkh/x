@@ -4,6 +4,7 @@ import {
   buildPublishSpreadPlan,
   buildPublishSpreadSharePath
 } from '../../utils/publish-spread.js';
+import { buildShareReceiverGuide } from '../../utils/share-receiver.js';
 import {
   createPostComment,
   getPost,
@@ -74,11 +75,13 @@ Page({
     post: null,
     loading: true,
     showPublishSuccess: false,
+    showShareReceiverGuide: false,
     isGuest: true,
     comments: [],
     commentsLoading: false,
     trustInsight: null,
     publishSpreadPlan: null,
+    shareReceiverGuide: null,
     entryQuery: {},
     commentDraft: '',
     commentDraftLength: 0,
@@ -92,7 +95,8 @@ Page({
     this.setData({
       id: query.id || '',
       entryQuery: query || {},
-      showPublishSuccess: query.from === 'publish'
+      showPublishSuccess: query.from === 'publish',
+      showShareReceiverGuide: query.from === 'share'
     });
     if (wx.showShareMenu) {
       wx.showShareMenu({
@@ -132,6 +136,7 @@ Page({
         commentsLoading: false,
         trustInsight: null,
         publishSpreadPlan: null,
+        shareReceiverGuide: null,
         shareMessage: null
       });
     }
@@ -142,6 +147,7 @@ Page({
       this.setData({
         post: null,
         trustInsight: null,
+        shareReceiverGuide: null,
         shareMessage: null,
         loading: false
       });
@@ -154,6 +160,7 @@ Page({
       publishSpreadPlan: this.data.showPublishSuccess
         ? buildPublishSpreadPlan(post, this.data.comments.length)
         : null,
+      shareReceiverGuide: this.buildShareReceiverGuide(post, this.data.comments.length),
       shareMessage: this.buildShareMessage(post, this.data.comments.length),
       loading: false
     });
@@ -162,6 +169,15 @@ Page({
   buildShareMessage(post, commentCount = 0) {
     return buildDetailShareMessage(post, commentCount, {
       surface: this.data.showPublishSuccess ? 'publish' : 'detail'
+    });
+  },
+
+  buildShareReceiverGuide(post, commentCount = 0) {
+    if (!this.data.showShareReceiverGuide) {
+      return null;
+    }
+    return buildShareReceiverGuide(post, commentCount, {
+      entryFrom: this.data.entryQuery.from
     });
   },
 
@@ -179,6 +195,7 @@ Page({
         publishSpreadPlan: this.data.showPublishSuccess && this.data.post
           ? buildPublishSpreadPlan(this.data.post, nextComments.length)
           : null,
+        shareReceiverGuide: this.buildShareReceiverGuide(this.data.post, nextComments.length),
         shareMessage: this.buildShareMessage(this.data.post, nextComments.length),
         commentsLoading: false
       });
@@ -280,6 +297,7 @@ Page({
         publishSpreadPlan: this.data.showPublishSuccess
           ? buildPublishSpreadPlan(this.data.post, nextComments.length)
           : null,
+        shareReceiverGuide: this.buildShareReceiverGuide(this.data.post, nextComments.length),
         shareMessage: this.buildShareMessage(this.data.post, nextComments.length),
         commentDraft: '',
         commentDraftLength: 0,

@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：详情页任务转发最小可验证迭代
-- 当前 blocker：自动验证可以覆盖 JSON、harness、详情页分享文案 helper、分享路径和代码静态检查；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认详情页分享模块的文案、按钮和换行表现，以及分享菜单实际行为
+- 当前正在实现的用户请求：详情页分享接收侧转化最小可验证迭代
+- 当前 blocker：自动验证可以覆盖 JSON、harness、接收侧文案 helper、分享路径和代码静态检查；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认 `from=share` 接收提示的文案、换行、按钮层级，以及分享菜单实际行为
 
 ## 会话记录
 
@@ -752,3 +752,16 @@
 - 更新过的文件或工件：`utils/share-message.js`，`utils/publish-spread.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-message.mjs`，`scripts/check-publish-spread.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools/真机中验证组合后的发布成功页、普通详情页、分享面板、接收路径、窄屏布局和带图任务渲染
 - 下一步最佳动作：提交组合候选，再把该大版本发送给用户评测 agent 追加评分
+
+### Session 057Receiver
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-receiver`
+- 本轮目标：围绕“分享接收侧转化”做一版最小可验证迭代，让 `from=share` 打开的详情页明确告诉用户为什么收到这条任务、先做什么、以及不在现场怎么帮
+- 产品假设：如果接收侧页面把“为什么转给你”“先做哪一步”“不在现场怎么帮”说清楚，用户更容易继续确认、评论或二次转发，而不是只看一眼就离开
+- 已完成：新增 `harness/viral-receiver-product-brief.md` 和 `harness/viral-receiver-design-checklist.md`；新增 `utils/share-receiver.js` 生成 `from=share` 的接收侧提示；详情页在 `entryQuery.from === 'share'` 且有任务时展示轻量提示条，并继续保留现有信任判断、评论和普通分享提示；新增 `scripts/check-share-receiver.mjs`，并把它接入 `scripts/check-devtools-readiness.mjs` 与 `scripts/check-viral-candidate.mjs`
+- 运行过的验证：`node --check pages/detail/detail.js`；`node --check utils/share-receiver.js`；`node --check scripts/check-share-receiver.mjs`；`node scripts/check-share-receiver.mjs`；`node scripts/check-share-message.mjs`；`node scripts/check-publish-spread.mjs`；`node scripts/check-viral-candidate.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`bash harness/init.sh`；`npm run check`
+- 已记录证据：四条 `node --check` 均通过；`node scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`bash harness/init.sh` 完整跑通；`npm run check` 输出 JSON、harness、publish flow、publish spread、share receiver、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 更新过的文件或工件：`utils/share-receiver.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-receiver.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-receiver-product-brief.md`，`harness/viral-receiver-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：真实 WeChat DevTools/真机仍需手动确认 `from=share` 提示模块的文案、换行、按钮层级以及二次转发行为；当前自动验证只能证明静态结构和 Node 逻辑正确，不能证明实际分享转化提升
+- 下一步最佳动作：在 WeChat DevTools 中打开一条从分享进入的 active、stale、resolved 和 expired 任务，确认接收侧提示、普通分享提示和信任/评论区域没有互相挤压

@@ -318,6 +318,86 @@
   line-height: 1.45;
 }
 
+.share-receiver {
+  display: grid;
+  gap: 18rpx;
+  padding: 28rpx;
+  border-color: rgba(31, 102, 88, 0.14);
+  background: linear-gradient(135deg, #f5fbf8, #fffefa);
+}
+
+.share-receiver.warn {
+  border-color: rgba(185, 121, 31, 0.18);
+  background: linear-gradient(135deg, #fff8ea, #fffefa);
+}
+
+.share-receiver.danger {
+  border-color: rgba(167, 53, 39, 0.16);
+  background: linear-gradient(135deg, #fff4f0, #fffefa);
+}
+
+.share-receiver.done {
+  border-color: rgba(105, 121, 112, 0.14);
+  background: linear-gradient(135deg, #f8f8f6, #fffefa);
+}
+
+.share-receiver-head {
+  display: grid;
+  gap: 8rpx;
+}
+
+.share-receiver-kicker {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: #eaf4ef;
+  color: #1f6658;
+  font-size: 22rpx;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.share-receiver-summary {
+  color: #2e423a;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
+.share-receiver-rows {
+  display: grid;
+  gap: 12rpx;
+}
+
+.share-receiver-row {
+  display: flex;
+  gap: 14rpx;
+  align-items: flex-start;
+}
+
+.share-receiver-label {
+  flex: 0 0 116rpx;
+  color: #1f6658;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.share-receiver-value {
+  flex: 1;
+  min-width: 0;
+  color: #2e423a;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
+.share-receiver-note {
+  color: #697970;
+  font-size: 22rpx;
+  line-height: 1.45;
+}
+
 .share-button {
   height: 72rpx;
   padding: 0 24rpx;
