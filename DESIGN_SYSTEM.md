@@ -62,7 +62,8 @@ The project currently has no frontend build step and no mini program npm depende
 - `PublishReadiness`: compact checklist near the top of the publish form. It should show identity, content, category, and location completion so the fixed submit action can explain or trigger the next required step.
 - `LocationCheck`: explicit location confirmation block in the publish form. Use it when location is required for correctness; show idle, loading, ready, and failed states without moving the submit button, and make retry language non-technical.
 - `TrustInsight`: detail-page section placed before trust actions. Summarize confirmations, stale reports, reports, and comment count into one cautious status sentence, then show compact segmented metrics and the next sensible action. Use it to explain the counts without implying absolute trust.
-- `NearbyPreview`: compact first-screen map overlay for the nearest open tasks. Show it only when the list drawer and selected-post card are closed; reserve the right side for map tools, keep item titles short, and let tapping an item select the same marker/list item.
+- `MapListEntry`: keep the collapsed map list entry as a compact top-right `cover-view` button with the label and count on one centered text line, such as "列表 6". Do not split the label and count into separate baseline-sensitive nodes, and do not use a bottom dock for this entry.
+- `MapToolRow`: location and discover controls sit together at the lower-right of the map above the custom tab bar. Keep them as `cover-view` controls with solid backgrounds, and keep selected task cards above this tool row so icons remain tappable.
 
 ## QA Checklist
 

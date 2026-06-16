@@ -168,6 +168,7 @@ Page({
       const check = result.check || {};
       const detail = [
         check.reason ? `状态: ${check.reason}` : '',
+        check.nextStep ? `处理: ${check.nextStep}` : '',
         check.missingCollection ? '请先配置管理员集合' : ''
       ].filter(Boolean).join('\n');
       this.setData({ adminCheckText: detail });

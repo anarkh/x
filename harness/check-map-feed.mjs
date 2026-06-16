@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { markerFromPost } from '../utils/geo.js';
 import { buildNearbyPreviewPosts } from '../utils/post-presenter.js';
 
+const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
+const mapWxml = readFileSync(join(rootDir, 'pages/map/map.wxml'), 'utf8');
+const mapWxss = readFileSync(join(rootDir, 'pages/map/map.wxss'), 'utf8');
 const now = Date.now();
 const posts = [
   {
@@ -85,5 +91,38 @@ const selectedMarker = markerFromPost(previewPosts[0]);
 assert.equal(selectedMarker.callout.bgColor, '#1F6658');
 assert.equal(selectedMarker.callout.color, '#FFFFFF');
 assert.equal(selectedMarker.callout.borderWidth, 2);
+
+assert.match(
+  mapWxml,
+  /<cover-view[^>]+wx:if="\{\{!showList\}\}"[^>]+class="list-fab"[^>]+bindtap="showList"/,
+  'The map list entry should be a top-right cover-view so it is visible above the native map.'
+);
+assert.match(
+  mapWxml,
+  /<cover-view[^>]+class="[^"]*\bdiscover-tool-button\b[^"]*"[^>]+bindtap="discoverNearby"[\s\S]*<cover-image[^>]+class="[^"]*\bsearch-icon\b[^"]*"/,
+  'The discover nearby button should remain visible beside the locate button.'
+);
+assert.match(
+  mapWxss,
+  /\.map-tool-row\s*\{[\s\S]*?bottom:\s*calc\([\s\S]*?\}/,
+  'Map tool buttons should sit at the lower-right of the map above the tabBar.'
+);
+assert.match(mapWxml, /<cover-view class="list-fab-line">列表 \{\{visiblePosts\.length\}\}<\/cover-view>/);
+assert.match(
+  mapWxss,
+  /\.list-fab-line\s*\{[\s\S]*?height:\s*70rpx;[\s\S]*?line-height:\s*70rpx;[\s\S]*?text-align:\s*center;[\s\S]*?\}/,
+  'The top-right list entry should keep the label and count centered on one aligned text line.'
+);
+assert.doesNotMatch(mapWxml, /附近优先|附近任务|点开看任务卡/);
+assert.match(
+  mapWxml,
+  /class="map-page \{\{showList \? 'list-open' : ''\}\}"/,
+  'The map page should expose list-open state so CSS can reserve space for the drawer.'
+);
+assert.match(
+  mapWxss,
+  /\.map-page\.list-open \.task-map\s*\{[\s\S]*?height:\s*38vh;[\s\S]*?\}/,
+  'Opening the list should shrink the native map instead of placing the drawer over it.'
+);
 
 console.log('Map feed checks passed.');

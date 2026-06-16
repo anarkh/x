@@ -42,6 +42,12 @@ function hasAnyDecl(rule, patterns) {
 }
 
 const listDrawer = ruleFor('.list-drawer');
+const mapToolRow = ruleFor('.map-tool-row');
+const discoverToolButton = ruleFor('.discover-tool-button');
+const listOpenTaskMap = ruleFor('.map-page.list-open .task-map');
+const listFab = ruleFor('.list-fab');
+const listFabLine = ruleFor('.list-fab-line');
+const listOpenDrawer = ruleFor('.map-page.list-open .list-drawer');
 const postList = ruleFor('.post-list');
 const postCard = ruleFor('.post-card');
 const postContent = ruleFor('.post-content');
@@ -59,6 +65,11 @@ const postFooterMeta = ruleFor('.post-footer-meta');
 const markButton = ruleFor('.post-card .mark-button');
 
 const wxmlChecks = [
+  ['map page open state class', /<view[^>]+class="map-page \{\{showList \? 'list-open' : ''\}\}"/],
+  ['cover-view map tool row', /<cover-view[^>]+wx:if="\{\{!showList\}\}"[^>]+class="map-tool-row"/],
+  ['discover nearby tool button', /<cover-view[^>]+class="[^"]*\bdiscover-tool-button\b[^"]*"[^>]+bindtap="discoverNearby"[\s\S]*<cover-image[^>]+class="[^"]*\bsearch-icon\b[^"]*"/],
+  ['cover-view top-right list entry', /<cover-view[^>]+wx:if="\{\{!showList\}\}"[^>]+class="list-fab"[^>]+bindtap="showList"/],
+  ['single-line aligned list count', /<cover-view[^>]+class="[^"]*\blist-fab-line\b[^"]*"[^>]*>列表 \{\{visiblePosts\.length\}\}<\/cover-view>/],
   ['list drawer container', /<view[^>]+class="[^"]*\blist-drawer\b[^"]*\bopen\b[^"]*"/],
   ['task list scroll-view', /<scroll-view[^>]+class="[^"]*\bpost-list\b[^"]*"[^>]*scroll-y/],
   ['task card repeat container', /<view[^>]+wx:for="\{\{visiblePosts\}\}"[^>]+class="[^"]*\bpost-card\b[^"]*"/],
@@ -86,6 +97,60 @@ expect(
 );
 
 expect(listDrawer, 'WXSS missing .list-drawer rule');
+expect(mapToolRow, 'WXSS missing .map-tool-row rule');
+expect(
+  hasEveryDecl(mapToolRow, [
+    /bottom:\s*calc\(/,
+    /z-index:\s*8;/,
+    /display:\s*flex;/
+  ]),
+  'WXSS .map-tool-row should stay at the lower-right of the map above the tabBar'
+);
+
+expect(discoverToolButton, 'WXSS missing .discover-tool-button rule');
+expect(
+  hasEveryDecl(discoverToolButton, [
+    /background:\s*#d7673f;/,
+    /margin-left:\s*16rpx;/
+  ]),
+  'WXSS .discover-tool-button should stay visible beside the locate button with a solid cover-view-safe background'
+);
+
+expect(listOpenTaskMap, 'WXSS missing .map-page.list-open .task-map rule');
+expect(hasDecl(listOpenTaskMap, /height:\s*38vh;/), 'WXSS should shrink native map while the task drawer is open');
+
+expect(listFab, 'WXSS missing .list-fab rule');
+expect(
+  hasEveryDecl(listFab, [
+    /position:\s*absolute;/,
+    /top:\s*24rpx;/,
+    /right:\s*24rpx;/,
+    /width:\s*146rpx;/,
+    /height:\s*70rpx;/,
+    /background:\s*rgba\(255,\s*254,\s*250,\s*0\.96\);/,
+    /z-index:\s*9;/
+  ]),
+  'WXSS .list-fab should be a compact top-right cover-view list button above the native map'
+);
+
+expect(listFabLine, 'WXSS missing .list-fab-line rule');
+expect(
+  hasEveryDecl(listFabLine, [
+    /height:\s*70rpx;/,
+    /line-height:\s*70rpx;/,
+    /text-align:\s*center;/
+  ]),
+  'WXSS .list-fab-line should center the label and count on one aligned text line'
+);
+
+expect(listOpenDrawer, 'WXSS missing .map-page.list-open .list-drawer rule');
+expect(
+  hasEveryDecl(listOpenDrawer, [
+    /top:\s*38vh;/,
+    /height:\s*auto;/
+  ]),
+  'WXSS should place the open drawer below the shrunken native map'
+);
 expect(
   hasEveryDecl(listDrawer, [
     /position:\s*absolute;/,

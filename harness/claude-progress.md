@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：把已完成的地图、发布、详情、管理、个人中心和验证能力集合到主分支
-- 当前 blocker：自动验证可以覆盖 JSON、harness、发布状态机、TrustInsight、地图列表静态 guard、管理/个人中心 helper 和 DevTools 诊断入口；真实 WeChat DevTools UI smoke/真机验证仍受 9420 service port 与人工操作阻塞
+- 当前正在实现的用户请求：修复地图右上角列表按钮内“列表”和数量没有对齐的问题
+- 当前 blocker：自动验证可以覆盖 JSON、harness、发布状态机、TrustInsight、地图列表静态 guard、管理/个人中心 helper、管理员错误格式和 DevTools 诊断入口；真实 WeChat DevTools UI smoke/真机验证仍受 9420 service port 与人工操作阻塞，地图右上角“列表 N”单行居中按钮、右下角定位/找一找按钮和选中任务卡避让关系仍需用户在 DevTools 重新编译后肉眼确认
 
 ## 会话记录
 
@@ -638,3 +638,80 @@
 - 已记录证据：各功能 helper 均已通过；`node scripts/check-json.mjs` 和 `node harness/check-harness.mjs` 在冲突解决后通过；项目既有 `MODULE_TYPELESS_PACKAGE_JSON` ESM warning 仍只影响 Node 检查输出，不影响退出码
 - 已知风险或未解决问题：本集成仍未完成真实 WeChat DevTools UI smoke 或真机验证；9420 service port blocker 仍需用户在 DevTools UI 中处理。集成进入 main 后仍不能把 map-feed 或其他用户可见旅程标记为 passing
 - 下一步最佳动作：运行完整候选验证，通过后把 `codex/integrate-all-capabilities` 合入 `main`，同时保护 `/Users/bytedance/git/x` 当前未提交的本地文件
+
+### Session 048Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：按用户真实体验反馈，修复地图“附近优先”看不见，以及管理员校验失败时展示 raw cloud.callFunction 堆栈的问题
+- 已完成：地图 `NearbyPreview` 从“未打开列表且未选中任务才显示”改为“未打开列表且有预览任务就显示”；选中任务卡在预览条可见时上移，避免与预览条重叠；管理员校验新增 `formatAdminRoleError`，把 `wx-server-sdk` 缺依赖、getMyRole 未部署/环境不匹配和未知云函数失败映射成短状态与处理步骤；“我的”页管理员入口展示 `处理:` 下一步；readiness 新增 admin auth error formatting guard
+- 运行过的验证：`node --check utils/auth.js`；`node --check pages/me/me.js`；`node --check pages/map/map.js`；`node scripts/check-admin-auth-errors.mjs`；`node harness/check-map-feed.mjs`；`npm run check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`scripts/check-admin-auth-errors.mjs` 输出 `Admin auth error checks passed.`；`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出
+- 已知风险或未解决问题：尚未由用户在 WeChat DevTools 里重新编译后肉眼确认地图首屏；管理员真正通过仍取决于云端 `getMyRole` 函数重新上传并选择“云端安装依赖”，以及 `admins` 集合里有当前 openid 的 enabled admin 记录
+- 下一步最佳动作：请用户在 WeChat DevTools 重新编译项目，先回到地图 tab 确认“附近优先”出现；再到“我的”页点管理员校验，若仍提示依赖未安装，则按提示重新上传部署 `cloudfunctions/getMyRole`
+
+### Session 049Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：继续修复用户反馈的“底部任务列表入口/抽屉依旧没看到”
+- 已完成：确认原实现把 `button/view/scroll-view` 绝对定位在全屏 `map` 原生组件上方，真实 DevTools 中可能被原生 map 层遮挡；将折叠态地图任务入口改为 `cover-view` 底部 dock，文案为“附近优先 / 列表”；地图工具按钮也改为 `cover-view`/`cover-image`；打开列表时为根节点增加 `list-open`，把 native map 高度缩到 `38vh`，并让普通任务卡抽屉从 `top: 38vh` 开始渲染，避免抽屉继续压在原生地图上
+- 运行过的验证：`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`npm run check`
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出
+- 已知风险或未解决问题：仍需用户在 WeChat DevTools 中重新编译后确认底部 cover-view dock 可见，点击后抽屉在下半屏显示并能滚动/点击任务卡；自动检查不能替代真实原生 map 层视觉验收
+- 下一步最佳动作：用户重新编译并打开地图 tab，观察底部“附近优先 / 列表”dock，点击“列表”确认抽屉露出；若仍不显示，优先截图地图页全屏和控制台首条错误
+
+### Session 050Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：修复用户截图反馈的“附近优先 dock 和回到当前位置按钮重叠，找一找按钮不见”
+- 已完成：将 `map-tool-row` 从和 `list-dock` 相同的底部位置上移到 `268rpx + safe-area`，确保定位/找一找两个 cover-view 按钮位于 dock 上方；把 cover-view 工具栏从 grid/gap 改为更稳的 flex + margin；把找一找按钮从 gradient 改成 cover-view 更稳定的实色橙色背景；图标改用绝对居中，确保两个按钮都可见
+- 运行过的验证：`bash harness/init.sh`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出
+- 已知风险或未解决问题：仍需用户在 WeChat DevTools 重新编译后确认定位和找一找两个按钮在 dock 上方并排可见，点击找一找仍能切换到附近任务
+- 下一步最佳动作：用户重新编译地图页，检查 dock 上方右侧是否有两个按钮：左边回到当前位置，右边橙色找一找
+
+### Session 051Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：修复用户反馈的“附近优先含义不清、任务卡片和地图 icon 仍重叠”
+- 已完成：底部 dock 标题从“附近优先”改为“附近任务”，副文案改成“全部/分类 · N 条任务”，去掉“点开看任务卡”的教学式文案；将定位/找一找工具栏从底部区域移动到地图右上角，彻底避开选中任务卡、详情按钮和底部 dock
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出
+- 已知风险或未解决问题：仍需用户在 WeChat DevTools 重新编译后确认地图右上角两个工具按钮不再和选中任务卡重叠，底部 dock 文案更易理解
+- 下一步最佳动作：用户重新编译地图页，点击 marker 后确认任务卡内详情按钮无遮挡；观察底部 dock 是否显示“附近任务”
+
+### Session 052Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：按用户明确偏好，把地图 UI 收敛为“列表入口右上角，回到当前位置和找一找按钮右下角”
+- 已完成：取消底部大 dock，改为右上角 `cover-view` 紧凑“列表 + 数量”入口；定位和找一找两个 `cover-view` 工具按钮放回右下角并保持并排；选中任务卡底部上移到工具行上方，避免遮挡按钮；移除选中卡片上旧的 `with-nearby-preview` 条件类；同步更新 `DESIGN_SYSTEM.md`、`harness/check-map-feed.mjs` 和 `scripts/check-map-list-resilience.mjs`，防止后续回退到底部 dock 或顶部工具行
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node scripts/check-json.mjs && node harness/check-harness.mjs && git diff --check`；`npm run check`
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 已知风险或未解决问题：自动检查不能替代真实原生地图层视觉验收；仍需用户在 WeChat DevTools 中重新编译后确认右上角“列表 N”入口可见、右下角两个按钮不与选中任务卡重叠、点击“列表”后抽屉仍正常打开
+- 下一步最佳动作：用户在 WeChat DevTools 重新编译地图页，先看右上角“列表 N”，再点击 marker 看任务卡和右下角定位/找一找按钮是否分离
+
+### Session 053Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：修复用户截图反馈的“右上角列表按钮样式有问题”
+- 已完成：确认截图中白底“列表 6”更像地图标签而不是操作按钮；将右上角列表入口改为绿色实色 `cover-view` 按钮，只显示“列表”，任务数量改为右上角橙色小角标；同步更新 `DESIGN_SYSTEM.md`、`harness/check-map-feed.mjs` 和 `scripts/check-map-list-resilience.mjs`，要求后续保持绿色按钮和数量角标
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node scripts/check-json.mjs && node harness/check-harness.mjs && git diff --check`；`npm run check`
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 已知风险或未解决问题：自动检查仍不能替代真实原生地图层视觉验收；需要用户在 WeChat DevTools 中重新编译后确认绿色列表按钮和角标不再像地图标签，并且点击仍打开列表抽屉
+- 下一步最佳动作：用户在 WeChat DevTools 重新编译地图页，观察右上角是否变成绿色“列表”按钮并带小角标
+
+### Session 054Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：按用户澄清修正右上角列表按钮的对齐问题，而不是颜色问题
+- 已完成：撤销上一轮绿色按钮/角标方向，恢复白色右上角 `cover-view` 按钮；把原来分开的“列表”和数量节点改为单个 `list-fab-line`，内容为“列表 {{visiblePosts.length}}”；通过固定 `height: 70rpx`、同等 `line-height: 70rpx` 和 `text-align: center` 保证文本与数字在同一条视觉中线上；同步更新 `DESIGN_SYSTEM.md`、`harness/check-map-feed.mjs` 和 `scripts/check-map-list-resilience.mjs`，防止再次拆成两个基线不一致的节点
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node scripts/check-json.mjs && node harness/check-harness.mjs && git diff --check`；`npm run check`
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 已知风险或未解决问题：自动检查不能替代真实原生地图层视觉验收；需要用户在 WeChat DevTools 中重新编译后确认“列表 6”同一行居中对齐，并且点击仍打开列表抽屉
+- 下一步最佳动作：用户在 WeChat DevTools 重新编译地图页，观察右上角白色“列表 N”按钮内文字和数字是否齐平

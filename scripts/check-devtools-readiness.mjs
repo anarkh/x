@@ -10,6 +10,7 @@ const requiredFiles = [
   'scripts/check-publish-flow.mjs',
   'harness/check-trust-insight.mjs',
   'scripts/check-candidate-flow.mjs',
+  'scripts/check-admin-auth-errors.mjs',
   'scripts/check-map-list-resilience.mjs',
   'scripts/check-map-list-blocked-summary-preflight.mjs',
   'harness/devtools-readiness-product-brief.md',
@@ -85,6 +86,7 @@ function runCheck(scriptPath, label) {
 runCheck('scripts/check-publish-flow.mjs', 'publish flow model check');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
+runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');
 console.log('Running map list static layout regression guard. This static WXML/WXSS check does not prove DevTools or real-device visual acceptance.');
 runCheck('scripts/check-map-list-resilience.mjs', 'map list static layout regression guard');
 console.log('Map list static layout regression guard passed; DevTools and real-device visual acceptance are still required.');

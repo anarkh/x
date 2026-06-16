@@ -1,4 +1,4 @@
-<view class="map-page">
+<view class="map-page {{showList ? 'list-open' : ''}}">
   <map
     id="taskMap"
     class="task-map"
@@ -13,44 +13,18 @@
     bindtap="onMapTap"
   />
 
-  <view class="map-tool-row">
-    <button class="map-tool-button clear-tool-button" aria-label="返回当前位置" bindtap="locateCurrent">
-      <image class="map-tool-icon locate-icon" src="/assets/icons/map-locate.png" mode="aspectFit" />
-    </button>
-    <button class="map-tool-button discover-tool-button" aria-label="找一找附近内容" bindtap="discoverNearby">
-      <image class="map-tool-icon search-icon" src="/assets/icons/map-search.png" mode="aspectFit" />
-    </button>
-  </view>
-  <button class="list-fab" aria-label="打开列表" bindtap="showList">
-    <text class="list-fab-label">列表</text>
-    <text class="list-fab-count">{{visiblePosts.length}}</text>
-  </button>
+  <cover-view wx:if="{{!showList}}" class="map-tool-row">
+    <cover-view class="map-tool-button clear-tool-button" aria-label="返回当前位置" bindtap="locateCurrent">
+      <cover-image class="map-tool-icon locate-icon" src="/assets/icons/map-locate.png" mode="aspectFit" />
+    </cover-view>
+    <cover-view class="map-tool-button discover-tool-button" aria-label="找一找附近内容" bindtap="discoverNearby">
+      <cover-image class="map-tool-icon search-icon" src="/assets/icons/map-search.png" mode="aspectFit" />
+    </cover-view>
+  </cover-view>
 
-  <view wx:if="{{!showList && !selectedPost && nearbyPreviewPosts.length}}" class="nearby-preview panel">
-    <view class="nearby-preview-head">
-      <view class="nearby-title-block">
-        <view class="nearby-title">附近优先</view>
-        <view class="nearby-subtitle">{{activeCategoryText}} · 先看最近有效任务</view>
-      </view>
-      <button class="nearby-open-button" bindtap="showList">全部</button>
-    </view>
-    <scroll-view class="nearby-strip" scroll-x enable-flex>
-      <view
-        wx:for="{{nearbyPreviewPosts}}"
-        wx:key="id"
-        class="nearby-item {{item.isSelected ? 'selected' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="focusPost"
-      >
-        <view class="nearby-item-top">
-          <text class="nearby-hint">{{item.browseHint}}</text>
-          <text class="nearby-distance">{{item.distanceText}}</text>
-        </view>
-        <view class="nearby-item-title">{{item.previewTitle}}</view>
-        <view class="nearby-item-meta">{{item.categoryText}} · {{item.expiryText}}</view>
-      </view>
-    </scroll-view>
-  </view>
+  <cover-view wx:if="{{!showList}}" class="list-fab" bindtap="showList">
+    <cover-view class="list-fab-line">列表 {{visiblePosts.length}}</cover-view>
+  </cover-view>
 
   <cover-view wx:if="{{diagnosticVisible}}" class="diagnostic-panel">
     <cover-view class="diagnostic-title">{{diagnosticTitle}}</cover-view>
