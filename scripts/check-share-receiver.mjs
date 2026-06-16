@@ -8,7 +8,7 @@ process.on('warning', (warning) => {
 
 const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 
-function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '') {
+function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '', extraOptions = {}) {
   return buildShareReceiverGuide(
     {
       id: 'post_001',
@@ -22,7 +22,7 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '
       ...overrides
     },
     commentCount,
-    { entryFrom, source }
+    { entryFrom, source, ...extraOptions }
   );
 }
 
@@ -79,6 +79,37 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '
   assert.match(result.rows[0].value, /接力链路|确认和评论/);
   assert.match(result.rows[1].value, /继续接力|确认和评论/);
   assert.match(result.note, /确认和评论/);
+
+  const confirmRelay = guide({ confirmations: 1 }, 2, 'share', 'receiver', {
+    receiverAction: 'confirm'
+  });
+  assert.ok(confirmRelay);
+  assert.equal(confirmRelay.title, '上一位刚确认过');
+  assert.match(confirmRelay.summary, /上一位刚确认|事实证明|现场信号/);
+  assert.match(confirmRelay.rows[0].value, /确认接力|现场信号/);
+  assert.match(confirmRelay.rows[1].value, /确认|现场信号|评论/);
+  assert.match(confirmRelay.note, /确认|现场信号/);
+
+  const commentRelay = guide({}, 2, 'share', 'receiver', {
+    receiverAction: 'comment'
+  });
+  assert.ok(commentRelay);
+  assert.equal(commentRelay.title, '上一位刚补了线索');
+  assert.match(commentRelay.summary, /上一位刚补|最新评论/);
+  assert.match(commentRelay.rows[0].value, /评论接力|最新评论/);
+  assert.match(commentRelay.rows[1].value, /最新评论|确认/);
+  assert.match(commentRelay.note, /最新评论/);
+
+  const unknownAction = guide({}, 1, 'share', 'receiver', {
+    receiverAction: 'stale'
+  });
+  assert.deepEqual(unknownAction, result, 'unknown receiverAction should keep the source=receiver fallback copy');
+
+  const sourceConfirm = guide({ confirmations: 1 }, 1, 'share', 'confirm', {
+    receiverAction: 'comment'
+  });
+  assert.equal(sourceConfirm.title, '有人刚确认过');
+  assert.doesNotMatch(sourceConfirm.summary, /上一位/, 'source=confirm should ignore receiverAction');
 }
 
 {
@@ -88,6 +119,14 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '
   assert.equal(result.tone, 'danger');
   assert.match(result.summary, /举报/);
   assert.doesNotMatch(result.summary, /最新评论/);
+
+  const receiverRisk = guide({ reportCount: 2 }, 2, 'share', 'receiver', {
+    receiverAction: 'confirm'
+  });
+  assert.ok(receiverRisk);
+  assert.equal(receiverRisk.title, '先谨慎核对');
+  assert.match(receiverRisk.summary, /举报/);
+  assert.doesNotMatch(receiverRisk.summary, /上一位|现场信号/, 'risk copy should override receiverAction');
 }
 
 {

@@ -160,7 +160,7 @@ function printJourneyPackage(journeys) {
 
     if (sharePayloadJourneyIds.has(journey.id)) {
       // The manual checker accepts either a concrete sharePayload.path or an explicit inability note.
-      console.log('   share payload check: confirm/comment/source second-hop evidence must include from=share&source=receiver, or record a concrete reason why the payload could not be inspected.');
+      console.log('   share payload check: confirm/comment evidence must include from=share&source=receiver and receiverAction=confirm/comment; source evidence must include from=share&source=receiver, or record a concrete reason why the payload could not be inspected.');
     }
   });
 }

@@ -47,7 +47,10 @@ function assertTargetRows(prompt, message) {
   assert.match(confirmed.title, /确认|接力/);
   assert.match(confirmed.body, /确认|路过的人|现场/);
   assert.match(confirmed.buttonText, /接力/);
-  assert.equal(confirmed.sharePath, '/pages/detail/detail?id=post_receiver_1&from=share&source=receiver');
+  assert.equal(
+    confirmed.sharePath,
+    '/pages/detail/detail?id=post_receiver_1&from=share&source=receiver&receiverAction=confirm'
+  );
   assertTargetRows(confirmed, 'low-risk confirm');
   assert.match(confirmed.targetRows[0].value, /丢失|路过|门卫|前台/);
   assert.match(confirmed.targetRows[1].value, /刚确认|确认/);
@@ -59,6 +62,10 @@ function assertTargetRows(prompt, message) {
   assert.match(commented.title, /评论|接力/);
   assert.match(commented.body, /评论|确认/);
   assert.match(commented.shareTitle, /已补充线索/);
+  assert.equal(
+    commented.sharePath,
+    '/pages/detail/detail?id=post_receiver_1&from=share&source=receiver&receiverAction=comment'
+  );
   assertTargetRows(commented, 'low-risk comment');
   assert.match(commented.targetRows[1].value, /刚补|线索|评论/);
 }
@@ -101,6 +108,7 @@ function assertTargetRows(prompt, message) {
   for (const risky of [weakStale, weakReport, stale, report, resolved]) {
     assert.ok(!risky.targetRows || risky.targetRows.length === 0, 'risk/closed prompts should not include encouraging target rows');
     assert.doesNotMatch(risky.buttonText, /接力|转发/, 'risk/closed prompt should not expose public relay copy');
+    assert.doesNotMatch(risky.sharePath, /receiverAction=/, 'risk/closed prompt should not carry receiver action source');
   }
 }
 
@@ -136,15 +144,67 @@ function assertTargetRows(prompt, message) {
 }
 
 {
-  const guide = buildShareReceiverGuide(post(), 2, {
+  const confirmGuide = buildShareReceiverGuide(post(), 2, {
+    entryFrom: 'share',
+    source: 'receiver',
+    receiverAction: 'confirm'
+  });
+  assert.ok(confirmGuide);
+  assert.equal(confirmGuide.title, '上一位刚确认过');
+  assert.match(confirmGuide.summary, /上一位刚确认|确认和现场信号/);
+  assert.match(confirmGuide.rows[0].value, /确认接力|现场信号/);
+  assert.match(confirmGuide.rows[1].value, /确认|现场信号|评论/);
+  assert.match(confirmGuide.note, /确认|现场信号/);
+
+  const commentGuide = buildShareReceiverGuide(post(), 2, {
+    entryFrom: 'share',
+    source: 'receiver',
+    receiverAction: 'comment'
+  });
+  assert.ok(commentGuide);
+  assert.equal(commentGuide.title, '上一位刚补了线索');
+  assert.match(commentGuide.summary, /上一位刚补|最新评论/);
+  assert.match(commentGuide.rows[0].value, /评论接力|最新评论/);
+  assert.match(commentGuide.rows[1].value, /最新评论|确认/);
+  assert.match(commentGuide.note, /最新评论/);
+
+  const fallbackGuide = buildShareReceiverGuide(post(), 2, {
     entryFrom: 'share',
     source: 'receiver'
   });
-  assert.ok(guide);
-  assert.equal(guide.title, '有人接力转给你');
-  assert.match(guide.summary, /接力|确认和评论/);
-  assert.match(guide.rows[1].value, /继续接力|确认和评论/);
-  assert.match(guide.note, /确认和评论/);
+  assert.ok(fallbackGuide);
+  assert.equal(fallbackGuide.title, '有人接力转给你');
+  assert.match(fallbackGuide.summary, /接力|确认和评论/);
+  assert.match(fallbackGuide.rows[1].value, /继续接力|确认和评论/);
+  assert.match(fallbackGuide.note, /确认和评论/);
+
+  const unknownActionGuide = buildShareReceiverGuide(post(), 2, {
+    entryFrom: 'share',
+    source: 'receiver',
+    receiverAction: 'stale'
+  });
+  assert.deepEqual(
+    unknownActionGuide,
+    fallbackGuide,
+    'unknown receiverAction should preserve the original source=receiver fallback semantics'
+  );
+
+  const plainShareWithAction = buildShareReceiverGuide(post(), 2, {
+    entryFrom: 'share',
+    receiverAction: 'confirm'
+  });
+  assert.ok(plainShareWithAction);
+  assert.equal(plainShareWithAction.title, '已有确认信号');
+  assert.doesNotMatch(plainShareWithAction.summary, /上一位/, 'receiverAction should be ignored when source is not receiver');
+
+  const sourceConfirmWithAction = buildShareReceiverGuide(post(), 2, {
+    entryFrom: 'share',
+    source: 'confirm',
+    receiverAction: 'comment'
+  });
+  assert.ok(sourceConfirmWithAction);
+  assert.equal(sourceConfirmWithAction.title, '有人刚确认过');
+  assert.doesNotMatch(sourceConfirmWithAction.summary, /上一位/, 'source=confirm should keep its existing semantics');
 
   const riskyGuide = buildShareReceiverGuide(post({ reportCount: 2 }), 2, {
     entryFrom: 'share',

@@ -38,7 +38,9 @@ const requiredFiles = [
   'harness/viral-blocked-evidence-capture-product-brief.md',
   'harness/viral-blocked-evidence-capture-checklist.md',
   'harness/viral-targeted-relay-product-brief.md',
-  'harness/viral-targeted-relay-design-checklist.md'
+  'harness/viral-targeted-relay-design-checklist.md',
+  'harness/viral-receiver-action-source-product-brief.md',
+  'harness/viral-receiver-action-source-design-checklist.md'
 ];
 
 const readinessDocs = [
@@ -53,7 +55,9 @@ const readinessDocs = [
   'harness/viral-blocked-evidence-capture-product-brief.md',
   'harness/viral-blocked-evidence-capture-checklist.md',
   'harness/viral-targeted-relay-product-brief.md',
-  'harness/viral-targeted-relay-design-checklist.md'
+  'harness/viral-targeted-relay-design-checklist.md',
+  'harness/viral-receiver-action-source-product-brief.md',
+  'harness/viral-receiver-action-source-design-checklist.md'
 ];
 
 function readProjectFile(relativePath) {

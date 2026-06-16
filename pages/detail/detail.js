@@ -99,12 +99,16 @@ Page({
     shareMessage: null
   },
 
-  onLoad(query) {
+  onLoad(query = {}) {
+    const entryQuery = {
+      ...query,
+      receiverAction: query.receiverAction || ''
+    };
     this.setData({
-      id: query.id || '',
-      entryQuery: query || {},
-      showPublishSuccess: query.from === 'publish',
-      showShareReceiverGuide: query.from === 'share',
+      id: entryQuery.id || '',
+      entryQuery,
+      showPublishSuccess: entryQuery.from === 'publish',
+      showShareReceiverGuide: entryQuery.from === 'share',
       shareReceiverActionStrip: null,
       receiverConversionPrompt: null
     });
@@ -203,7 +207,8 @@ Page({
     }
     return buildShareReceiverGuide(post, commentCount, {
       entryFrom: this.data.entryQuery.from,
-      source: this.data.entryQuery.source
+      source: this.data.entryQuery.source,
+      receiverAction: this.data.entryQuery.receiverAction
     });
   },
 

@@ -81,7 +81,7 @@
       "expected": [
         "receiverConversionPrompt is visible after confirm.",
         "actionRelayPrompt is not competing as the primary CTA.",
-        "The share path contains from=share&source=receiver."
+        "The share path contains from=share&source=receiver&receiverAction=confirm."
       ],
       "actual": "Not run in this example. Replace with observed prompt and share payload.",
       "evidence": [],
@@ -104,7 +104,7 @@
       "expected": [
         "receiverConversionPrompt is visible after comment submit.",
         "commentRelayPrompt is not competing as the primary CTA.",
-        "The share path contains from=share&source=receiver."
+        "The share path contains from=share&source=receiver&receiverAction=comment."
       ],
       "actual": "Not run in this example. Replace with observed prompt and share payload.",
       "evidence": [],
@@ -117,7 +117,7 @@
       "id": "second-hop-receiver-source",
       "title": "二跳接收者看到接力语境",
       "status": "not_run",
-      "route": "/pages/detail/detail?id=<activeLowRiskPostId>&from=share&source=receiver",
+      "route": "/pages/detail/detail?id=<activeLowRiskPostId>&from=share&source=receiver&receiverAction=<confirm-or-comment>",
       "steps": [
         "Open the second-hop route directly or from the system share card.",
         "Wait for the receiver guide to render.",
@@ -125,7 +125,8 @@
       ],
       "expected": [
         "The receiver guide title communicates that someone relayed the task.",
-        "The summary and rows tell the next receiver to look at confirmations and comments first.",
+        "If receiverAction=confirm is present, the copy distinguishes that the previous receiver just confirmed.",
+        "If receiverAction=comment is present, the copy distinguishes that the previous receiver just added a clue.",
         "The page does not show an ordinary share panel at the same time."
       ],
       "actual": "Not run in this example. Replace with observed copy and panel state.",

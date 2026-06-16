@@ -57,6 +57,7 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
   });
   assert.ok(conversion, `${message}: receiver conversion still gives cautious feedback`);
   assert.equal(conversion.shouldRelay, false, `${message}: receiver conversion should not expose public relay CTA`);
+  assert.doesNotMatch(conversion.sharePath, /receiverAction=/, `${message}: risky conversion path should not carry receiverAction`);
 }
 
 {
@@ -91,8 +92,8 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
   assert.equal(confirmConversion.shouldRelay, true);
   assert.equal(
     confirmConversion.sharePath,
-    '/pages/detail/detail?id=post_viral_journey&from=share&source=receiver',
-    'receiver second-hop share path should carry from=share&source=receiver'
+    '/pages/detail/detail?id=post_viral_journey&from=share&source=receiver&receiverAction=confirm',
+    'receiver confirm second-hop share path should carry from=share&source=receiver&receiverAction=confirm'
   );
   assert.match(confirmConversion.title, /确认|接力/);
   assert.ok(Array.isArray(confirmConversion.targetRows), 'receiver conversion prompt should include targeted relay rows');
@@ -112,8 +113,8 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
   assert.equal(commentConversion.shouldRelay, true);
   assert.equal(
     commentConversion.sharePath,
-    '/pages/detail/detail?id=post_viral_journey&from=share&source=receiver',
-    'comment second-hop share path should also carry receiver source'
+    '/pages/detail/detail?id=post_viral_journey&from=share&source=receiver&receiverAction=comment',
+    'comment second-hop share path should carry from=share&source=receiver&receiverAction=comment'
   );
   assert.match(commentConversion.shareTitle, /已补充线索/);
   assert.ok(Array.isArray(commentConversion.targetRows), 'comment receiver conversion should include targeted relay rows');
@@ -126,6 +127,30 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
 }
 
 {
+  const nextReceiverConfirmGuide = buildShareReceiverGuide(post({ confirmations: 1 }), 2, {
+    entryFrom: 'share',
+    source: 'receiver',
+    receiverAction: 'confirm'
+  });
+  assert.ok(nextReceiverConfirmGuide, 'source=receiver with receiverAction=confirm should show receiver guide');
+  assert.equal(nextReceiverConfirmGuide.title, '上一位刚确认过');
+  assert.match(nextReceiverConfirmGuide.summary, /上一位刚确认|确认和现场信号/);
+  assert.match(nextReceiverConfirmGuide.rows[0].value, /确认接力|现场信号/);
+  assert.match(nextReceiverConfirmGuide.rows[1].value, /确认|现场信号|评论/);
+  assert.match(nextReceiverConfirmGuide.note, /确认|现场信号/);
+
+  const nextReceiverCommentGuide = buildShareReceiverGuide(post(), 2, {
+    entryFrom: 'share',
+    source: 'receiver',
+    receiverAction: 'comment'
+  });
+  assert.ok(nextReceiverCommentGuide, 'source=receiver with receiverAction=comment should show receiver guide');
+  assert.equal(nextReceiverCommentGuide.title, '上一位刚补了线索');
+  assert.match(nextReceiverCommentGuide.summary, /上一位刚补|最新评论/);
+  assert.match(nextReceiverCommentGuide.rows[0].value, /评论接力|最新评论/);
+  assert.match(nextReceiverCommentGuide.rows[1].value, /最新评论|确认/);
+  assert.match(nextReceiverCommentGuide.note, /最新评论/);
+
   const nextReceiverGuide = buildShareReceiverGuide(post(), 2, {
     entryFrom: 'share',
     source: 'receiver'
@@ -136,6 +161,33 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
   assert.match(nextReceiverGuide.rows[0].value, /接力链路|确认和评论/);
   assert.match(nextReceiverGuide.rows[1].value, /继续接力|确认和评论/);
   assert.match(nextReceiverGuide.note, /确认和评论/);
+
+  const unknownActionGuide = buildShareReceiverGuide(post(), 2, {
+    entryFrom: 'share',
+    source: 'receiver',
+    receiverAction: 'unknown'
+  });
+  assert.deepEqual(
+    unknownActionGuide,
+    nextReceiverGuide,
+    'unknown receiverAction should keep source=receiver fallback copy'
+  );
+
+  const sourceConfirmWithReceiverAction = buildShareReceiverGuide(post({ confirmations: 1 }), 2, {
+    entryFrom: 'share',
+    source: 'confirm',
+    receiverAction: 'comment'
+  });
+  assert.ok(sourceConfirmWithReceiverAction, 'source=confirm should ignore receiverAction and keep its own guide');
+  assert.equal(sourceConfirmWithReceiverAction.title, '有人刚确认过');
+  assert.doesNotMatch(sourceConfirmWithReceiverAction.summary, /上一位/);
+
+  const plainShareWithReceiverAction = buildShareReceiverGuide(post(), 2, {
+    entryFrom: 'share',
+    receiverAction: 'confirm'
+  });
+  assert.ok(plainShareWithReceiverAction, 'plain from=share should ignore receiverAction without source=receiver');
+  assert.doesNotMatch(plainShareWithReceiverAction.summary, /上一位/);
 }
 
 {
@@ -196,8 +248,8 @@ const commentRelayIndex = detailWxml.indexOf('wx:if="{{commentRelayPrompt}}"');
 
 assert.match(
   detailJs,
-  /buildShareReceiverGuide\(post,\s*commentCount,\s*\{\s*entryFrom: this\.data\.entryQuery\.from,\s*source: this\.data\.entryQuery\.source\s*\}\s*\)/s,
-  'detail page should pass from/source query into receiver guide'
+  /buildShareReceiverGuide\(post,\s*commentCount,\s*\{\s*entryFrom: this\.data\.entryQuery\.from,\s*source: this\.data\.entryQuery\.source,\s*receiverAction: this\.data\.entryQuery\.receiverAction\s*\}\s*\)/s,
+  'detail page should pass from/source/receiverAction query into receiver guide'
 );
 assert.match(
   detailJs,

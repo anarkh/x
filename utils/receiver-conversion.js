@@ -15,9 +15,13 @@ function titleText(post) {
   return title.length > 18 ? `${title.slice(0, 17)}…` : title;
 }
 
-function sharePathForPost(post) {
+function receiverActionParam(action) {
+  return ['confirm', 'comment'].includes(action) ? `&receiverAction=${action}` : '';
+}
+
+function sharePathForPost(post, action) {
   const id = encodeURIComponent(post.id || '');
-  return `/pages/detail/detail?id=${id}&from=share&source=receiver`;
+  return `/pages/detail/detail?id=${id}&from=share&source=receiver${receiverActionParam(action)}`;
 }
 
 function buildSafeTitle(action) {
@@ -186,6 +190,6 @@ export function buildReceiverConversionPrompt(post = {}, action = '', options = 
     shareTitle: shouldRelay
       ? `${normalizedAction === 'comment' ? '已补充线索' : '已确认接力'}：${titleText(currentPost)}`
       : `附近任务：${titleText(currentPost)}`,
-    sharePath: sharePathForPost(currentPost)
+    sharePath: shouldRelay ? sharePathForPost(currentPost, normalizedAction) : sharePathForPost(currentPost)
   };
 }

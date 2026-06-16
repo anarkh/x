@@ -270,16 +270,43 @@ function validateEvidenceItem(item, label, errors) {
   }
 }
 
+function hasQueryValue(path, key, value) {
+  const query = String(path || '').split('?')[1] || '';
+  return new URLSearchParams(query).get(key) === value;
+}
+
+function getQueryValue(path, key) {
+  const query = String(path || '').split('?')[1] || '';
+  return new URLSearchParams(query).get(key) || '';
+}
+
 function validateSharePayload(journey, label, errors) {
   if (isPlainObject(journey.sharePayload)) {
     validateConcreteField(journey.sharePayload, 'path', `${label}.sharePayload`, errors);
+    const payloadPath = journey.sharePayload.path;
 
     if (
-      ['receiver-confirm-conversion', 'receiver-comment-conversion'].includes(journey.id) &&
-      typeof journey.sharePayload.path === 'string' &&
-      !journey.sharePayload.path.includes('from=share&source=receiver')
+      sharePayloadRequiredJourneyIds.has(journey.id) &&
+      typeof payloadPath === 'string' &&
+      (!hasQueryValue(payloadPath, 'from', 'share') || !hasQueryValue(payloadPath, 'source', 'receiver'))
     ) {
-      errors.push(`${label}.sharePayload.path must include from=share&source=receiver.`);
+      errors.push(`${label}.sharePayload.path must include from=share and source=receiver query values.`);
+    }
+
+    const requiredReceiverAction = journey.id === 'receiver-confirm-conversion'
+      ? 'confirm'
+      : (journey.id === 'receiver-comment-conversion' ? 'comment' : '');
+    if (
+      requiredReceiverAction &&
+      typeof payloadPath === 'string' &&
+      !hasQueryValue(payloadPath, 'receiverAction', requiredReceiverAction)
+    ) {
+      errors.push(`${label}.sharePayload.path must include receiverAction=${requiredReceiverAction}.`);
+    }
+
+    const receiverAction = typeof payloadPath === 'string' ? getQueryValue(payloadPath, 'receiverAction') : '';
+    if (journey.id === 'second-hop-receiver-source' && receiverAction && !['confirm', 'comment'].includes(receiverAction)) {
+      errors.push(`${label}.sharePayload.path must not use an unsupported receiverAction.`);
     }
 
     return;

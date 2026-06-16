@@ -116,19 +116,19 @@
   - 确认确认动作真实成功；若同一用户已确认导致重复动作被拦截，应换账号/storage 或记录 blocked。
   - 确认 `receiverConversionPrompt` 出现。
   - 确认 `actionRelayPrompt` 没有抢占主 CTA。
-  - 检查二跳分享 payload，路径必须包含 `from=share&source=receiver`；无法检查时写明具体原因。
+  - 检查二跳分享 payload，路径必须包含 `from=share&source=receiver&receiverAction=confirm`；无法检查时写明具体原因。
 
 - [ ] `receiver-comment-conversion`：接收者评论后的二跳提示。
   - 从首跳分享详情页打开评论弹窗并提交有效评论。
   - 确认评论真实提交成功，记录本地 storage 或 CloudBase 路径。
   - 确认 `receiverConversionPrompt` 出现。
   - 确认 `commentRelayPrompt` 没有抢占主 CTA。
-  - 检查二跳分享 payload，路径必须包含 `from=share&source=receiver`；无法检查时写明具体原因。
+  - 检查二跳分享 payload，路径必须包含 `from=share&source=receiver&receiverAction=comment`；无法检查时写明具体原因。
 
 - [ ] `second-hop-receiver-source`：二跳接收者看到接力语境。
-  - 优先通过真实系统分享卡片进入；无法操作时可直接打开 `/pages/detail/detail?id=<activeLowRiskPostId>&from=share&source=receiver`，但必须标注这是 direct route 辅助。
+  - 优先通过真实系统分享卡片进入；无法操作时可直接打开 `/pages/detail/detail?id=<activeLowRiskPostId>&from=share&source=receiver&receiverAction=confirm` 和 `...&receiverAction=comment`，但必须标注这是 direct route 辅助。
   - 确认 receiver guide 标题或摘要表达“有人接力了任务”的语境。
-  - 确认文案引导下一位接收者先看确认、评论和最新状态。
+  - 确认 `receiverAction=confirm` 文案强调上一位刚确认，`receiverAction=comment` 文案强调上一位刚补线索或最新评论。
   - 确认普通分享面板没有在同一状态展示。
   - 记录入口来源、route/payload、实际文案和面板状态。
 
@@ -148,7 +148,7 @@
   - `postId`
   - `sourceAction`：`confirm`、`comment`、`receiver` 或实际入口。
   - `title`：脱敏后的分享标题摘要。
-  - `path`：必须包含页面路径和 query；二跳 conversion 必须看到 `from=share&source=receiver`。
+  - `path`：必须包含页面路径和 query；二跳 conversion 必须看到 `from=share&source=receiver`，confirm/comment conversion 还必须分别看到 `receiverAction=confirm/comment`。
   - `query`：拆出的 `id`、`from`、`source`。
   - `captureMethod`：DevTools share hook、真机分享卡片、控制台日志、截图/录屏或无法检查原因。
 
@@ -156,7 +156,7 @@
 
   ```json
   "sharePayload": {
-    "path": "/pages/detail/detail?id=post_001&from=share&source=receiver",
+    "path": "/pages/detail/detail?id=post_001&from=share&source=receiver&receiverAction=confirm",
     "title": "脱敏后的分享标题摘要"
   }
   ```
