@@ -58,6 +58,17 @@
       </view>
     </view>
     <view class="share-receiver-note">{{shareReceiverGuide.note}}</view>
+    <view wx:if="{{shareReceiverActionStrip && !receiverConversionPrompt}}" class="share-receiver-actions {{shareReceiverActionStrip.tone}}">
+      <view class="share-receiver-action-copy">
+        <view class="share-receiver-action-title">{{shareReceiverActionStrip.title}}</view>
+        <view class="share-receiver-action-body">{{shareReceiverActionStrip.body}}</view>
+      </view>
+      <view class="share-receiver-action-row">
+        <button class="share-receiver-action-button share-receiver-action-confirm {{shareReceiverActionStrip.confirmDisabled ? 'disabled-action' : ''}}" disabled="{{shareReceiverActionStrip.confirmDisabled}}" data-action="confirm" bindtap="react">{{shareReceiverActionStrip.confirmText}}</button>
+        <button class="ghost-button share-receiver-action-button share-receiver-action-comment" bindtap="openCommentDialog">{{shareReceiverActionStrip.commentText}}</button>
+      </view>
+      <view class="share-receiver-action-note">{{shareReceiverActionStrip.note}}</view>
+    </view>
   </view>
 
   <view wx:if="{{receiverConversionPrompt}}" class="panel receiver-conversion {{receiverConversionPrompt.tone}}">

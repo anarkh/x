@@ -13,6 +13,7 @@ const requiredFiles = [
   'scripts/check-action-relay.mjs',
   'scripts/check-receiver-conversion.mjs',
   'scripts/check-share-receiver.mjs',
+  'scripts/check-share-receiver-action.mjs',
   'harness/check-trust-insight.mjs',
   'scripts/check-candidate-flow.mjs',
   'scripts/check-admin-auth-errors.mjs',
@@ -94,6 +95,7 @@ runCheck('scripts/check-comment-relay.mjs', 'comment relay prompt check');
 runCheck('scripts/check-action-relay.mjs', 'action relay prompt check');
 runCheck('scripts/check-receiver-conversion.mjs', 'receiver conversion relay check');
 runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
+runCheck('scripts/check-share-receiver-action.mjs', 'share receiver action strip check');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');

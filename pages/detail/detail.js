@@ -8,6 +8,7 @@ import { buildActionRelayPrompt } from '../../utils/action-relay.js';
 import { buildCommentRelayPrompt } from '../../utils/comment-relay.js';
 import { buildReceiverConversionPrompt } from '../../utils/receiver-conversion.js';
 import { buildShareReceiverGuide } from '../../utils/share-receiver.js';
+import { buildShareReceiverActionStrip } from '../../utils/share-receiver-actions.js';
 import {
   createPostComment,
   getPost,
@@ -85,6 +86,7 @@ Page({
     trustInsight: null,
     publishSpreadPlan: null,
     shareReceiverGuide: null,
+    shareReceiverActionStrip: null,
     receiverConversionPrompt: null,
     entryQuery: {},
     commentDraft: '',
@@ -103,6 +105,7 @@ Page({
       entryQuery: query || {},
       showPublishSuccess: query.from === 'publish',
       showShareReceiverGuide: query.from === 'share',
+      shareReceiverActionStrip: null,
       receiverConversionPrompt: null
     });
     if (wx.showShareMenu) {
@@ -127,6 +130,7 @@ Page({
     this.setData({
       loading: true,
       isGuest: getCurrentUser().isGuest,
+      shareReceiverActionStrip: null,
       actionRelayPrompt: null,
       commentRelayPrompt: null,
       receiverConversionPrompt: null
@@ -147,6 +151,7 @@ Page({
         trustInsight: null,
         publishSpreadPlan: null,
         shareReceiverGuide: null,
+        shareReceiverActionStrip: null,
         actionRelayPrompt: null,
         commentRelayPrompt: null,
         receiverConversionPrompt: null,
@@ -161,6 +166,7 @@ Page({
         post: null,
         trustInsight: null,
         shareReceiverGuide: null,
+        shareReceiverActionStrip: null,
         actionRelayPrompt: null,
         commentRelayPrompt: null,
         receiverConversionPrompt: null,
@@ -177,6 +183,7 @@ Page({
         ? buildPublishSpreadPlan(post, this.data.comments.length)
         : null,
       shareReceiverGuide: this.buildShareReceiverGuide(post, this.data.comments.length),
+      shareReceiverActionStrip: this.buildShareReceiverActionStrip(post),
       actionRelayPrompt: null,
       receiverConversionPrompt: null,
       shareMessage: this.buildShareMessage(post, this.data.comments.length),
@@ -200,6 +207,12 @@ Page({
     });
   },
 
+  buildShareReceiverActionStrip(post) {
+    return buildShareReceiverActionStrip(post, {
+      entryFrom: this.data.entryQuery.from
+    });
+  },
+
   async loadComments() {
     if (!this.data.id) {
       return;
@@ -215,6 +228,7 @@ Page({
           ? buildPublishSpreadPlan(this.data.post, nextComments.length)
           : null,
         shareReceiverGuide: this.buildShareReceiverGuide(this.data.post, nextComments.length),
+        shareReceiverActionStrip: this.buildShareReceiverActionStrip(this.data.post),
         shareMessage: this.buildShareMessage(this.data.post, nextComments.length),
         commentsLoading: false
       });
@@ -320,6 +334,7 @@ Page({
           ? buildPublishSpreadPlan(this.data.post, nextComments.length)
           : null,
         shareReceiverGuide: this.buildShareReceiverGuide(this.data.post, nextComments.length),
+        shareReceiverActionStrip: this.buildShareReceiverActionStrip(this.data.post),
         shareMessage: this.buildShareMessage(this.data.post, nextComments.length),
         actionRelayPrompt: null,
         commentRelayPrompt: receiverConversionPrompt

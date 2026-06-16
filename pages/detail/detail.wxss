@@ -398,6 +398,66 @@
   line-height: 1.45;
 }
 
+.share-receiver-actions {
+  display: grid;
+  gap: 14rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid rgba(31, 102, 88, 0.12);
+}
+
+.share-receiver-action-copy {
+  display: grid;
+  gap: 6rpx;
+}
+
+.share-receiver-action-title {
+  color: #14211d;
+  font-size: 28rpx;
+  font-weight: 900;
+  line-height: 1.34;
+}
+
+.share-receiver-action-body {
+  color: #3c4c45;
+  font-size: 24rpx;
+  line-height: 1.48;
+}
+
+.share-receiver-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
+  gap: 12rpx;
+}
+
+.share-receiver-action-button {
+  width: 100%;
+  min-width: 0;
+  height: 68rpx;
+  padding: 0 16rpx;
+  border-radius: 14rpx;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 68rpx;
+  white-space: normal;
+}
+
+.share-receiver-action-confirm {
+  color: #ffffff;
+  background: linear-gradient(135deg, #143e37, #1f6658);
+  box-shadow: 0 12rpx 22rpx rgba(31, 102, 88, 0.16);
+}
+
+.share-receiver-action-comment {
+  border-color: rgba(31, 102, 88, 0.18);
+  color: #1f6658;
+}
+
+.share-receiver-action-note {
+  color: #697970;
+  font-size: 22rpx;
+  line-height: 1.42;
+}
+
 .receiver-conversion {
   display: grid;
   gap: 16rpx;

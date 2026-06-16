@@ -9,6 +9,7 @@ process.on('warning', (warning) => {
 
 const { buildDetailShareMessage } = await import('../utils/share-message.js');
 const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
+const { buildShareReceiverActionStrip } = await import('../utils/share-receiver-actions.js');
 const { buildCommentRelayPrompt } = await import('../utils/comment-relay.js');
 const { buildActionRelayPrompt } = await import('../utils/action-relay.js');
 const { buildReceiverConversionPrompt } = await import('../utils/receiver-conversion.js');
@@ -22,6 +23,7 @@ const detailWxml = readFileSync('pages/detail/detail.wxml', 'utf8');
 
 assert.match(detailJs, /buildDetailShareMessage/, 'detail page should use share-message helper');
 assert.match(detailJs, /buildShareReceiverGuide/, 'detail page should use share-receiver helper');
+assert.match(detailJs, /buildShareReceiverActionStrip/, 'detail page should use share receiver action helper');
 assert.match(detailJs, /buildCommentRelayPrompt/, 'detail page should use comment-relay helper');
 assert.match(detailJs, /buildActionRelayPrompt/, 'detail page should use action-relay helper');
 assert.match(detailJs, /buildReceiverConversionPrompt/, 'detail page should use receiver-conversion helper');
@@ -34,6 +36,7 @@ assert.match(
   'ordinary context should render share guidance only when receiver and relay prompts are absent'
 );
 assert.match(detailWxml, /share-receiver/, 'share entry should render receiver guidance');
+assert.match(detailWxml, /shareReceiverActionStrip && !receiverConversionPrompt/, 'share entry should render receiver action strip before conversion');
 assert.match(detailWxml, /receiverConversionPrompt/, 'receiver conversion should render relay prompt when present');
 assert.match(detailWxml, /commentRelayPrompt/, 'comment success should render relay prompt when present');
 assert.match(detailWxml, /actionRelayPrompt/, 'trust action success should render relay prompt when present');
@@ -59,6 +62,16 @@ const shareReceiverGuide = buildShareReceiverGuide(activePost, 2, { entryFrom: '
 assert.ok(shareReceiverGuide);
 assert.match(shareReceiverGuide.summary, /评论|现场/);
 assert.equal(buildShareReceiverGuide(activePost, 0, { entryFrom: 'detail' }), null);
+
+const shareReceiverActionStrip = buildShareReceiverActionStrip(activePost, { entryFrom: 'share' });
+assert.ok(shareReceiverActionStrip);
+assert.equal(shareReceiverActionStrip.confirmText, '我在附近，确认一下');
+assert.equal(shareReceiverActionStrip.commentText, '补一条线索');
+assert.equal(buildShareReceiverActionStrip(activePost, { entryFrom: 'detail' }), null);
+assert.equal(buildShareReceiverActionStrip({ ...activePost, reportCount: 1 }, { entryFrom: 'share' }), null);
+assert.equal(buildShareReceiverActionStrip({ ...activePost, staleCount: 1 }, { entryFrom: 'share' }), null);
+assert.equal(buildShareReceiverActionStrip({ ...activePost, reportCount: 2 }, { entryFrom: 'share' }), null);
+assert.equal(buildShareReceiverActionStrip({ ...activePost, status: 'stale', staleCount: 3 }, { entryFrom: 'share' }), null);
 
 const commentSourceReceiverGuide = buildShareReceiverGuide(activePost, 2, {
   entryFrom: 'share',
