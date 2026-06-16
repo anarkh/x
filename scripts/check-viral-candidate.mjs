@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 process.on('warning', (warning) => {
   if (warning.code !== 'MODULE_TYPELESS_PACKAGE_JSON') {
@@ -17,6 +20,8 @@ const {
   buildPublishSpreadPlan,
   buildPublishSpreadSharePath
 } = await import('../utils/publish-spread.js');
+
+const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const detailJs = readFileSync('pages/detail/detail.js', 'utf8');
 const detailWxml = readFileSync('pages/detail/detail.wxml', 'utf8');
@@ -163,5 +168,16 @@ assert.doesNotMatch(publishSharePath, /from=publish/);
 const closedPlan = buildPublishSpreadPlan({ ...activePost, status: 'resolved' }, 2);
 assert.equal(closedPlan.shouldEncourageSpread, false);
 assert.match(closedPlan.sharePrompt, /不用继续扩散/);
+
+const journeyEvidence = spawnSync(process.execPath, ['--no-warnings', 'scripts/check-viral-journey-evidence.mjs'], {
+  cwd: rootDir,
+  encoding: 'utf8',
+  stdio: 'inherit'
+});
+assert.equal(
+  journeyEvidence.status,
+  0,
+  'viral candidate check should include the viral journey evidence model'
+);
 
 console.log('Viral candidate checks passed.');

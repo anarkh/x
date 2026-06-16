@@ -12,6 +12,7 @@ const requiredFiles = [
   'scripts/check-comment-relay.mjs',
   'scripts/check-action-relay.mjs',
   'scripts/check-receiver-conversion.mjs',
+  'scripts/check-viral-journey-evidence.mjs',
   'scripts/check-share-receiver.mjs',
   'scripts/check-share-receiver-action.mjs',
   'harness/check-trust-insight.mjs',
@@ -94,6 +95,7 @@ runCheck('scripts/check-publish-spread.mjs', 'post-publish spread plan check');
 runCheck('scripts/check-comment-relay.mjs', 'comment relay prompt check');
 runCheck('scripts/check-action-relay.mjs', 'action relay prompt check');
 runCheck('scripts/check-receiver-conversion.mjs', 'receiver conversion relay check');
+runCheck('scripts/check-viral-journey-evidence.mjs', 'viral journey evidence model check');
 runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
 runCheck('scripts/check-share-receiver-action.mjs', 'share receiver action strip check');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');

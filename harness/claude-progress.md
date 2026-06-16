@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：分享接收者完成行动后的再传播最小可验证迭代
-- 当前 blocker：自动验证可以覆盖 JSON、harness、receiver conversion helper、`source=receiver` 路径、接收侧文案 helper、普通分享互斥 guard 和代码静态检查；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认 from=share 用户完成确认/评论后的提示、窄屏换行、系统分享面板和真实二跳行为
+- 当前正在实现的用户请求：N 组传播链路真实可验证性证据框架
+- 当前 blocker：自动场景证据可以覆盖首跳 `from=share`、接收侧说明/action strip、普通 share panel 互斥、confirm/comment 后 `receiverConversionPrompt` 优先级、二跳 `from=share&source=receiver` 和 `source=receiver` 接收语境；真实 WeChat DevTools UI smoke/真机验证仍需要手动确认点击、系统分享面板、真实二跳路径、窄屏换行和云端评论路径
 
 ## 会话记录
 
@@ -843,3 +843,18 @@
 - 更新过的文件或工件：`utils/share-receiver-actions.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-receiver-action.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-receiver-action-product-brief.md`，`harness/viral-receiver-action-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 from=share action strip 的真实布局、confirm 点击后的 receiverConversionPrompt、评论弹窗、游客登录引导、系统分享面板、风险态无按钮、窄屏换行和真实云端评论路径；自动检查只证明 helper、模板绑定、互斥结构和 readiness 接入
 - 下一步最佳动作：主 agent 复核后，在 WeChat DevTools 中分别打开 active 低风险、stale、高举报、resolved/expired/hidden 的 `from=share` 详情页，实测 action strip、confirm/comment 后提示和窄屏展示
+
+### Session 064ViralJourneyEvidence
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-journey-evidence`
+- 本轮目标：N 组产品/设计/开发围绕“真实链路可验证性”补一个可复跑证据框架，验证从分享接收、完成行动、二跳接力到下一位接收者语境的核心链路，同时不声称替代 DevTools/真机
+- 产品假设：J/L/M 并列高分候选的主要短板是缺少连贯链路证据；把 helper 输出和详情页互斥条件组合成一个自动场景模型，可以降低后续迭代破坏真实传播链路的风险
+- 已完成：新增 `scripts/check-viral-journey-evidence.mjs`，直接导入 `buildShareReceiverGuide`、`buildShareReceiverActionStrip`、`buildReceiverConversionPrompt`、`buildActionRelayPrompt`、`buildCommentRelayPrompt` 和 `buildDetailShareMessage`，并静态读取 `pages/detail/detail.js/wxml`；新增 `harness/viral-journey-evidence-product-brief.md`、`harness/viral-journey-evidence-design-checklist.md` 和 `harness/viral-journey-manual-results.example.json`；readiness 和 viral candidate 都运行新证据脚本；证据脚本同时校验手测模板保持 `not_run` 且没有伪造 evidence
+- 自动场景覆盖：`/pages/detail/detail?id=<id>&from=share` 进入 active 且无 stale/report 的任务时，接收侧 guide 与 action strip 出现、普通 share panel 不出现；接收者 confirm/comment 后生成 `receiverConversionPrompt` 并优先于 action/comment relay；二跳分享路径带 `from=share&source=receiver`；`source=receiver` 接收说明是接力语境；普通入口和风险态不出现接收侧鼓励 action strip 或接收者公开接力 CTA
+- 手测模板说明：`harness/viral-journey-manual-results.example.json` 只作为样例，`summary.overallStatus` 为 `not_run`，不包含真实执行结论；它不能被引用为 DevTools/真机通过证据
+- 运行过的验证：`node --no-warnings scripts/check-viral-journey-evidence.mjs` 先因脚本缺失按预期失败；补实现后运行 `node --check scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-share-receiver-action.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：新增证据脚本输出 `Viral journey evidence checks passed.`，并校验手测样例只能作为 `not_run` 模板；share receiver action 输出 `Share receiver action checks passed.`；receiver conversion 输出 `Receiver conversion checks passed.`；viral candidate 输出包含 `Viral journey evidence checks passed.` 和 `Viral candidate checks passed.`；readiness 输出包含 `Viral journey evidence checks passed.` 和 `DevTools readiness checks passed.`；JSON、harness、diff、npm check 和 init 结果以本 session 最终验证输出为准
+- 更新过的文件或工件：`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-journey-evidence-product-brief.md`，`harness/viral-journey-evidence-design-checklist.md`，`harness/viral-journey-manual-results.example.json`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：未执行 WeChat DevTools/真机；自动脚本只证明 helper、路径、互斥结构和手测模板存在，不证明系统分享面板、真实点击、真实二跳、窄屏视觉、云端评论路径或分享转化提升
+- 下一步最佳动作：主 agent 复核后，在 WeChat DevTools 中用 active 低风险任务打开 `/pages/detail/detail?id=<id>&from=share`，分别走确认和评论后分享，再用 `source=receiver` 打开二跳；同时用 stale/report/resolved/expired/hidden 夹具确认风险态不出现鼓励性接收动作

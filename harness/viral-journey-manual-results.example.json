@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "viral-journey-manual-results.example.v1",
+  "exampleNotice": "This is a fill-in example only. It is not real WeChat DevTools or device evidence.",
+  "branch": "codex/iter-viral-journey-evidence",
+  "commit": "<replace-with-tested-commit-sha>",
+  "testedAt": "<replace-with-ISO-8601-time-after-real-run>",
+  "tester": "<replace-with-tester-name-or-handle>",
+  "statusAllowedValues": [
+    "not_run",
+    "blocked",
+    "failed"
+  ],
+  "environment": {
+    "wechatDevToolsVersion": "<replace-with-version>",
+    "baseLibraryVersion": "<replace-with-version>",
+    "device": "<replace-with-simulator-or-device-model>",
+    "isRealDevice": false,
+    "network": "<replace-with-network-profile>",
+    "cloudBase": {
+      "enabled": false,
+      "environmentId": "<replace-with-env-id-or-none>",
+      "postsFunctionDeployed": false,
+      "notes": "Example values only; replace after checking the actual test environment."
+    },
+    "dataSetup": {
+      "activeLowRiskPostId": "<replace-with-active-post-id>",
+      "staleSignalPostId": "<replace-with-post-id-or-none>",
+      "reportSignalPostId": "<replace-with-post-id-or-none>",
+      "closedPostIds": {
+        "stale": "<replace-with-post-id-or-none>",
+        "resolved": "<replace-with-post-id-or-none>",
+        "expired": "<replace-with-post-id-or-none>",
+        "hidden": "<replace-with-post-id-or-none>"
+      },
+      "notes": "Record whether data came from local storage, mock data, or CloudBase."
+    }
+  },
+  "summary": {
+    "overallStatus": "not_run",
+    "recommendation": "Do not treat this example as release evidence. Replace every placeholder after a real manual run.",
+    "notes": [
+      "No manual journey has been executed for this example.",
+      "Use blocked only when a concrete DevTools, device, data, or environment issue prevents the run."
+    ]
+  },
+  "journeys": [
+    {
+      "id": "first-hop-share-entry",
+      "title": "首跳从分享进入低风险 active 任务",
+      "status": "not_run",
+      "route": "/pages/detail/detail?id=<activeLowRiskPostId>&from=share",
+      "steps": [
+        "Open the route in WeChat DevTools or on a real device.",
+        "Wait for the detail page and comments to finish loading.",
+        "Inspect the share receiver guide, receiver action strip, and ordinary share panel area."
+      ],
+      "expected": [
+        "shareReceiverGuide is visible.",
+        "shareReceiverActionStrip is visible.",
+        "The ordinary share panel is not visible in the same state.",
+        "The action strip buttons are confirm/comment actions, not direct share buttons."
+      ],
+      "actual": "Not run in this example. Replace with observed UI state.",
+      "evidence": [],
+      "risks": [
+        "Static checks cannot prove native page rendering, loading order, or narrow-screen wrapping."
+      ],
+      "followUp": "Record the exact post id, device profile, and whether the guide/action strip/ordinary panel were visible."
+    },
+    {
+      "id": "receiver-confirm-conversion",
+      "title": "接收者确认后的二跳提示",
+      "status": "not_run",
+      "route": "/pages/detail/detail?id=<activeLowRiskPostId>&from=share",
+      "steps": [
+        "Open the first-hop route.",
+        "Tap the receiver confirm action.",
+        "Observe the prompt shown after the trust action is recorded.",
+        "Trigger the prompt share button if the environment allows inspecting the share payload."
+      ],
+      "expected": [
+        "receiverConversionPrompt is visible after confirm.",
+        "actionRelayPrompt is not competing as the primary CTA.",
+        "The share path contains from=share&source=receiver."
+      ],
+      "actual": "Not run in this example. Replace with observed prompt and share payload.",
+      "evidence": [],
+      "risks": [
+        "A duplicate prior confirm by the same user can block the confirm action before this journey reaches conversion."
+      ],
+      "followUp": "Use a user/storage state that has not already confirmed the target task."
+    },
+    {
+      "id": "receiver-comment-conversion",
+      "title": "接收者评论后的二跳提示",
+      "status": "not_run",
+      "route": "/pages/detail/detail?id=<activeLowRiskPostId>&from=share",
+      "steps": [
+        "Open the first-hop route.",
+        "Open the comment dialog and submit a valid comment.",
+        "Observe the prompt shown after the comment is recorded.",
+        "Inspect the share payload if the environment allows it."
+      ],
+      "expected": [
+        "receiverConversionPrompt is visible after comment submit.",
+        "commentRelayPrompt is not competing as the primary CTA.",
+        "The share path contains from=share&source=receiver."
+      ],
+      "actual": "Not run in this example. Replace with observed prompt and share payload.",
+      "evidence": [],
+      "risks": [
+        "Guest state, CloudBase comment failure, or closed task state can block comment submission."
+      ],
+      "followUp": "Record login state, storage/cloud path, submitted comment text, and resulting prompt copy."
+    },
+    {
+      "id": "second-hop-receiver-source",
+      "title": "二跳接收者看到接力语境",
+      "status": "not_run",
+      "route": "/pages/detail/detail?id=<activeLowRiskPostId>&from=share&source=receiver",
+      "steps": [
+        "Open the second-hop route directly or from the system share card.",
+        "Wait for the receiver guide to render.",
+        "Inspect the title, summary, rows, and note."
+      ],
+      "expected": [
+        "The receiver guide title communicates that someone relayed the task.",
+        "The summary and rows tell the next receiver to look at confirmations and comments first.",
+        "The page does not show an ordinary share panel at the same time."
+      ],
+      "actual": "Not run in this example. Replace with observed copy and panel state.",
+      "evidence": [],
+      "risks": [
+        "Direct route opening can differ from a real system share entry if query parameters are lost."
+      ],
+      "followUp": "Compare direct-route behavior with a real system share-card entry when available."
+    },
+    {
+      "id": "ordinary-and-risk-entries",
+      "title": "普通入口和风险态不鼓励接收侧扩散",
+      "status": "not_run",
+      "route": "multiple",
+      "steps": [
+        "Open the same active low-risk post without from=share.",
+        "Open share routes for posts with any stale signal and any report signal.",
+        "Open share routes for stale, resolved, expired, and hidden posts when such fixtures exist.",
+        "Inspect receiver action strip, receiver conversion prompt, and any public relay CTA."
+      ],
+      "expected": [
+        "The ordinary entry does not show receiver guide or receiver action strip.",
+        "Any stale/report signal hides the receiver action strip.",
+        "stale, resolved, expired, and hidden states do not expose a receiver public relay CTA.",
+        "Risk-state copy asks users to inspect comments, confirmation, or latest status before taking action."
+      ],
+      "actual": "Not run in this example. Replace with observed state for each fixture.",
+      "evidence": [],
+      "risks": [
+        "Hidden posts may be unavailable through normal list paths and need a controlled fixture or admin setup.",
+        "Expired status can depend on current time and fixture timestamps."
+      ],
+      "followUp": "Record every post id and status fixture used, including staleCount/reportCount values."
+    }
+  ]
+}
