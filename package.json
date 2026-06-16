@@ -6,6 +6,7 @@
   "scripts": {
     "check": "npm run check:json && npm run check:harness && npm run check:readiness",
     "check:blocked-summary": "node scripts/check-map-list-blocked-summary-preflight.mjs",
+    "capture:viral-blocked-evidence": "node scripts/capture-viral-journey-blocked-evidence.mjs",
     "check:devtools-recovery-report": "node scripts/check-devtools-recovery-report.mjs",
     "check:devtools-recovery-report-preflight": "node scripts/check-devtools-recovery-report-preflight.mjs",
     "check:devtools-smoke": "node scripts/check-devtools-smoke-access.mjs --strict",

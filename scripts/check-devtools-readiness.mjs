@@ -19,6 +19,7 @@ const requiredFiles = [
   'scripts/inspect-devtools-port-state.mjs',
   'scripts/check-devtools-smoke-access.mjs',
   'scripts/recover-devtools-service-port.mjs',
+  'scripts/capture-viral-journey-blocked-evidence.mjs',
   'scripts/check-share-receiver.mjs',
   'scripts/check-share-receiver-action.mjs',
   'harness/check-trust-insight.mjs',
@@ -33,7 +34,9 @@ const requiredFiles = [
   'harness/viral-journey-manual-evidence-product-brief.md',
   'harness/viral-journey-manual-evidence-checklist.md',
   'harness/viral-devtools-journey-run-product-brief.md',
-  'harness/viral-devtools-journey-run-checklist.md'
+  'harness/viral-devtools-journey-run-checklist.md',
+  'harness/viral-blocked-evidence-capture-product-brief.md',
+  'harness/viral-blocked-evidence-capture-checklist.md'
 ];
 
 const readinessDocs = [
@@ -44,7 +47,9 @@ const readinessDocs = [
   'harness/viral-journey-manual-evidence-product-brief.md',
   'harness/viral-journey-manual-evidence-checklist.md',
   'harness/viral-devtools-journey-run-product-brief.md',
-  'harness/viral-devtools-journey-run-checklist.md'
+  'harness/viral-devtools-journey-run-checklist.md',
+  'harness/viral-blocked-evidence-capture-product-brief.md',
+  'harness/viral-blocked-evidence-capture-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -116,6 +121,7 @@ console.log('Viral journey manual evidence gate passed structurally; this does n
 console.log('Running viral journey DevTools manual-run preparation. This is no-side-effect environment diagnostics and does not prove UI passed.');
 runCheck('scripts/prepare-viral-journey-devtools-run.mjs', 'viral journey DevTools manual-run preparation');
 console.log('Viral journey DevTools manual-run preparation completed; port/smoke blockers remain manual execution blockers, not UI passed evidence.');
+console.log('Viral blocked evidence capture command exists, but readiness does not run it because capture writes ignored local evidence files.');
 runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
 runCheck('scripts/check-share-receiver-action.mjs', 'share receiver action strip check');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');

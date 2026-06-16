@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：P 组传播链路真实手测 DevTools 启动诊断包
-- 当前 blocker：`prepare:viral-journey-run` 当前只读诊断显示 DevTools port status 为 `unknown`、smoke access 为 `blocked`，9420 无 listener 且无进程声明目标 ide-http-port；真实 WeChat DevTools UI smoke/真机验证仍未执行，五条 viral journey 仍需要手动确认点击、系统分享面板、真实二跳 payload、窄屏换行和云端评论路径
+- 当前正在实现的用户请求：Q 组传播链路 DevTools blocked evidence 自动落盘
+- 当前 blocker：`capture:viral-blocked-evidence` 可把当前 DevTools port/smoke blocker 写入 ignored local blocked JSON 并通过 manual evidence checker，但真实 WeChat DevTools UI smoke/真机验证仍未执行；五条 viral journey 仍需要手动确认点击、系统分享面板、真实二跳 payload、窄屏换行和云端评论路径
 
 ## 会话记录
 
@@ -885,3 +885,17 @@
 - 更新过的文件或工件：`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/viral-devtools-journey-run-product-brief.md`，`harness/viral-devtools-journey-run-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：P 组仍未执行 WeChat DevTools 或真机真实链路手测；当前 9420 service port blocker 只是环境阻塞，不是 UI failed；没有真实 local viral journey result 文件，也没有截图、录屏、payload 或日志 evidence；readiness/diagnostic/dry-run/checker-passed 均不能写成 UI passed
 - 下一步最佳动作：若要进入真实手测，先在 WeChat DevTools UI 启用 Settings -> Security Settings -> Service Port 并确认端口匹配 9420，重新运行 `npm run prepare:viral-journey-run` 直到 port/smoke ready；随后生成 ignored local draft，执行五条 viral journey，填入 evidence 和 share payload/无法检查说明，再运行 manual evidence checker 与 readiness
+
+### Session 067ViralBlockedEvidenceCapture
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-blocked-evidence-capture`
+- 本轮目标：Q 组产品/设计/开发把 P 组诊断到的 DevTools port/smoke blocker 显式落成 O 组 checker 可校验的 ignored local blocked result，避免继续停留在 no files/nothing checked
+- 产品假设：P 能告诉执行者当前为什么不能手测，但没有留下 O checker 会扫描的结果文件；当环境 blocker 真实存在且用户显式运行 capture 时，把 blocker 写成全 blocked local JSON，可以让交接者清楚知道五条 journey 未执行的原因，并把“无 UI evidence”从口头说明变成可校验 artifact
+- 已完成：产品 agent 新增 `harness/viral-blocked-evidence-capture-product-brief.md`；设计/QA agent 新增 `harness/viral-blocked-evidence-capture-checklist.md`；开发 agent 新增 `scripts/capture-viral-journey-blocked-evidence.mjs`；主线程修正文档命令名，新增 `npm run capture:viral-blocked-evidence`，并把 capture 脚本和文档接入 `scripts/check-devtools-readiness.mjs` 的文件/语义要求但不在 readiness 默认执行写文件 capture
+- 脚本行为：显式运行时执行只读 `scripts/inspect-devtools-port-state.mjs` 与无副作用 `scripts/check-devtools-smoke-access.mjs`，写入 ignored local `harness/manual-test-results.local-viral-journey-blocked.json`，记录当前 branch/commit/testedAt/environment/summary，五条 required journeys 全部为 `blocked`，写入具体 port/smoke blocker、actual、followUp，并自动运行 `node --no-warnings scripts/check-viral-journey-manual-evidence.mjs <out>`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/capture-viral-journey-blocked-evidence.mjs`；`node scripts/capture-viral-journey-blocked-evidence.mjs --force`；`node scripts/capture-viral-journey-blocked-evidence.mjs --out harness/viral-journey-blocked.json` 负向；已存在文件未 `--force` 负向；篡改 `summary.overallStatus=passed` 后运行 manual evidence checker 负向；清理 ignored local JSON；`npm run check`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`bash harness/init.sh`
+- 已记录证据：正向 capture 输出 `Checked viral journey manual evidence: harness/manual-test-results.local-viral-journey-blocked.json (overallStatus=blocked)`，生成 JSON 解析为 `schemaVersion=viral-journey-manual-results.v1`、五条 journey 均 `blocked`、DevTools 版本 `2.01.2510290; build 4240.111`、blocker 包含 `status=unknown`、`diagnosis=connect_refused`、9420 无 listener 和 smoke blocked；未 ignored 输出路径被拒绝；已有文件无 `--force` 被拒绝；篡改 `overallStatus=passed` 被 checker 拒绝并提示应为 `blocked`；清理后 `git status --ignored` 无 local result 残留
+- 更新过的文件或工件：`scripts/capture-viral-journey-blocked-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/viral-blocked-evidence-capture-product-brief.md`，`harness/viral-blocked-evidence-capture-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：Q 组仍未执行 WeChat DevTools 或真机真实链路手测；capture 只证明当前环境 blocker 被结构化记录并通过 O checker，不证明 UI passed 或产品 failed；默认 readiness 不执行 capture，因此真实交接需要用户显式运行 `npm run capture:viral-blocked-evidence`
+- 下一步最佳动作：若继续推进真实证据，先恢复 WeChat DevTools Service Port 9420 并确认 `npm run prepare:viral-journey-run` port/smoke ready；若仍 blocked，显式运行 `npm run capture:viral-blocked-evidence -- --force` 记录当前 blocker；恢复后执行五条 viral journey 并用真实 evidence 替换 blocked local JSON
