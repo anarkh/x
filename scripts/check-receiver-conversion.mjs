@@ -25,6 +25,20 @@ function post(overrides = {}) {
   };
 }
 
+function assertTargetRows(prompt, message) {
+  assert.ok(Array.isArray(prompt.targetRows), `${message}: targetRows should be an array`);
+  assert.equal(prompt.targetRows.length, 3, `${message}: should render 3 target rows`);
+  assert.deepEqual(
+    prompt.targetRows.map((row) => row.label),
+    ['推荐转给', '为什么可信', '下一位先看'],
+    `${message}: target row labels should stay structured`
+  );
+  assert.ok(
+    prompt.targetRows.every((row) => row.value && row.value.length <= 34),
+    `${message}: target row copy should stay compact`
+  );
+}
+
 {
   const confirmed = buildReceiverConversionPrompt(post(), 'confirm', { entryFrom: 'share' });
   assert.ok(confirmed, 'share-entry confirm should create a receiver conversion prompt');
@@ -34,6 +48,10 @@ function post(overrides = {}) {
   assert.match(confirmed.body, /确认|路过的人|现场/);
   assert.match(confirmed.buttonText, /接力/);
   assert.equal(confirmed.sharePath, '/pages/detail/detail?id=post_receiver_1&from=share&source=receiver');
+  assertTargetRows(confirmed, 'low-risk confirm');
+  assert.match(confirmed.targetRows[0].value, /丢失|路过|门卫|前台/);
+  assert.match(confirmed.targetRows[1].value, /刚确认|确认/);
+  assert.match(confirmed.targetRows[2].value, /物品|地点|评论/);
 
   const commented = buildReceiverConversionPrompt(post(), 'comment', { entryFrom: 'share' });
   assert.ok(commented);
@@ -41,6 +59,8 @@ function post(overrides = {}) {
   assert.match(commented.title, /评论|接力/);
   assert.match(commented.body, /评论|确认/);
   assert.match(commented.shareTitle, /已补充线索/);
+  assertTargetRows(commented, 'low-risk comment');
+  assert.match(commented.targetRows[1].value, /刚补|线索|评论/);
 }
 
 {
@@ -70,6 +90,49 @@ function post(overrides = {}) {
   assert.equal(resolved.shouldRelay, false);
   assert.equal(resolved.tone, 'done');
   assert.match(resolved.body, /处理完|历史结果/);
+
+  const weakStale = buildReceiverConversionPrompt(post({ staleCount: 1 }), 'confirm', { entryFrom: 'share' });
+  const weakReport = buildReceiverConversionPrompt(post({ reportCount: 1 }), 'comment', { entryFrom: 'share' });
+  assert.ok(weakStale);
+  assert.ok(weakReport);
+  assert.equal(weakStale.shouldRelay, false);
+  assert.equal(weakReport.shouldRelay, false);
+
+  for (const risky of [weakStale, weakReport, stale, report, resolved]) {
+    assert.ok(!risky.targetRows || risky.targetRows.length === 0, 'risk/closed prompts should not include encouraging target rows');
+    assert.doesNotMatch(risky.buttonText, /接力|转发/, 'risk/closed prompt should not expose public relay copy');
+  }
+}
+
+{
+  const lost = buildReceiverConversionPrompt(post({ intent: 'lost' }), 'confirm', { entryFrom: 'share' });
+  const found = buildReceiverConversionPrompt(post({ intent: 'found' }), 'confirm', { entryFrom: 'share' });
+  assertTargetRows(lost, 'lost_found lost');
+  assertTargetRows(found, 'lost_found found');
+  assert.notEqual(lost.targetRows[0].value, found.targetRows[0].value, 'lost and found should recommend different targets');
+  assert.match(lost.targetRows[0].value, /丢失|门卫|前台/);
+  assert.match(found.targetRows[0].value, /丢东西|楼栋群|前台/);
+
+  for (const [category, expected] of [
+    ['help_needed', /搭把手|邻居|店员|熟悉情况/],
+    ['street_update', /经过|同楼栋|同路线/],
+    ['check_in', /会到这里|附近朋友|同社区/]
+  ]) {
+    const prompt = buildReceiverConversionPrompt(post({ category, intent: '' }), 'comment', { entryFrom: 'share' });
+    assertTargetRows(prompt, `${category} prompt`);
+    assert.match(prompt.targetRows[0].value, expected, `${category} should have category-specific relay target`);
+  }
+
+  const streetUpdate = buildReceiverConversionPrompt(post({ category: 'street_update', intent: '' }), 'confirm', { entryFrom: 'share' });
+  const helpNeeded = buildReceiverConversionPrompt(post({ category: 'help_needed', intent: '' }), 'confirm', { entryFrom: 'share' });
+  const checkIn = buildReceiverConversionPrompt(post({ category: 'check_in', intent: '' }), 'confirm', { entryFrom: 'share' });
+  assert.match(streetUpdate.targetRows[2].value, /更新时间|过时信号/);
+  assert.match(helpNeeded.targetRows[2].value, /求助内容|最新评论/);
+  assert.match(checkIn.targetRows[2].value, /地点状态|适合到场/);
+
+  const fallback = buildReceiverConversionPrompt(post({ category: 'other', intent: '' }), 'confirm', { entryFrom: 'share' });
+  assertTargetRows(fallback, 'fallback prompt');
+  assert.match(fallback.targetRows[0].value, /熟悉这个地点|核对/);
 }
 
 {
@@ -108,6 +171,12 @@ assert.match(detailJs, /commentRelayPrompt: receiverConversionPrompt\s*\?\s*null
 assert.match(detailJs, /actionRelayPrompt: receiverConversionPrompt \? null : buildActionRelayPrompt/, 'receiver conversion should suppress action relay prompt');
 assert.match(detailJs, /shareContext === 'receiverConversion'/, 'receiver conversion share button should have its own share payload');
 assert.match(detailWxml, /receiverConversionPrompt/, 'detail page should render receiver conversion panel');
+assert.match(detailWxml, /receiverConversionPrompt\.targetRows && receiverConversionPrompt\.targetRows\.length/, 'receiver conversion panel should safely render target rows');
+assert.match(
+  detailWxml,
+  /wx:if="\{\{receiverConversionPrompt\.shouldRelay\}\}"[\s\S]*?open-type="share"/,
+  'receiver conversion public share CTA should only render when shouldRelay is true'
+);
 assert.match(detailWxml, /data-share-context="receiverConversion"/, 'receiver conversion share button should identify share context');
 assert.match(
   detailWxml,

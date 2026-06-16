@@ -95,6 +95,15 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
     'receiver second-hop share path should carry from=share&source=receiver'
   );
   assert.match(confirmConversion.title, /确认|接力/);
+  assert.ok(Array.isArray(confirmConversion.targetRows), 'receiver conversion prompt should include targeted relay rows');
+  assert.deepEqual(
+    confirmConversion.targetRows.map((row) => row.label),
+    ['推荐转给', '为什么可信', '下一位先看'],
+    'targeted relay rows should explain who, why now, and what to inspect first'
+  );
+  assert.match(confirmConversion.targetRows[0].value, /丢失|门卫|前台|核对/);
+  assert.match(confirmConversion.targetRows[1].value, /确认|评论|线索/);
+  assert.match(confirmConversion.targetRows[2].value, /物品|评论|地点/);
 
   const commentConversion = buildReceiverConversionPrompt(post(), 'comment', {
     entryFrom: 'share'
@@ -107,6 +116,8 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
     'comment second-hop share path should also carry receiver source'
   );
   assert.match(commentConversion.shareTitle, /已补充线索/);
+  assert.ok(Array.isArray(commentConversion.targetRows), 'comment receiver conversion should include targeted relay rows');
+  assert.equal(commentConversion.targetRows.length, 3, 'comment receiver conversion should keep 3 target rows');
 
   const actionRelay = buildActionRelayPrompt({ ...post(), confirmations: 1 }, 'confirm');
   const commentRelay = buildCommentRelayPrompt(post(), { body: '刚路过，保安说有人见过。' }, 1);

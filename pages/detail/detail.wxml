@@ -77,6 +77,12 @@
       <view class="receiver-conversion-title">{{receiverConversionPrompt.title}}</view>
       <view class="receiver-conversion-body">{{receiverConversionPrompt.body}}</view>
     </view>
+    <view wx:if="{{receiverConversionPrompt.targetRows && receiverConversionPrompt.targetRows.length}}" class="receiver-conversion-targets">
+      <view wx:for="{{receiverConversionPrompt.targetRows}}" wx:key="label" class="receiver-conversion-target-row">
+        <text class="receiver-conversion-target-label">{{item.label}}</text>
+        <text class="receiver-conversion-target-value">{{item.value}}</text>
+      </view>
+    </view>
     <view class="receiver-conversion-actions">
       <button
         wx:if="{{receiverConversionPrompt.shouldRelay}}"

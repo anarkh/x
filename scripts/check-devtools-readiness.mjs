@@ -36,7 +36,9 @@ const requiredFiles = [
   'harness/viral-devtools-journey-run-product-brief.md',
   'harness/viral-devtools-journey-run-checklist.md',
   'harness/viral-blocked-evidence-capture-product-brief.md',
-  'harness/viral-blocked-evidence-capture-checklist.md'
+  'harness/viral-blocked-evidence-capture-checklist.md',
+  'harness/viral-targeted-relay-product-brief.md',
+  'harness/viral-targeted-relay-design-checklist.md'
 ];
 
 const readinessDocs = [
@@ -49,7 +51,9 @@ const readinessDocs = [
   'harness/viral-devtools-journey-run-product-brief.md',
   'harness/viral-devtools-journey-run-checklist.md',
   'harness/viral-blocked-evidence-capture-product-brief.md',
-  'harness/viral-blocked-evidence-capture-checklist.md'
+  'harness/viral-blocked-evidence-capture-checklist.md',
+  'harness/viral-targeted-relay-product-brief.md',
+  'harness/viral-targeted-relay-design-checklist.md'
 ];
 
 function readProjectFile(relativePath) {

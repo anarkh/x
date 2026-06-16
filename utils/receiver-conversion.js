@@ -32,6 +32,58 @@ function buildSafeBody(action) {
     : '刚确认过这条后继续转给更可能路过的人，能更快补全现场信息。';
 }
 
+function targetAudienceForPost(post) {
+  if (post.category === 'lost_found') {
+    if (post.intent === 'found') {
+      return '可能在附近丢东西的人、楼栋群或前台';
+    }
+    return '可能路过丢失地点的人、门卫或前台';
+  }
+  if (post.category === 'help_needed') {
+    return '能搭把手的邻居、店员或熟悉情况的人';
+  }
+  if (post.category === 'street_update') {
+    return '即将经过这里的人、同楼栋或同路线邻居';
+  }
+  if (post.category === 'check_in') {
+    return '会到这里的人、附近朋友或同社区邻居';
+  }
+  return '熟悉这个地点、能帮忙核对的人';
+}
+
+function nextReceiverCueForPost(post) {
+  if (post.category === 'lost_found') {
+    return '物品特征、地点和最新评论';
+  }
+  if (post.category === 'help_needed') {
+    return '求助内容、地点和最新评论';
+  }
+  if (post.category === 'street_update') {
+    return '更新时间、地点和过时信号';
+  }
+  if (post.category === 'check_in') {
+    return '地点状态、评论和适合到场时间';
+  }
+  return '地点、确认数和最新评论';
+}
+
+function buildTargetRows(post, action) {
+  return [
+    {
+      label: '推荐转给',
+      value: targetAudienceForPost(post)
+    },
+    {
+      label: '为什么可信',
+      value: action === 'comment' ? '刚补了线索，评论可直接核对' : '刚有人确认，现场信号更新'
+    },
+    {
+      label: '下一位先看',
+      value: nextReceiverCueForPost(post)
+    }
+  ];
+}
+
 function buildRiskTitle(post, counts) {
   if (post.status === 'hidden') {
     return '内容已隐藏，先别继续扩散';
@@ -130,6 +182,7 @@ export function buildReceiverConversionPrompt(post = {}, action = '', options = 
     body: shouldRelay ? buildSafeBody(normalizedAction) : buildRiskBody(currentPost, counts, normalizedAction),
     buttonText: shouldRelay ? '继续接力' : '先看确认和评论',
     note: buildNote(currentPost, counts, shouldRelay),
+    targetRows: shouldRelay ? buildTargetRows(currentPost, normalizedAction) : [],
     shareTitle: shouldRelay
       ? `${normalizedAction === 'comment' ? '已补充线索' : '已确认接力'}：${titleText(currentPost)}`
       : `附近任务：${titleText(currentPost)}`,

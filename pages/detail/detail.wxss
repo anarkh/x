@@ -514,6 +514,36 @@
   white-space: normal;
 }
 
+.receiver-conversion-targets {
+  display: grid;
+  gap: 10rpx;
+  padding-top: 14rpx;
+  border-top: 1rpx solid rgba(31, 102, 88, 0.12);
+}
+
+.receiver-conversion-target-row {
+  display: grid;
+  grid-template-columns: 112rpx minmax(0, 1fr);
+  gap: 12rpx;
+  align-items: start;
+}
+
+.receiver-conversion-target-label {
+  color: #1f6658;
+  font-size: 22rpx;
+  font-weight: 900;
+  line-height: 1.42;
+}
+
+.receiver-conversion-target-value {
+  min-width: 0;
+  color: #2e423a;
+  font-size: 24rpx;
+  line-height: 1.42;
+  overflow-wrap: break-word;
+  word-break: break-all;
+}
+
 .receiver-conversion-actions {
   display: grid;
   grid-template-columns: minmax(0, 260rpx) minmax(0, 1fr);

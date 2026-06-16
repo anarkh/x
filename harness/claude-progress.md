@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：Q 组传播链路 DevTools blocked evidence 自动落盘
-- 当前 blocker：`capture:viral-blocked-evidence` 可把当前 DevTools port/smoke blocker 写入 ignored local blocked JSON 并通过 manual evidence checker，但真实 WeChat DevTools UI smoke/真机验证仍未执行；五条 viral journey 仍需要手动确认点击、系统分享面板、真实二跳 payload、窄屏换行和云端评论路径
+- 当前正在实现的用户请求：R 组接收者二跳目标化接力提示
+- 当前 blocker：R 组自动检查已覆盖低风险 receiverConversionPrompt 的目标化三行信息、风险态 targetRows 为空、二跳 path 保持 `from=share&source=receiver`，但真实 WeChat DevTools UI smoke/真机验证仍未执行；五条 viral journey 仍需要手动确认点击、系统分享面板、真实二跳 payload、窄屏换行和云端评论路径
 
 ## 会话记录
 
@@ -899,3 +899,18 @@
 - 更新过的文件或工件：`scripts/capture-viral-journey-blocked-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/viral-blocked-evidence-capture-product-brief.md`，`harness/viral-blocked-evidence-capture-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：Q 组仍未执行 WeChat DevTools 或真机真实链路手测；capture 只证明当前环境 blocker 被结构化记录并通过 O checker，不证明 UI passed 或产品 failed；默认 readiness 不执行 capture，因此真实交接需要用户显式运行 `npm run capture:viral-blocked-evidence`
 - 下一步最佳动作：若继续推进真实证据，先恢复 WeChat DevTools Service Port 9420 并确认 `npm run prepare:viral-journey-run` port/smoke ready；若仍 blocked，显式运行 `npm run capture:viral-blocked-evidence -- --force` 记录当前 blocker；恢复后执行五条 viral journey 并用真实 evidence 替换 blocked local JSON
+
+### Session 068ViralTargetedRelay
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-targeted-relay`
+- 本轮目标：R 组产品/设计/开发把 `from=share` 接收者完成 confirm/comment 后的二跳提示从泛化“继续接力”升级为目标化接力，降低用户自己思考“转给谁、为什么可信、对方先看什么”的成本
+- 产品假设：接收者刚确认或补线索后，已经有一次真实判断或贡献；如果二跳提示明确推荐目标人群、解释刚发生动作带来的可信信号，并告诉下一位先核对什么，更可能把一次接收转化为有边界的二次传播，而不是无差别扩散
+- 已完成：产品 agent 新增 `harness/viral-targeted-relay-product-brief.md`；设计/QA agent 新增 `harness/viral-targeted-relay-design-checklist.md`；开发 agent 扩展 `utils/receiver-conversion.js`，给低风险 receiverConversionPrompt 增加 `targetRows` 三行结构：`推荐转给`、`为什么可信`、`下一位先看`；目标化文案对齐当前 `lost_found`、`help_needed`、`street_update`、`check_in` 分类枚举；风险态、弱 stale/report、resolved/expired/hidden 继续保持 `targetRows` 为空且不展示公开接力 CTA
+- 页面变化：`pages/detail/detail.wxml` 在 receiver conversion panel 内渲染目标化三行，且使用 `receiverConversionPrompt.targetRows && receiverConversionPrompt.targetRows.length` 防空；`pages/detail/detail.wxss` 增加两列 label/value 样式，保证短 label 固定、value 可换行
+- 检查变化：`scripts/check-receiver-conversion.mjs` 覆盖三行 label、紧凑文案、lost/found 差异、真实项目分类目标化、fallback、风险态空 targetRows 和公开 share CTA 只在 shouldRelay 时出现；`scripts/check-viral-journey-evidence.mjs` 覆盖接收者 confirm/comment 后 targetRows 存在；`scripts/check-devtools-readiness.mjs` 把 R 组产品/设计文档纳入 readiness 文件和语义文档扫描
+- 运行过的验证：`pwd`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/receiver-conversion.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-receiver-conversion.mjs`；`node --check scripts/check-viral-journey-evidence.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/viral-targeted-relay`，对应约定 `/tmp/street-tasks-iter-worktrees/viral-targeted-relay`；当前分支为 `codex/iter-viral-targeted-relay`；receiver conversion 输出 `Receiver conversion checks passed.`；viral journey evidence 输出 `Viral journey evidence checks passed.`；readiness 输出包含 receiver conversion、viral journey evidence、manual evidence gate、DevTools manual-run preparation、share receiver、share receiver action、trust insight、candidate、admin auth、map list resilience 和 blocked summary preflight，并最终输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；readiness 仍报告 9420 service port `connect_refused` 和 smoke access `blocked`，这只记录环境 blocker，不代表 UI passed；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 完整跑通；最终 `bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/receiver-conversion.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-receiver-conversion.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-targeted-relay-product-brief.md`，`harness/viral-targeted-relay-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：R 组仍未执行 WeChat DevTools 或真机真实链路手测；未验证系统分享面板、真实 `from=share&source=receiver` payload、二跳接收者真实打开、窄屏换行、云端评论路径和转发率提升；本轮尝试查找本地 wcc/wcsc 编译器未找到可直接调用路径，因此没有记录 WXML/WXSS 编译器通过证据
+- 下一步最佳动作：提交 R 组并启动用户评测 agent；评测时重点比较 R 相比 Q 是否明显提升用户侧二跳接力意愿，同时保持风险态和关闭态不鼓励公开扩散
