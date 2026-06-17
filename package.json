@@ -11,6 +11,7 @@
     "check:devtools-recovery-report-preflight": "node scripts/check-devtools-recovery-report-preflight.mjs",
     "check:devtools-recovery": "node scripts/check-devtools-recovery.mjs",
     "check:devtools-port-forensics": "node scripts/check-devtools-port-forensics.mjs",
+    "check:devtools-ui-confirmation": "node scripts/check-devtools-ui-confirmation.mjs",
     "check:devtools-smoke": "node scripts/check-devtools-smoke-access.mjs --strict",
     "check:harness": "node harness/check-harness.mjs",
     "check:json": "node scripts/check-json.mjs",
@@ -18,6 +19,7 @@
     "inspect:devtools-port": "node scripts/inspect-devtools-port-state.mjs",
     "inspect:devtools-recovery": "node scripts/recover-devtools-service-port.mjs --dry-run",
     "prepare:devtools-recovery-report": "node scripts/prepare-devtools-recovery-report.mjs",
+    "prepare:devtools-ui-confirmation": "node scripts/prepare-devtools-ui-confirmation-run.mjs",
     "prepare:viral-journey-run": "node --no-warnings scripts/prepare-viral-journey-devtools-run.mjs",
     "recover:devtools-app-quit": "node scripts/recover-devtools-service-port.mjs --app-quit-reopen"
   }

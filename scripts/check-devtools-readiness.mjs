@@ -21,6 +21,8 @@ const requiredFiles = [
   'scripts/recover-devtools-service-port.mjs',
   'scripts/check-devtools-recovery.mjs',
   'scripts/check-devtools-port-forensics.mjs',
+  'scripts/check-devtools-ui-confirmation.mjs',
+  'scripts/prepare-devtools-ui-confirmation-run.mjs',
   'scripts/capture-viral-journey-blocked-evidence.mjs',
   'scripts/check-share-receiver.mjs',
   'scripts/check-share-receiver-action.mjs',
@@ -62,7 +64,9 @@ const requiredFiles = [
   'harness/devtools-port-deep-forensics-product-brief.md',
   'harness/devtools-port-deep-forensics-checklist.md',
   'harness/devtools-service-port-config-forensics-product-brief.md',
-  'harness/devtools-service-port-config-forensics-checklist.md'
+  'harness/devtools-service-port-config-forensics-checklist.md',
+  'harness/devtools-service-port-ui-confirmation-product-brief.md',
+  'harness/devtools-service-port-ui-confirmation-checklist.md'
 ];
 
 const readinessDocs = [
@@ -97,7 +101,9 @@ const readinessDocs = [
   'harness/devtools-port-deep-forensics-product-brief.md',
   'harness/devtools-port-deep-forensics-checklist.md',
   'harness/devtools-service-port-config-forensics-product-brief.md',
-  'harness/devtools-service-port-config-forensics-checklist.md'
+  'harness/devtools-service-port-config-forensics-checklist.md',
+  'harness/devtools-service-port-ui-confirmation-product-brief.md',
+  'harness/devtools-service-port-ui-confirmation-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -143,12 +149,25 @@ for (const group of requiredSemanticGroups) {
   );
 }
 
-function runCheck(scriptPath, label) {
+function redactReadinessOutput(output) {
+  return String(output || '')
+    .replaceAll(rootDir, '<repo-worktree>')
+    .replace(/\/private\/tmp\/street-tasks-iter-worktrees\/[^\s"'`),\]}<>]+/g, '<repo-worktree>')
+    .replace(/\/tmp\/street-tasks-iter-worktrees\/[^\s"'`),\]}<>]+/g, '<repo-worktree>')
+    .replace(/\/Users\/[^\s"'`),\]}<>]+/g, '<local-path>');
+}
+
+function runCheck(scriptPath, label, options = {}) {
   const result = spawnSync(process.execPath, ['--no-warnings', scriptPath], {
     cwd: rootDir,
     encoding: 'utf8',
-    stdio: 'inherit'
+    stdio: options.redactOutput ? 'pipe' : 'inherit'
   });
+
+  if (options.redactOutput) {
+    process.stdout.write(redactReadinessOutput(result.stdout));
+    process.stderr.write(redactReadinessOutput(result.stderr));
+  }
 
   assert.equal(
     result.status,
@@ -167,7 +186,7 @@ console.log('Running viral journey manual evidence gate. This scans ignored loca
 runCheck('scripts/check-viral-journey-manual-evidence.mjs', 'viral journey manual evidence gate');
 console.log('Viral journey manual evidence gate passed structurally; this does not prove DevTools or real-device UI passed.');
 console.log('Running viral journey DevTools manual-run preparation. This is no-side-effect environment diagnostics and does not prove UI passed.');
-runCheck('scripts/prepare-viral-journey-devtools-run.mjs', 'viral journey DevTools manual-run preparation');
+runCheck('scripts/prepare-viral-journey-devtools-run.mjs', 'viral journey DevTools manual-run preparation', { redactOutput: true });
 console.log('Viral journey DevTools manual-run preparation completed; port/smoke blockers remain manual execution blockers, not UI passed evidence.');
 console.log('Viral blocked evidence capture command exists, but readiness does not run it because capture writes ignored local evidence files.');
 runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
@@ -178,6 +197,8 @@ console.log('Running DevTools recovery static guard. This does not quit or reope
 runCheck('scripts/check-devtools-recovery.mjs', 'DevTools recovery static guard');
 console.log('Running DevTools port forensics static guard. This is read-only/static and does not quit or open DevTools.');
 runCheck('scripts/check-devtools-port-forensics.mjs', 'DevTools port forensics static guard');
+console.log('Running DevTools UI confirmation static guard. This does not run the UI-state-dependent prepare script and does not automate DevTools UI.');
+runCheck('scripts/check-devtools-ui-confirmation.mjs', 'DevTools UI confirmation static guard');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');
