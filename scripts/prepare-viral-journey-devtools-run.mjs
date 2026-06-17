@@ -166,7 +166,11 @@ function printJourneyPackage(journeys) {
 
     if (sharePayloadJourneyIds.has(journey.id)) {
       // The manual checker accepts either a concrete sharePayload.path or an explicit inability note.
-      console.log('   share payload check: confirm/comment evidence must include from=share&source=receiver and receiverAction=confirm/comment; source evidence must include from=share&source=receiver, or record a concrete reason why the payload could not be inspected.');
+      if (journey.id === 'receiver-confirm-conversion' || journey.id === 'receiver-comment-conversion') {
+        console.log('   share payload check: confirm/comment evidence must include from=share&source=receiver, receiverAction=confirm/comment, and relay attribution params share_id, parent_share_id, share_depth when inspectable; otherwise record a concrete reason why the payload could not be inspected.');
+      } else {
+        console.log('   share payload check: source evidence must include from=share&source=receiver and a supported receiverAction when inspectable, or record a concrete reason why the payload could not be inspected.');
+      }
     }
 
     if (timelinePayloadJourneyIds.has(journey.id)) {

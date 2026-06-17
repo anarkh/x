@@ -23,6 +23,17 @@ import {
   shouldShowDetailTimelineShare
 } from '../../utils/timeline-share.js';
 import {
+  appendViralRelayQuery,
+  appendViralRelayParams,
+  createViralRelaySession,
+  createViralAttributionSession,
+  recordShareConversion,
+  recordShareDetailBlocked,
+  recordShareDetailLanding,
+  recordShareDetailLoaded,
+  recordShareRelay
+} from '../../utils/viral-attribution.js';
+import {
   categoryLabel,
   formatCreatedAt,
   formatTimeLeft,
@@ -76,6 +87,17 @@ function decorateComment(raw) {
   };
 }
 
+function receiverConversionAction(prompt) {
+  const path = String(prompt && prompt.sharePath || '');
+  if (path.indexOf('receiverAction=comment') >= 0) {
+    return 'comment';
+  }
+  if (path.indexOf('receiverAction=confirm') >= 0) {
+    return 'confirm';
+  }
+  return '';
+}
+
 Page({
   data: {
     id: '',
@@ -100,7 +122,10 @@ Page({
     maxCommentLength: MAX_COMMENT_LENGTH,
     actionRelayPrompt: null,
     commentRelayPrompt: null,
-    shareMessage: null
+    shareMessage: null,
+    attributionSession: null,
+    attributionLoadedRecorded: false,
+    attributionBlockedRecorded: false
   },
 
   onLoad(query = {}) {
@@ -108,14 +133,19 @@ Page({
       ...query,
       receiverAction: query.receiverAction || ''
     };
+    const attributionSession = createViralAttributionSession(entryQuery);
     this.setData({
       id: entryQuery.id || '',
       entryQuery,
       showPublishSuccess: entryQuery.from === 'publish',
       showShareReceiverGuide: entryQuery.from === 'share',
       shareReceiverActionStrip: null,
-      receiverConversionPrompt: null
+      receiverConversionPrompt: null,
+      attributionSession,
+      attributionLoadedRecorded: false,
+      attributionBlockedRecorded: false
     });
+    recordShareDetailLanding(attributionSession);
     this.configureShareMenu(null);
   },
 
@@ -139,12 +169,14 @@ Page({
       receiverConversionPrompt: null
     });
     let raw = null;
+    let blockedReason = 'not_found';
     try {
       raw = await getPost(this.data.id);
     } catch (error) {
+      blockedReason = 'load_failed';
       console.warn('[detail] failed to load post', error);
     }
-    this.renderPost(raw);
+    this.renderPost(raw, blockedReason);
     if (raw) {
       this.loadComments();
     } else {
@@ -163,8 +195,11 @@ Page({
     }
   },
 
-  renderPost(raw) {
+  renderPost(raw, blockedReason = 'not_found') {
     if (!raw) {
+      if (!this.data.attributionBlockedRecorded) {
+        recordShareDetailBlocked(this.data.attributionSession, blockedReason);
+      }
       this.configureShareMenu(null);
       this.setData({
         post: null,
@@ -175,11 +210,15 @@ Page({
         commentRelayPrompt: null,
         receiverConversionPrompt: null,
         shareMessage: null,
+        attributionBlockedRecorded: true,
         loading: false
       });
       return;
     }
     const post = decorateDetailPost(raw);
+    if (!this.data.attributionLoadedRecorded) {
+      recordShareDetailLoaded(this.data.attributionSession, post);
+    }
     this.configureShareMenu(post);
     this.setData({
       post,
@@ -192,6 +231,7 @@ Page({
       actionRelayPrompt: null,
       receiverConversionPrompt: null,
       shareMessage: this.buildShareMessage(post, this.data.comments.length),
+      attributionLoadedRecorded: true,
       loading: false
     });
   },
@@ -234,6 +274,14 @@ Page({
     return buildShareReceiverActionStrip(post, {
       entryFrom: this.data.entryQuery.from
     });
+  },
+
+  buildAttributedRelayShare(post, path, options = {}) {
+    const relaySession = createViralRelaySession(this.data.attributionSession, post, options);
+    return {
+      path: appendViralRelayParams(path, relaySession),
+      relaySession
+    };
   },
 
   async loadComments() {
@@ -350,6 +398,7 @@ Page({
       const receiverConversionPrompt = buildReceiverConversionPrompt(this.data.post, 'comment', {
         entryFrom: this.data.entryQuery.from
       });
+      recordShareConversion(this.data.attributionSession, this.data.post, 'comment');
       this.setData({
         comments: nextComments,
         trustInsight: formatTrustInsight(this.data.post, nextComments.length),
@@ -403,6 +452,7 @@ Page({
     const receiverConversionPrompt = buildReceiverConversionPrompt(post, action, {
       entryFrom: this.data.entryQuery.from
     });
+    recordShareConversion(this.data.attributionSession, post, action);
     this.setData({
       actionRelayPrompt: receiverConversionPrompt ? null : buildActionRelayPrompt(post, action),
       commentRelayPrompt: null,
@@ -450,9 +500,18 @@ Page({
       this.data.commentRelayPrompt &&
       this.data.commentRelayPrompt.shouldEncourageRelay
     ) {
+      const relayShare = this.buildAttributedRelayShare(post, this.data.commentRelayPrompt.sharePath, {
+        conversionAction: 'comment',
+        shareChannel: 'app_message'
+      });
+      recordShareRelay(this.data.attributionSession, post, {
+        conversionAction: 'comment',
+        shareChannel: 'app_message',
+        relaySession: relayShare.relaySession
+      });
       return {
         title: this.data.commentRelayPrompt.shareTitle,
-        path: this.data.commentRelayPrompt.sharePath
+        path: relayShare.path
       };
     }
     if (
@@ -460,9 +519,18 @@ Page({
       this.data.actionRelayPrompt &&
       this.data.actionRelayPrompt.shouldEncourageRelay
     ) {
+      const relayShare = this.buildAttributedRelayShare(post, this.data.actionRelayPrompt.sharePath, {
+        conversionAction: 'confirm',
+        shareChannel: 'app_message'
+      });
+      recordShareRelay(this.data.attributionSession, post, {
+        conversionAction: 'confirm',
+        shareChannel: 'app_message',
+        relaySession: relayShare.relaySession
+      });
       return {
         title: this.data.actionRelayPrompt.shareTitle,
-        path: this.data.actionRelayPrompt.sharePath
+        path: relayShare.path
       };
     }
     if (
@@ -470,22 +538,52 @@ Page({
       this.data.receiverConversionPrompt &&
       this.data.receiverConversionPrompt.shouldRelay
     ) {
+      const conversionAction = receiverConversionAction(this.data.receiverConversionPrompt);
+      const relayShare = this.buildAttributedRelayShare(post, this.data.receiverConversionPrompt.sharePath, {
+        conversionAction,
+        shareChannel: 'app_message'
+      });
+      recordShareRelay(this.data.attributionSession, post, {
+        conversionAction,
+        shareChannel: 'app_message',
+        relaySession: relayShare.relaySession
+      });
       return {
         title: this.data.receiverConversionPrompt.shareTitle,
-        path: this.data.receiverConversionPrompt.sharePath
+        path: relayShare.path
       };
     }
     const shareMessage = this.data.shareMessage || this.buildShareMessage(post, this.data.comments.length);
+    const ordinarySharePath = this.data.showPublishSuccess
+      ? buildPublishSpreadSharePath(post.id, this.data.entryQuery)
+      : shareMessage.path;
+    const relayShare = this.buildAttributedRelayShare(post, ordinarySharePath, {
+      shareChannel: 'app_message'
+    });
+    recordShareRelay(this.data.attributionSession, post, {
+      shareChannel: 'app_message',
+      relaySession: relayShare.relaySession
+    });
     return {
       title: shareMessage.title,
-      path: this.data.showPublishSuccess
-        ? buildPublishSpreadSharePath(post.id, this.data.entryQuery)
-        : shareMessage.path
+      path: relayShare.path
     };
   },
 
   onShareTimeline() {
-    return buildDetailTimelineShare(this.data.post);
+    const post = this.data.post;
+    const payload = buildDetailTimelineShare(post);
+    const relaySession = createViralRelaySession(this.data.attributionSession, post, {
+      shareChannel: 'timeline'
+    });
+    recordShareRelay(this.data.attributionSession, post, {
+      shareChannel: 'timeline',
+      relaySession
+    });
+    return {
+      ...payload,
+      query: appendViralRelayQuery(payload.query, relaySession)
+    };
   },
 
   goHome() {

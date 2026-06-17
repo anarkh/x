@@ -84,7 +84,8 @@ for (const { status, expected, staleCount = 0, reportCount = 0 } of riskyPosts) 
 }
 
 assert.match(detailJs, /buildDetailTimelineShare/, 'detail page should use timeline share helper');
-assert.match(detailJs, /onShareTimeline\(\)\s*{[\s\S]*buildDetailTimelineShare\(this\.data\.post\)/, 'detail page should define onShareTimeline from current post');
+assert.match(detailJs, /onShareTimeline\(\)\s*{[\s\S]*const post = this\.data\.post[\s\S]*buildDetailTimelineShare\(post\)/, 'detail page should define onShareTimeline from current post');
+assert.match(detailJs, /onShareTimeline\(\)\s*{[\s\S]*appendViralRelayQuery\(payload\.query, relaySession\)/, 'timeline re-share should append attribution params to the timeline query when available');
 assert.doesNotMatch(
   detailJs.match(/onShareTimeline\(\)\s*{[\s\S]*?\n  },/)?.[0] || '',
   /\bpath\s*:/,

@@ -23,6 +23,10 @@ const sharePayloadRequiredJourneyIds = new Set([
   'receiver-comment-conversion',
   'second-hop-receiver-source'
 ]);
+const relayAttributionPayloadJourneyIds = new Set([
+  'receiver-confirm-conversion',
+  'receiver-comment-conversion'
+]);
 const timelineShareJourneyId = 'timeline-share-channel';
 const timelineRiskJourneyId = 'timeline-risk-gating';
 const unableToInspectPattern = /(无法|不能|不可|未能|无法触发|无法检查|无法查看|unable|cannot|could not|not exposed|unavailable)/i;
@@ -418,6 +422,18 @@ function validateSharePayload(journey, label, errors) {
     const receiverAction = typeof payloadPath === 'string' ? getQueryValue(payloadPath, 'receiverAction') : '';
     if (journey.id === 'second-hop-receiver-source' && receiverAction && !['confirm', 'comment'].includes(receiverAction)) {
       errors.push(`${label}.sharePayload.path must not use an unsupported receiverAction.`);
+    }
+
+    if (relayAttributionPayloadJourneyIds.has(journey.id) && typeof payloadPath === 'string') {
+      for (const key of ['share_id', 'parent_share_id', 'share_depth']) {
+        if (!getQueryValue(payloadPath, key)) {
+          errors.push(`${label}.sharePayload.path must include ${key} for relay attribution.`);
+        }
+      }
+      const shareDepth = getQueryValue(payloadPath, 'share_depth');
+      if (shareDepth && !['2', '2_plus'].includes(shareDepth)) {
+        errors.push(`${label}.sharePayload.path share_depth must be 2 or 2_plus for a receiver relay.`);
+      }
     }
 
     return;

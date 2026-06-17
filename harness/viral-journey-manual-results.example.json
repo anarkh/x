@@ -83,7 +83,8 @@
         "2-3 relay channel suggestions are visible between targetRows and the share reason; they are scene suggestions, not share buttons or contact/group pickers.",
         "The share reason is visible between targetRows and the share button, and the copy says the sender just confirmed or can help re-check.",
         "actionRelayPrompt is not competing as the primary CTA.",
-        "The share path contains from=share&source=receiver&receiverAction=confirm."
+        "The share path contains from=share&source=receiver&receiverAction=confirm.",
+        "If share payload is inspectable, the relay path also contains share_id, parent_share_id, and share_depth=2 or 2_plus."
       ],
       "actual": "Not run in this example. Replace with observed prompt and share payload.",
       "evidence": [],
@@ -108,7 +109,8 @@
         "2-3 relay channel suggestions are visible between targetRows and the share reason; they are scene suggestions, not share buttons or contact/group pickers.",
         "The share reason is visible between targetRows and the share button, and the copy says the sender just added a clue or the next receiver should read latest comments.",
         "commentRelayPrompt is not competing as the primary CTA.",
-        "The share path contains from=share&source=receiver&receiverAction=comment."
+        "The share path contains from=share&source=receiver&receiverAction=comment.",
+        "If share payload is inspectable, the relay path also contains share_id, parent_share_id, and share_depth=2 or 2_plus."
       ],
       "actual": "Not run in this example. Replace with observed prompt and share payload.",
       "evidence": [],

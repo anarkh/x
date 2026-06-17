@@ -6,7 +6,7 @@ Guidance for AI coding agents working on this repository.
 
 Street Tasks is a native WeChat mini program for short-lived neighborhood tasks. The current product is intentionally small: a map-first feed, a publish flow, a task detail page, comments, structured trust actions, lightweight admin moderation, profile/activity surfaces, and feedback. There is no fixed service area; users can browse and publish from any current location.
 
-The app can run locally from mock data and `wx` local storage, and it also has CloudBase-backed paths for shared posts, reactions, comments, feedback, images, and admin role checks. Treat `utils/store.js` as the main persistence boundary; page code should not duplicate storage or cloud fallback logic.
+The app can run locally from mock data and `wx` local storage, and it also has CloudBase-backed paths for shared posts, reactions, comments, feedback, viral attribution events, images, and admin role checks. Treat `utils/store.js` as the main persistence boundary; page code should not duplicate storage or cloud fallback logic.
 
 ## Harness Operating Loop
 
@@ -62,6 +62,7 @@ Session closeout:
 - `project.private.config.json`: local-only WeChat DevTools config. This may contain the real AppID and must stay ignored.
 - `utils/config.js`: nearby feed config, categories, and expiry options.
 - `utils/store.js`: post, comment, reaction, image upload, local storage, and CloudBase fallback APIs.
+- `utils/viral-attribution.js`: best-effort share landing, conversion, and relay attribution events with local fallback and a strict field whitelist.
 - `utils/auth.js`: local user, profile completion, admin role refresh, and permission helpers.
 - `utils/feedback.js`: user feedback creation and admin feedback listing.
 - `utils/geo.js`: distance calculation and map marker conversion.
@@ -80,7 +81,7 @@ Session closeout:
 - `pages/my-posts/*`: current user's posts.
 - `pages/activities/*`: current user's trust-action history.
 - `pages/feedback/*`: user feedback form.
-- `cloudfunctions/posts/index.js`: CloudBase actions for posts, reactions, comments, feedback, and image upload preparation.
+- `cloudfunctions/posts/index.js`: CloudBase actions for posts, reactions, comments, feedback, viral attribution events, and image upload preparation.
 - `cloudfunctions/getMyRole/index.js`: CloudBase admin role lookup from the `admins` collection.
 - `scripts/check-json.mjs`: JSON syntax check for project and page config files.
 
@@ -139,7 +140,7 @@ Posts are plain objects with these important fields:
 
 `listPosts(center)` computes derived status and distance, filters hidden posts, sorts newest first, and caps results by `config.maxVisiblePosts`.
 
-Comments are stored locally under `post_comments` or in the CloudBase `post_comments` collection. Feedback is stored locally under `feedback_items` or in the CloudBase `feedback_items` collection. Trust reactions are stored locally under `post_reactions` or in the CloudBase `post_reactions` collection.
+Comments are stored locally under `post_comments` or in the CloudBase `post_comments` collection. Feedback is stored locally under `feedback_items` or in the CloudBase `feedback_items` collection. Trust reactions are stored locally under `post_reactions` or in the CloudBase `post_reactions` collection. Viral attribution events are stored locally under `viral_attribution_events` or in the CloudBase `viral_attribution_events` collection and must not contain comment body, contact/group data, raw OpenID, or precise coordinates.
 
 ## Behavior Rules
 
@@ -160,6 +161,7 @@ CloudBase is optional for local development but required for shared multi-user d
 - `post_reactions`
 - `post_comments`
 - `feedback_items`
+- `viral_attribution_events`
 - `admins`
 
 Text-only posts may fall back to local storage when cloud APIs are unavailable. Image posts are stricter: selected images are compressed, capped at 4 files under 1.5MB each, uploaded to CloudBase Storage, and saved as `cloud://` file IDs. If cloud upload or cloud post creation fails for an image post, fail explicitly instead of saving local-only temp image paths.

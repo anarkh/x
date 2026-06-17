@@ -471,8 +471,8 @@ assert.match(
 );
 assert.match(
   detailJs,
-  /shareContext === 'receiverConversion'[\s\S]*?path: this\.data\.receiverConversionPrompt\.sharePath/,
-  'receiver conversion share button should use the receiver conversion share path'
+  /shareContext === 'receiverConversion'[\s\S]*?buildAttributedRelayShare\(post, this\.data\.receiverConversionPrompt\.sharePath,[\s\S]*?\)[\s\S]*?path: relayShare\.path/,
+  'receiver conversion share button should return the receiver conversion share path with attribution params appended'
 );
 assert.match(
   detailWxml,
@@ -548,12 +548,20 @@ assert.ok(
   'manual confirm journey should ask testers to observe relay channel suggestions'
 );
 assert.ok(
+  confirmManualJourney.expected.some((item) => /share_id|parent_share_id|share_depth/.test(item)),
+  'manual confirm journey should ask testers to inspect relay attribution query values'
+);
+assert.ok(
   commentManualJourney.expected.some((item) => /share reason|线索|latest comments/.test(item)),
   'manual comment journey should ask testers to observe the comment share reason'
 );
 assert.ok(
   commentManualJourney.expected.some((item) => /relay channel|场景建议|适合转/.test(item)),
   'manual comment journey should ask testers to observe relay channel suggestions'
+);
+assert.ok(
+  commentManualJourney.expected.some((item) => /share_id|parent_share_id|share_depth/.test(item)),
+  'manual comment journey should ask testers to inspect relay attribution query values'
 );
 assert.ok(
   timelineShareJourney.expected.some((item) => /friend share|send-to-friend|发送给朋友|timeline share|share-to-timeline|朋友圈/.test(item)),

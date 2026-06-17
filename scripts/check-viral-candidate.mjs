@@ -244,4 +244,15 @@ assert.equal(
   'viral candidate check should include timeline share payload checks'
 );
 
+const viralAttributionCheck = spawnSync(process.execPath, ['--no-warnings', 'scripts/check-viral-attribution.mjs'], {
+  cwd: rootDir,
+  encoding: 'utf8',
+  stdio: 'inherit'
+});
+assert.equal(
+  viralAttributionCheck.status,
+  0,
+  'viral candidate check should include viral attribution event checks'
+);
+
 console.log('Viral candidate checks passed.');
