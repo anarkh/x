@@ -60,7 +60,9 @@ const requiredFiles = [
   'harness/viral-real-evidence-recovery-product-brief.md',
   'harness/viral-real-evidence-recovery-checklist.md',
   'harness/devtools-port-deep-forensics-product-brief.md',
-  'harness/devtools-port-deep-forensics-checklist.md'
+  'harness/devtools-port-deep-forensics-checklist.md',
+  'harness/devtools-service-port-config-forensics-product-brief.md',
+  'harness/devtools-service-port-config-forensics-checklist.md'
 ];
 
 const readinessDocs = [
@@ -93,7 +95,9 @@ const readinessDocs = [
   'harness/viral-real-evidence-recovery-product-brief.md',
   'harness/viral-real-evidence-recovery-checklist.md',
   'harness/devtools-port-deep-forensics-product-brief.md',
-  'harness/devtools-port-deep-forensics-checklist.md'
+  'harness/devtools-port-deep-forensics-checklist.md',
+  'harness/devtools-service-port-config-forensics-product-brief.md',
+  'harness/devtools-service-port-config-forensics-checklist.md'
 ];
 
 function readProjectFile(relativePath) {

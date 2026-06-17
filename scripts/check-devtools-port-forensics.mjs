@@ -76,11 +76,14 @@ assert.ok(
 requireInspectText('historical_service_port_success', 'historical_service_port_success diagnosis code');
 
 const forbiddenSideEffectPatterns = [
-  [/\bwriteFile(?:Sync)?\b/, 'file writes'],
-  [/\bappendFile(?:Sync)?\b/, 'file appends'],
+  [/\bwriteFile(?:Sync)?\b|\bappendFile(?:Sync)?\b|\btruncate(?:Sync)?\b|\butimes(?:Sync)?\b/, 'file writes or timestamp updates'],
   [/\brm(?:Sync)?\b|\bunlink(?:Sync)?\b|\brmdir(?:Sync)?\b/, 'file deletion'],
+  [/\brename(?:Sync)?\b|\bcopyFile(?:Sync)?\b|\bchmod(?:Sync)?\b|\bchown(?:Sync)?\b|\bcreateWriteStream\b|\bfs\.promises\b/, 'file mutation APIs'],
   [/\bprocess\.kill\b|\bkillSync\b|spawnSync\([^,\n]+,\s*\[[^\]]*['"](?:kill|killall|pkill)['"]/s, 'process killing'],
+  [/spawnSync\(\s*['"](?:[^'"]*\/)?(?:kill|killall|pkill)['"]/s, 'process killing command'],
   [/osascript/, 'app quit/open automation'],
+  [/spawnSync\(\s*['"](?:[^'"]*\/)?(?:open|defaults|launchctl)['"]/s, 'system command with side effects'],
+  [/spawnSync\(\s*['"](?:[^'"]*\/)?plutil['"]\s*,\s*\[[^\]]*['"]-(?:replace|remove|insert|create|convert)['"]/s, 'plist mutation command'],
   [/spawnSync\([^,\n]+,\s*\[[^\]]*['"]open['"]/s, 'DevTools open command'],
   [/spawnSync\([^,\n]+,\s*\[[^\]]*['"]quit['"]/s, 'DevTools quit command'],
   [/spawnSync\([^,\n]+,\s*\[[^\]]*['"]preview['"]/s, 'DevTools preview command'],
@@ -102,6 +105,44 @@ requireInspectPattern(
 requireInspectPattern(
   /(?:raw\s+log\s+lines?|log\s+lines?)[\s\S]{0,180}(?:not\s+printed|were\s+not\s+printed|not\s+output|not\s+returned|never\s+printed|suppressed)|(?:not\s+printed|not\s+output|not\s+returned|never\s+printed|suppressed)[\s\S]{0,180}(?:raw\s+log\s+lines?|log\s+lines?)/i,
   'explicit privacy wording that raw DevTools log lines are not output'
+);
+requireInspectPattern(
+  /\b(?:function|const|let)\s+(?:inspectServicePortConfig|getServicePortConfigCandidates|classifyServicePortConfig)\b/,
+  'a read-only DevTools service-port config forensics entry'
+);
+requireInspectText('WeappLocalData', 'DevTools local-data config candidate category');
+requireInspectText('WeappVendor/cfg.json', 'DevTools vendor config candidate category');
+requireInspectText('service_port_config_enabled_port_match', 'enabled and target-port match config diagnosis code');
+requireInspectText('service_port_config_enabled_port_mismatch', 'enabled but target-port mismatch config diagnosis code');
+requireInspectText('service_port_config_disabled', 'disabled config diagnosis code');
+requireInspectText('service_port_config_unconfirmed', 'unconfirmed config diagnosis code');
+requireInspectText('service_port_config_conflict', 'conflicting config diagnosis code');
+assert.ok(
+  !inspectSource.includes('service_port_config_enabled_port_unconfirmed'),
+  'inspect-devtools-port-state.mjs should use the documented unconfirmed config diagnosis vocabulary'
+);
+requireInspectPattern(
+  /enabledStates[\s\S]{0,400}portValues|portValues[\s\S]{0,400}enabledStates/,
+  'config summaries for enabled state and port values'
+);
+requireInspectPattern(
+  /if\s*\(\s*hasTargetPort\s*&&\s*hasOtherPort\s*\)[\s\S]{0,320}service_port_config_conflict[\s\S]{0,900}service_port_config_enabled_port_match/,
+  'port conflict diagnosis before enabled target-port match'
+);
+requireInspectText('isSensitiveConfigKey', 'sensitive config key denylist');
+requireInspectText('isServicePortPortConfigKey', 'service-port value key allowlist');
+requireInspectPattern(
+  /token[\s\S]{0,160}cookie[\s\S]{0,160}session[\s\S]{0,220}(?:openid|open\\s\+id)[\s\S]{0,260}(?:secret|password|credential)/i,
+  'sensitive key denylist for token, cookie, session, identity, and secret-like fields'
+);
+requireInspectText('conflictCount', 'config conflict count summary');
+requireInspectPattern(
+  /notClaimed[\s\S]{0,260}DevTools\s+smoke\s+passed[\s\S]{0,260}DevTools\s+UI\s+journey\s+passed[\s\S]{0,260}real-device\s+journey\s+passed/,
+  'explicit config not-claimed summary for smoke, UI, and real-device evidence'
+);
+requireInspectPattern(
+  /raw\s+DevTools\s+config\s+content[\s\S]{0,180}(?:not\s+printed|suppressed)|(?:raw\s+config\s+content|config\s+file\s+names)[\s\S]{0,180}(?:not\s+printed|suppressed)/i,
+  'explicit privacy wording that raw DevTools config content and file names are not output'
 );
 
 requireReadinessText(

@@ -22,6 +22,8 @@ const connectTimeoutMs = 800;
 const maxLogFilesToScan = 80;
 const recentLogWindowSize = 12;
 const maxLogTailBytes = 512 * 1024;
+const maxConfigFilesToScan = 120;
+const maxConfigTextBytes = 2 * 1024 * 1024;
 
 function usage() {
   return [
@@ -647,6 +649,448 @@ function inspectRecentDevToolsLogs(port) {
   };
 }
 
+function getServicePortConfigCandidates() {
+  const files = [];
+
+  for (const rootPath of getDevToolsUserDataRootCandidates()) {
+    const rootStat = safeStat(rootPath);
+
+    if (!rootStat?.isDirectory()) {
+      continue;
+    }
+
+    let profileEntries = [];
+
+    try {
+      profileEntries = readdirSync(rootPath, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of profileEntries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      const profilePath = join(rootPath, entry.name);
+      const vendorConfig = join(profilePath, 'WeappVendor/cfg.json');
+      const vendorConfigStat = safeStat(vendorConfig);
+
+      if (vendorConfigStat?.isFile()) {
+        files.push({
+          path: vendorConfig,
+          category: 'devtools-vendor-config',
+          mtimeMs: vendorConfigStat.mtimeMs,
+          size: vendorConfigStat.size
+        });
+      }
+
+      const localDataPath = join(profilePath, 'WeappLocalData');
+      const localDataStat = safeStat(localDataPath);
+
+      if (!localDataStat?.isDirectory()) {
+        continue;
+      }
+
+      let localDataEntries = [];
+
+      try {
+        localDataEntries = readdirSync(localDataPath, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+
+      for (const localEntry of localDataEntries) {
+        if (!localEntry.isFile() || !/^(?:localstorage_|ls_|storage_meta).*\.json$/i.test(localEntry.name)) {
+          continue;
+        }
+
+        const filePath = join(localDataPath, localEntry.name);
+        const fileStat = safeStat(filePath);
+
+        if (!fileStat?.isFile()) {
+          continue;
+        }
+
+        files.push({
+          path: filePath,
+          category: 'devtools-local-data',
+          mtimeMs: fileStat.mtimeMs,
+          size: fileStat.size
+        });
+      }
+    }
+  }
+
+  return files
+    .sort((left, right) => right.mtimeMs - left.mtimeMs)
+    .slice(0, maxConfigFilesToScan);
+}
+
+function isServicePortConfigKey(keyPath) {
+  return !isSensitiveConfigKey(keyPath) && (
+    isServicePortEnableConfigKey(keyPath) ||
+    isServicePortPortConfigKey(keyPath)
+  );
+}
+
+function getConfigKeySearchText(keyPath) {
+  return String(keyPath || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function isSensitiveConfigKey(keyPath) {
+  const searchText = getConfigKeySearchText(keyPath);
+
+  return /\b(?:token|cookie|session|openid|open\s+id|unionid|union\s+id|auth|authorization|bearer|secret|password|passwd|pwd|appsecret|app\s+secret|credential|ticket|signature|project|history|recent|path|url|phone|email|account|nickname|avatar|device|uin|uuid)\b/i.test(searchText);
+}
+
+function isServicePortEnableConfigKey(keyPath) {
+  const searchText = getConfigKeySearchText(keyPath);
+
+  return /\b(?:enable\s+service\s+port|service\s+port\s+enable|serviceport|enable\s+cli|cli\s+enable|enablecli)\b/i.test(searchText);
+}
+
+function isServicePortPortConfigKey(keyPath) {
+  const searchText = getConfigKeySearchText(keyPath);
+
+  return /\b(?:service\s+port|ide\s+http\s+port|ide\s+port|http\s+port|cli\s+port|security\s+port)\b/i.test(searchText);
+}
+
+function sanitizeConfigKey(keyPath) {
+  const safeSegments = String(keyPath || '')
+    .split('.')
+    .filter((segment) => /(enable|service|port|cli|ide|http|security)/i.test(segment))
+    .map((segment) => {
+      const tokens = [];
+
+      if (/security/i.test(segment)) {
+        tokens.push('security');
+      }
+
+      if (/enable/i.test(segment)) {
+        tokens.push('enable');
+      }
+
+      if (/service/i.test(segment)) {
+        tokens.push('service');
+      }
+
+      if (/cli/i.test(segment)) {
+        tokens.push('cli');
+      }
+
+      if (/ide/i.test(segment)) {
+        tokens.push('ide');
+      }
+
+      if (/http/i.test(segment)) {
+        tokens.push('http');
+      }
+
+      if (/port/i.test(segment)) {
+        tokens.push('port');
+      }
+
+      return tokens.join('-');
+    })
+    .filter(Boolean);
+
+  return safeSegments.length > 0 ? safeSegments.slice(-4).join('.') : '<service-port-key>';
+}
+
+function classifyValueType(value) {
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+
+  if (value === null) {
+    return 'null';
+  }
+
+  return typeof value;
+}
+
+function maybePortValue(value) {
+  if (Number.isInteger(value) && value > 0 && value <= 65535) {
+    return value;
+  }
+
+  if (typeof value === 'string' && /^\d+$/.test(value)) {
+    const parsed = Number(value);
+
+    if (parsed > 0 && parsed <= 65535) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function recordConfigMatch(summary, category, keyPath, value) {
+  if (isSensitiveConfigKey(keyPath)) {
+    return;
+  }
+
+  const isEnableKey = isServicePortEnableConfigKey(keyPath);
+  const isPortKey = isServicePortPortConfigKey(keyPath);
+  const key = sanitizeConfigKey(keyPath);
+  const rowKey = `${category}:${key}`;
+  const existing = summary.matches.get(rowKey) || {
+    category,
+    key,
+    count: 0,
+    valueTypes: new Set(),
+    boolValues: new Set(),
+    portValues: new Set()
+  };
+  const portValue = maybePortValue(value);
+
+  existing.count += 1;
+  existing.valueTypes.add(classifyValueType(value));
+
+  if (typeof value === 'boolean') {
+    existing.boolValues.add(value ? 'true' : 'false');
+  }
+
+  if (isPortKey && portValue !== null) {
+    existing.portValues.add(String(portValue));
+  }
+
+  summary.matches.set(rowKey, existing);
+
+  if (isEnableKey && typeof value === 'boolean') {
+    summary.enabledStates.add(value ? 'true' : 'false');
+  }
+
+  if (isPortKey && portValue !== null) {
+    summary.portValues.add(String(portValue));
+  }
+}
+
+function scanConfigValue(summary, category, value, prefix = '', depth = 0) {
+  if (depth > 8) {
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.slice(0, 60).forEach((item) => scanConfigValue(summary, category, item, `${prefix}[]`, depth + 1));
+    return;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    const keyPath = prefix ? `${prefix}.${key}` : key;
+
+    if (isServicePortConfigKey(keyPath)) {
+      recordConfigMatch(summary, category, keyPath, child);
+    }
+
+    scanConfigValue(summary, category, child, keyPath, depth + 1);
+  }
+}
+
+function bucketAgeFromMtime(mtimeMs) {
+  if (!Number.isFinite(mtimeMs)) {
+    return 'unknown';
+  }
+
+  const ageMs = Date.now() - mtimeMs;
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  if (ageMs < dayMs) {
+    return '<1d';
+  }
+
+  if (ageMs < 7 * dayMs) {
+    return '<7d';
+  }
+
+  if (ageMs < 30 * dayMs) {
+    return '<30d';
+  }
+
+  return '>=30d';
+}
+
+function classifyServicePortConfig(summary, port) {
+  const hasTrue = summary.enabledStates.has('true');
+  const hasFalse = summary.enabledStates.has('false');
+  const targetPort = String(port);
+  const hasTargetPort = summary.portValues.has(targetPort);
+  const hasOtherPort = [...summary.portValues].some((value) => value !== targetPort);
+  const conflictCount = Number(hasTrue && hasFalse) + Number(hasTargetPort && hasOtherPort);
+  const configState = hasTrue && hasFalse
+    ? 'conflict'
+    : hasTrue
+      ? 'enabled'
+      : hasFalse
+        ? 'disabled'
+        : 'unconfirmed';
+  const portState = hasTargetPort && hasOtherPort
+    ? 'conflict'
+    : hasTargetPort
+      ? `matches_${targetPort}`
+      : hasOtherPort
+        ? 'mismatch'
+        : 'unconfirmed';
+  const commonFields = {
+    conflictCount,
+    configState,
+    portState,
+    notClaimed: [
+      'DevTools smoke passed',
+      'DevTools UI journey passed',
+      'real-device journey passed'
+    ]
+  };
+
+  if (hasTrue && hasFalse) {
+    return {
+      ...commonFields,
+      code: 'service_port_config_conflict',
+      confidence: 'medium',
+      nextHumanConfirmation: 'Confirm the Service Port toggle and port in DevTools UI because config sources disagree.'
+    };
+  }
+
+  if (hasTargetPort && hasOtherPort) {
+    return {
+      ...commonFields,
+      code: 'service_port_config_conflict',
+      confidence: 'medium',
+      nextHumanConfirmation: 'Confirm the Service Port value in DevTools UI because config sources disagree about the port.'
+    };
+  }
+
+  if (hasFalse && !hasTrue) {
+    return {
+      ...commonFields,
+      code: 'service_port_config_disabled',
+      confidence: 'medium',
+      nextHumanConfirmation: 'Confirm Settings > Security Settings > Service Port is enabled before retrying smoke checks.'
+    };
+  }
+
+  if (hasTrue && hasTargetPort) {
+    return {
+      ...commonFields,
+      code: 'service_port_config_enabled_port_match',
+      confidence: 'medium',
+      nextHumanConfirmation: 'Config suggests Service Port is enabled for the target port; if no listener exists, inspect profile/session or restart state.'
+    };
+  }
+
+  if (hasTrue && hasOtherPort) {
+    return {
+      ...commonFields,
+      code: 'service_port_config_enabled_port_mismatch',
+      confidence: 'medium',
+      nextHumanConfirmation: 'Use the configured port for smoke checks or update the DevTools UI port manually.'
+    };
+  }
+
+  if (hasTrue) {
+    return {
+      ...commonFields,
+      code: 'service_port_config_unconfirmed',
+      confidence: 'low',
+      nextHumanConfirmation: 'Config suggests Service Port may be enabled, but the exact port still needs DevTools UI confirmation.'
+    };
+  }
+
+  return {
+    ...commonFields,
+    code: 'service_port_config_unconfirmed',
+    confidence: 'low',
+    nextHumanConfirmation: 'Confirm Settings > Security Settings > Service Port manually; no reliable config key was found.'
+  };
+}
+
+function inspectServicePortConfig(port) {
+  const files = getServicePortConfigCandidates();
+  const summary = {
+    matches: new Map(),
+    enabledStates: new Set(),
+    portValues: new Set()
+  };
+  const categoryCounts = new Map();
+  const ageBuckets = new Map();
+  let scannedFileCount = 0;
+  let parsedFileCount = 0;
+  let skippedLargeFileCount = 0;
+  let unreadableFileCount = 0;
+
+  for (const file of files) {
+    scannedFileCount += 1;
+    categoryCounts.set(file.category, (categoryCounts.get(file.category) || 0) + 1);
+    ageBuckets.set(bucketAgeFromMtime(file.mtimeMs), (ageBuckets.get(bucketAgeFromMtime(file.mtimeMs)) || 0) + 1);
+
+    if (file.size > maxConfigTextBytes) {
+      skippedLargeFileCount += 1;
+      continue;
+    }
+
+    let text = '';
+
+    try {
+      text = readFileSync(file.path, 'utf8');
+    } catch {
+      unreadableFileCount += 1;
+      continue;
+    }
+
+    let json = null;
+
+    try {
+      json = JSON.parse(text);
+    } catch {
+      continue;
+    }
+
+    parsedFileCount += 1;
+    scanConfigValue(summary, file.category, json);
+  }
+
+  const diagnosis = classifyServicePortConfig(summary, port);
+  const matches = [...summary.matches.values()]
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key))
+    .slice(0, 12)
+    .map((match) => ({
+      category: match.category,
+      key: match.key,
+      count: match.count,
+      valueTypes: [...match.valueTypes].sort(),
+      boolValues: [...match.boolValues].sort(),
+      portValues: [...match.portValues].sort()
+    }));
+
+  return {
+    ok: parsedFileCount > 0,
+    candidateFileCount: files.length,
+    scannedFileCount,
+    parsedFileCount,
+    skippedLargeFileCount,
+    unreadableFileCount,
+    categoryCounts: [...categoryCounts.entries()].map(([category, count]) => `${category}:${count}`),
+    ageBuckets: [...ageBuckets.entries()].map(([bucket, count]) => `${bucket}:${count}`),
+    matchCount: summary.matches.size,
+    enabledStates: [...summary.enabledStates].sort(),
+    portValues: [...summary.portValues].sort(),
+    matches,
+    diagnosis,
+    detail: parsedFileCount > 0
+      ? `${parsedFileCount} config JSON file(s) parsed; raw config content and file names suppressed`
+      : 'no readable DevTools config JSON parsed'
+  };
+}
+
 function inspectBundledCliServicePortGate(bundle) {
   const sourcePath = bundle.path
     ? join(bundle.path, 'Contents/Resources/package.nw/js/common/cli/index.js')
@@ -849,7 +1293,7 @@ function yesNo(value) {
   return value ? 'yes' : 'no';
 }
 
-function buildDiagnosis({ project, cli, bundle, userData, logs, cliGate, lsof, processes, connect }) {
+function buildDiagnosis({ project, cli, bundle, userData, logs, config, cliGate, lsof, processes, connect }) {
   const diagnosis = [];
 
   if (!project.ok) {
@@ -926,6 +1370,10 @@ function buildDiagnosis({ project, cli, bundle, userData, logs, cliGate, lsof, p
     diagnosis.push('historical_service_port_success');
   }
 
+  if (config.diagnosis?.code) {
+    diagnosis.push(config.diagnosis.code);
+  }
+
   if (cliGate.ok && !connect.ok) {
     diagnosis.push('service_port_flag_gate_detected');
   }
@@ -961,6 +1409,7 @@ function buildReport(context) {
     bundle,
     userData,
     logs,
+    config,
     cliGate,
     lsof,
     processes,
@@ -998,6 +1447,18 @@ function buildReport(context) {
     `  historical cli server target ready lines: ${logs.historicalCliServerStartedTargetCount}`,
     `  sanitized log error counters: EADDRINUSE=${logs.eaddrinuseCount}, EACCES=${logs.eaccesCount}, ECONNREFUSED=${logs.connectRefusedCount}, timeout=${logs.timeoutCount}, crash_or_exit=${logs.crashOrExitCount}, disabled_hint=${logs.disabledHintCount}`,
     `  latest log file labels: ${logs.latestLogFileLabels.length > 0 ? logs.latestLogFileLabels.join(', ') : 'none'}`,
+    `- DevTools service-port config: ${yesNo(config.ok)} (${config.detail}; candidates: ${config.candidateFileCount}; parsed: ${config.parsedFileCount}; unreadable: ${config.unreadableFileCount}; skipped large: ${config.skippedLargeFileCount})`,
+    `  config categories: ${config.categoryCounts.length > 0 ? config.categoryCounts.join(', ') : 'none'}`,
+    `  config mtime buckets: ${config.ageBuckets.length > 0 ? config.ageBuckets.join(', ') : 'none'}`,
+    `  config service-port diagnosis: ${config.diagnosis.code} (confidence: ${config.diagnosis.confidence})`,
+    `  config state: ${config.diagnosis.configState}`,
+    `  config port state: ${config.diagnosis.portState}`,
+    `  config conflict count: ${config.diagnosis.conflictCount}`,
+    `  config enabled states: ${config.enabledStates.length > 0 ? config.enabledStates.join(', ') : 'unconfirmed'}`,
+    `  config port values: ${config.portValues.length > 0 ? config.portValues.join(', ') : 'unconfirmed'}`,
+    `  config key summaries: ${config.matches.length > 0 ? config.matches.map((match) => `${match.category}/${match.key}[count=${match.count};types=${match.valueTypes.join('|') || 'none'};bools=${match.boolValues.join('|') || '-'};ports=${match.portValues.join('|') || '-'}]`).join('; ') : 'none'}`,
+    `  config not claimed: ${config.diagnosis.notClaimed.join('; ')}`,
+    `  config next human confirmation: ${config.diagnosis.nextHumanConfirmation}`,
     `- bundled CLI service-port gate: ${yesNo(cliGate.ok)} (${cliGate.detail})`,
     `- lsof listener: ${yesNo(lsof.ok)} (${lsof.detail})`,
     `- socket connect: ${yesNo(connect.ok)} (${connect.detail})`,
@@ -1013,7 +1474,8 @@ function buildReport(context) {
     '- no processes were killed',
     '- no caches, project config, user config, or local files were modified',
     '- process command lines were not printed',
-    '- raw DevTools log lines were not printed'
+    '- raw DevTools log lines were not printed',
+    '- raw DevTools config content and config file names were not printed'
   ];
 
   return lines.join('\n');
@@ -1032,11 +1494,12 @@ try {
   const bundle = inspectAppBundle(cli);
   const userData = inspectUserDataRoots();
   const logs = inspectRecentDevToolsLogs(options.port);
+  const config = inspectServicePortConfig(options.port);
   const cliGate = inspectBundledCliServicePortGate(bundle);
   const lsof = inspectLsof(options.port);
   const processes = inspectProcesses(options.port);
   const connect = await inspectConnect(options.port);
-  const diagnosis = buildDiagnosis({ project, cli, bundle, userData, logs, cliGate, lsof, processes, connect });
+  const diagnosis = buildDiagnosis({ project, cli, bundle, userData, logs, config, cliGate, lsof, processes, connect });
   const status = classifyStatus({ lsof, processes, connect });
   const extraLabels = [
     { path: options.projectPath, label: '<repo>' },
@@ -1052,6 +1515,7 @@ try {
     bundle,
     userData,
     logs,
+    config,
     cliGate,
     lsof,
     processes,

@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：Z 组 viral real evidence recovery，为 DevTools service port blocker 增加显式 app-level quit/reopen 恢复模式和静态防回归检查
-- 当前 blocker：Z 轮已把 macOS app-level quit + CLI open 恢复路径做成显式 opt-in，并把静态 guard 接入 readiness；主 agent 实际运行 `npm run recover:devtools-app-quit -- --timeout-ms 30000 --port 9420` 后，app quit 成功但 DevTools CLI open 仍超时在 `IDE may already started at port 9420, trying to connect`，after 状态仍是 service port 9420 `connect_refused` / smoke `blocked`，朋友圈菜单、系统分享面板、真实 payload、单页模式首屏、窄屏和真机转化仍未产生 passed evidence
+- 当前正在实现的用户请求：AB 组 DevTools service-port config forensics，为 9420 blocker 增加只读配置层取证，确认 Service Port UI/config 是否 disabled、端口是否匹配，以及配置结果不能替代真实 UI evidence
+- 当前 blocker：AB 轮只读配置取证显示 DevTools 配置摘要中 `security.enableServicePort=false` 且 `security.port=9420`，同时端口仍无 listener、IPv4/IPv6 均 `ECONNREFUSED`；这说明下一步应由用户在 WeChat DevTools UI 中人工确认并开启 Settings -> Security Settings -> Service Port，真实朋友圈菜单、系统分享面板、payload、CloudBase attribution、窄屏和真机转化仍未产生 passed evidence
 
 ## 会话记录
 
@@ -1062,3 +1062,20 @@
 - 更新过的文件或工件：`scripts/inspect-devtools-port-state.mjs`，`scripts/check-devtools-port-forensics.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/devtools-port-deep-forensics-product-brief.md`，`harness/devtools-port-deep-forensics-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：DevTools service port 9420 仍无 listener，smoke 仍 blocked，系统分享/朋友圈菜单/真实 payload/单页模式/CloudBase attribution/真机 journey 都没有 passed evidence；当前最强假设是 Service Port UI/config 或 `global.enableCLI` 状态没有让 app 带 `--enable-service-port` 启动 listener，而不是端口冲突或项目代码问题
 - 下一步最佳动作：请用户在 WeChat DevTools UI 中人工确认 Settings -> Security Settings -> Service Port 是否开启、显示端口是否为 9420、当前项目是否是本 worktree、是否有登录/升级/安全弹窗；若 UI 已开启但仍无 listener，下一轮应优先换端口/换 profile/换机器或走真机 evidence，不要再把静态 readiness 当作 UI passed
+
+### Session 078DevToolsServicePortConfigForensics
+
+- 日期：2026-06-17
+- 分支：`codex/iter-devtools-service-port-config-forensics`
+- 本轮目标：AB 组在 AA 的 log/user-data/CLI gate 深层取证之上，继续补一层 DevTools Service Port 配置只读取证，判断 UI/config 是否显示 Service Port disabled、enabled、port mismatch、conflict 或 unconfirmed
+- 产品/QA 假设：AA 已把 blocker 从普通 `connect_refused` 推进到 mixed recent flag evidence；AB 应避免继续盲目重启，先回答配置层是否明确指向 Service Port 关闭或端口不匹配，并且该结论不能替代 listener/smoke/UI/real-device evidence
+- 已完成：产品 agent 新增 `harness/devtools-service-port-config-forensics-product-brief.md`，定义配置层取证目标、输出语义、诊断码、裂变目标关系和评测口径；QA agent 新增 `harness/devtools-service-port-config-forensics-checklist.md`，定义 allowed/forbidden evidence、只读命令边界、blocked/diagnosis mapping 和 static guard 期望
+- 已完成：`scripts/inspect-devtools-port-state.mjs` 新增 Service Port 配置只读扫描，仅读取 DevTools profile 下 `WeappVendor/cfg.json` 与 `WeappLocalData` 的 JSON 候选文件，输出类别计数、mtime bucket、service-port-like key 摘要、enabled states、port values、诊断码、confidence 和 next human confirmation；不输出完整路径、文件名、raw JSON、localStorage 值、cookie/session、账号、项目历史或 token
+- 诊断变化：当前只读配置摘要显示 `service_port_config_disabled`，confidence 为 `medium`；配置状态为 `disabled`，端口状态为 `matches_9420`，`conflict count` 为 0，key 摘要只显示 `security.enable-service-port` 的 bool 为 `false`、`security.port` 的端口值为 `9420`；端口层仍是 `declared_without_listener` 和 `connect_refused`，所以结论仍是 blocked，不是 service port ready
+- 已完成：`scripts/check-devtools-port-forensics.mjs` 扩展为 log/user-data + config 双层 static guard，要求配置取证入口、配置候选类别、enabled/mismatch/disabled/unconfirmed/conflict 诊断码、enabledStates/portValues 摘要、raw config content/file name suppression，以及原有 side-effect negative checks；`scripts/check-devtools-readiness.mjs` 要求 AB 产品/QA 文档存在，并继续运行该 no-side-effect static guard
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 与 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/inspect-devtools-port-state.mjs`；`node --check scripts/check-devtools-port-forensics.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node scripts/check-devtools-port-forensics.mjs`；`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-service-port-config-forensics --port 9420`；`node --no-warnings scripts/check-devtools-readiness.mjs`
+- 已记录证据：`node scripts/check-devtools-port-forensics.mjs` 输出 `DevTools port forensics static guard checks passed.`；inspect 输出 `status: blocked`，diagnosis 为 `declared_without_listener`、`connect_refused`、`service_port_flag_mixed_recent_evidence`、`historical_service_port_success`、`service_port_config_disabled`、`service_port_flag_gate_detected`，并显示 config state `disabled`、port state `matches_9420`、conflict count `0`、not claimed `DevTools smoke passed`/`DevTools UI journey passed`/`real-device journey passed`，且 raw config content 和 config file names 未打印；readiness 输出新的配置层报告，仍明确 `Static gates passed; DevTools and real-device visual acceptance are still required.`
+- 代码审查修复：AB code review 指出端口多源冲突会先落到 `service_port_config_enabled_port_match`、local-data key 缺少敏感 denylist/port allowlist、side-effect guard 漏掉部分写入 API/危险命令；已修复为端口冲突优先返回 `service_port_config_conflict`，敏感 key 在匹配和记录前跳过，端口值只从明确 service/ide/http/cli/security port key 提取，并加严 static guard 覆盖敏感 key、冲突分支顺序、未登记诊断码和更多副作用 API/命令
+- 更新过的文件或工件：`scripts/inspect-devtools-port-state.mjs`，`scripts/check-devtools-port-forensics.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/devtools-service-port-config-forensics-product-brief.md`，`harness/devtools-service-port-config-forensics-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：配置取证只说明当前本机配置摘要指向 Service Port disabled；它不自动开启开关、不证明 listener ready、不证明 DevTools UI、系统分享、朋友圈、payload、CloudBase readback 或真机 journey 通过；如果用户在 UI 中开启后配置和日志会改变，需要重新跑 `npm run inspect:devtools-port` 与 `npm run check:devtools-smoke`
+- 下一步最佳动作：请用户在 WeChat DevTools UI 中打开 Settings -> Security Settings -> Service Port，并确认端口显示为 9420；开启后重新跑只读 inspect/smoke/prepare，若仍无 listener，再转向换端口、换 profile、换机器或真机 evidence 路线
