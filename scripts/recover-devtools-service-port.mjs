@@ -10,13 +10,16 @@ const smokeScriptPath = join(rootDir, 'scripts/check-devtools-smoke-access.mjs')
 const defaultPort = 9420;
 const defaultTimeoutMs = 30000;
 const reopenWaitMs = 1200;
+const defaultAppBundleIdentifier = 'com.tencent.webplusdevtools';
 
 function usage() {
   return [
-    'Usage: node scripts/recover-devtools-service-port.mjs [--project <path>] [--port <number>] [--timeout-ms <n>] [--dry-run] [--quit-reopen] [--strict]',
+    'Usage: node scripts/recover-devtools-service-port.mjs [--project <path>] [--port <number>] [--timeout-ms <n>] [--dry-run] [--quit-reopen|--app-quit-reopen] [--strict]',
     '',
     'Runs before/after WeChat DevTools service-port diagnostics.',
-    'Default mode is diagnostic-only; quit/open only runs when --quit-reopen is provided without --dry-run.'
+    'Default mode is diagnostic-only; recovery only runs when exactly one opt-in mode is provided without --dry-run.',
+    '--quit-reopen uses the DevTools CLI quit/open path.',
+    '--app-quit-reopen uses macOS app quit by bundle id, then the DevTools CLI open path.'
   ].join('\n');
 }
 
@@ -41,6 +44,7 @@ function parseArgs(argv) {
     timeoutMs: defaultTimeoutMs,
     dryRun: false,
     quitReopen: false,
+    appQuitReopen: false,
     strict: false
   };
 
@@ -59,6 +63,11 @@ function parseArgs(argv) {
 
     if (arg === '--quit-reopen') {
       options.quitReopen = true;
+      continue;
+    }
+
+    if (arg === '--app-quit-reopen') {
+      options.appQuitReopen = true;
       continue;
     }
 
@@ -87,6 +96,10 @@ function parseArgs(argv) {
     }
 
     throw new Error(`Unknown argument: ${arg}`);
+  }
+
+  if (options.quitReopen && options.appQuitReopen) {
+    throw new Error('Choose only one recovery mode: --quit-reopen or --app-quit-reopen.');
   }
 
   return options;
@@ -236,6 +249,47 @@ function projectLooksOpenable(projectPath) {
   return existsSync(join(projectPath, 'project.config.json'));
 }
 
+function devToolsBundlePathFromCli(cliPath) {
+  const marker = '/Contents/MacOS/';
+
+  if (!cliPath.includes(marker)) {
+    return '';
+  }
+
+  return cliPath.slice(0, cliPath.indexOf(marker));
+}
+
+function readDevToolsBundleIdentifier(cliPath, redact) {
+  const bundlePath = devToolsBundlePathFromCli(cliPath);
+  const plistPath = bundlePath ? join(bundlePath, 'Contents/Info.plist') : '';
+
+  if (plistPath && existsSync(plistPath)) {
+    const result = spawnSync('/usr/libexec/PlistBuddy', [
+      '-c',
+      'Print :CFBundleIdentifier',
+      plistPath
+    ], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      timeout: 5000,
+      maxBuffer: 64 * 1024
+    });
+    const bundleIdentifier = (result.stdout || '').trim();
+
+    if (result.status === 0 && bundleIdentifier) {
+      return {
+        bundleIdentifier,
+        source: 'DevTools bundle Info.plist CFBundleIdentifier'
+      };
+    }
+  }
+
+  return {
+    bundleIdentifier: defaultAppBundleIdentifier,
+    source: 'fallback com.tencent.webplusdevtools because Info.plist CFBundleIdentifier was unavailable'
+  };
+}
+
 function runCliAction(name, cliPath, args, options, redact) {
   const result = spawnSync(cliPath, args, {
     cwd: rootDir,
@@ -258,6 +312,32 @@ function runCliAction(name, cliPath, args, options, redact) {
   };
 }
 
+function runAppQuitAction(bundleInfo, options, redact) {
+  const result = spawnSync('osascript', [
+    '-e',
+    `tell application id "${bundleInfo.bundleIdentifier}" to quit`
+  ], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    timeout: options.timeoutMs,
+    maxBuffer: 128 * 1024
+  });
+  const timedOut = result.error && result.error.code === 'ETIMEDOUT';
+
+  return {
+    name: 'DevTools app quit',
+    attempted: true,
+    ok: result.status === 0 && !timedOut,
+    timedOut,
+    exitCode: typeof result.status === 'number' ? result.status : null,
+    signal: result.signal || null,
+    detail: `bundle id ${bundleInfo.bundleIdentifier} (${bundleInfo.source})`,
+    stdout: summarize(result.stdout, redact),
+    stderr: summarize(result.stderr, redact),
+    error: result.error && !timedOut ? summarize(result.error.message, redact) : ''
+  };
+}
+
 function skippedAction(name, reason) {
   return {
     name,
@@ -267,16 +347,43 @@ function skippedAction(name, reason) {
   };
 }
 
+function selectedRecoveryMode(options) {
+  if (options.appQuitReopen) {
+    return 'app';
+  }
+
+  if (options.quitReopen) {
+    return 'cli';
+  }
+
+  return '';
+}
+
+function reportModeLabel(options) {
+  const selectedMode = selectedRecoveryMode(options);
+
+  if (options.dryRun || !selectedMode) {
+    return 'dry-run diagnostics';
+  }
+
+  if (selectedMode === 'app') {
+    return 'app quit-reopen';
+  }
+
+  return 'cli quit-reopen';
+}
+
 async function runRecoveryActions(options, redact) {
   const actions = [];
-  const sideEffectsAllowed = options.quitReopen && !options.dryRun;
+  const selectedMode = selectedRecoveryMode(options);
+  const sideEffectsAllowed = selectedMode && !options.dryRun;
 
   if (!sideEffectsAllowed) {
     const reason = options.dryRun
       ? 'skipped because --dry-run was requested'
-      : 'skipped because --quit-reopen was not provided';
+      : 'skipped because no recovery mode was selected';
 
-    actions.push(skippedAction('DevTools quit', reason));
+    actions.push(skippedAction(selectedMode === 'app' ? 'DevTools app quit' : 'DevTools quit', reason));
     actions.push(skippedAction('reopen wait', reason));
     actions.push(skippedAction('DevTools open', reason));
     return actions;
@@ -285,14 +392,21 @@ async function runRecoveryActions(options, redact) {
   const cli = findDevToolsCli();
 
   if (!cli.ok) {
-    actions.push(skippedAction('DevTools quit', 'skipped because DevTools CLI was not found'));
+    const quitActionName = selectedMode === 'app' ? 'DevTools app quit' : 'DevTools quit';
+    actions.push(skippedAction(quitActionName, 'skipped because DevTools CLI was not found'));
     actions.push(skippedAction('reopen wait', 'skipped because DevTools CLI was not found'));
     actions.push(skippedAction('DevTools open', 'skipped because DevTools CLI was not found'));
     return actions;
   }
 
   const cliRedact = makeRedactor(options, cli.path);
-  actions.push(runCliAction('DevTools quit', cli.path, ['quit'], options, cliRedact));
+
+  if (selectedMode === 'app') {
+    const bundleInfo = readDevToolsBundleIdentifier(cli.path, cliRedact);
+    actions.push(runAppQuitAction(bundleInfo, options, cliRedact));
+  } else {
+    actions.push(runCliAction('DevTools quit', cli.path, ['quit'], options, cliRedact));
+  }
 
   const waitMs = Math.min(reopenWaitMs, options.timeoutMs);
 
@@ -381,10 +495,16 @@ function buildNextSteps({ options, after, actions }) {
   }
 
   const attemptedSideEffect = actions.some((action) => action.attempted && action.name !== 'reopen wait');
+  const selectedMode = selectedRecoveryMode(options);
   const steps = [];
 
-  if (!options.quitReopen || options.dryRun) {
-    steps.push('If the diagnostics match the known service-port timeout, rerun with --quit-reopen to allow quit/open recovery.');
+  if (!selectedMode) {
+    steps.push('If diagnostics match the known service-port timeout, rerun with exactly one opt-in recovery mode: --quit-reopen or --app-quit-reopen.');
+  } else if (options.dryRun) {
+    steps.push(`If diagnostics match the known service-port timeout, rerun without --dry-run using ${selectedMode === 'app' ? '--app-quit-reopen' : '--quit-reopen'}.`);
+  } else if (selectedMode === 'app' && attemptedSideEffect) {
+    steps.push('Confirm WeChat DevTools Settings -> Security Settings -> Service Port is enabled and matches --port after the app-level quit/reopen.');
+    steps.push('If DevTools is still blocked, reopen the project manually in the UI before rerunning dry-run diagnostics.');
   } else if (attemptedSideEffect) {
     steps.push('Confirm WeChat DevTools Settings -> Security Settings -> Service Port is enabled and matches --port.');
     steps.push('If DevTools is still blocked, reopen the project manually in the UI before rerunning this script.');
@@ -399,7 +519,7 @@ function buildNextSteps({ options, after, actions }) {
 }
 
 function buildReport({ options, before, actions, after }) {
-  const mode = options.quitReopen && !options.dryRun ? 'quit-reopen' : 'dry-run diagnostics';
+  const mode = reportModeLabel(options);
   const lines = [
     'WeChat DevTools service port recovery report',
     '',

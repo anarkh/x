@@ -19,6 +19,7 @@ const requiredFiles = [
   'scripts/inspect-devtools-port-state.mjs',
   'scripts/check-devtools-smoke-access.mjs',
   'scripts/recover-devtools-service-port.mjs',
+  'scripts/check-devtools-recovery.mjs',
   'scripts/capture-viral-journey-blocked-evidence.mjs',
   'scripts/check-share-receiver.mjs',
   'scripts/check-share-receiver-action.mjs',
@@ -54,7 +55,9 @@ const requiredFiles = [
   'harness/viral-timeline-share-product-brief.md',
   'harness/viral-timeline-share-design-checklist.md',
   'harness/viral-attribution-events-product-brief.md',
-  'harness/viral-attribution-events-checklist.md'
+  'harness/viral-attribution-events-checklist.md',
+  'harness/viral-real-evidence-recovery-product-brief.md',
+  'harness/viral-real-evidence-recovery-checklist.md'
 ];
 
 const readinessDocs = [
@@ -83,7 +86,9 @@ const readinessDocs = [
   'harness/viral-timeline-share-product-brief.md',
   'harness/viral-timeline-share-design-checklist.md',
   'harness/viral-attribution-events-product-brief.md',
-  'harness/viral-attribution-events-checklist.md'
+  'harness/viral-attribution-events-checklist.md',
+  'harness/viral-real-evidence-recovery-product-brief.md',
+  'harness/viral-real-evidence-recovery-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -160,6 +165,8 @@ runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
 runCheck('scripts/check-share-receiver-action.mjs', 'share receiver action strip check');
 runCheck('scripts/check-timeline-share.mjs', 'timeline share payload check');
 runCheck('scripts/check-viral-attribution.mjs', 'viral attribution event check');
+console.log('Running DevTools recovery static guard. This does not quit or reopen DevTools.');
+runCheck('scripts/check-devtools-recovery.mjs', 'DevTools recovery static guard');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');

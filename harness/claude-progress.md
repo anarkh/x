@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：Y 组分享传播归因事件
-- 当前 blocker：Y 组自动检查已覆盖 `from=share` 进入、loaded/blocked、confirm/comment 转化、低风险二跳 relay 事件、归因字段白名单、CloudBase best-effort 降级、二跳 path 的 `share_id/parent_share_id/share_depth` 参数，以及手测包里的归因 payload 观察点；但真实 WeChat DevTools service port 9420 仍未监听，朋友圈菜单、系统分享面板、真实 payload、单页模式首屏、窄屏和真机转化仍未产生 passed evidence
+- 当前正在实现的用户请求：Z 组 viral real evidence recovery，为 DevTools service port blocker 增加显式 app-level quit/reopen 恢复模式和静态防回归检查
+- 当前 blocker：Z 轮已把 macOS app-level quit + CLI open 恢复路径做成显式 opt-in，并把静态 guard 接入 readiness；主 agent 实际运行 `npm run recover:devtools-app-quit -- --timeout-ms 30000 --port 9420` 后，app quit 成功但 DevTools CLI open 仍超时在 `IDE may already started at port 9420, trying to connect`，after 状态仍是 service port 9420 `connect_refused` / smoke `blocked`，朋友圈菜单、系统分享面板、真实 payload、单页模式首屏、窄屏和真机转化仍未产生 passed evidence
 
 ## 会话记录
 
@@ -1028,3 +1028,18 @@
 - 更新过的文件或工件：`AGENTS.md`，`README.md`，`PROJECT_SUMMARY.md`，`utils/viral-attribution.js`，`pages/detail/detail.js`，`cloudfunctions/posts/index.js`，`scripts/check-viral-attribution.mjs`，`scripts/check-viral-candidate.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-journey-manual-evidence.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/prepare-viral-journey-devtools-run.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-attribution-events-product-brief.md`，`harness/viral-attribution-events-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证真实系统分享面板是否保留归因参数、朋友圈/好友分享真实 payload、二跳接收页串联、CloudBase `viral_attribution_events` 集合部署、离线上报本地 fallback、窄屏布局、以及事件与真实用户转化的对应关系；`share_relay_success` 仍是客户端准备好分享 payload 并交给微信分享能力，不代表下一位实际打开
 - 下一步最佳动作：提交 Y 组并发送给用户评测 agent 与 X=99 比较；若继续迭代，优先恢复 DevTools service port 或用真机跑七条 journey，把 timeline 菜单、receiver 二跳 path、归因事件 payload 和风险态 no-shareTimeline 记录成真实 ignored/local evidence
+
+### Session 076ViralRealEvidenceRecovery
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-real-evidence-recovery`
+- 本轮目标：Z 组最小开发增量，把主 agent 已确认的 DevTools CLI quit 自锁与 macOS app-level quit fallback 经验沉淀到恢复工具里，同时避免默认检查产生 GUI 副作用
+- 产品/验证假设：评测只差真实 WeChat DevTools/真机 evidence；继续扩展传播文案收益低，当前更需要一个显式 opt-in 的 app-level quit/reopen 恢复入口，以及一个静态 guard 防止未来把默认 readiness 变成会 quit/open DevTools 的副作用检查
+- 已完成：`scripts/recover-devtools-service-port.mjs` 新增 `--app-quit-reopen`；`--quit-reopen` 与 `--app-quit-reopen` 互斥；默认和 `--dry-run` 仍只做 before/after 诊断并跳过恢复动作；app 模式从 DevTools bundle `Info.plist` 读取 `CFBundleIdentifier`，读不到时回退 `com.tencent.webplusdevtools` 并在 action detail 中报告来源；app 模式只用 macOS `osascript` 退出应用，再用已有 DevTools CLI `open --project ... --port ... --disable-gpu` 重开，不同时执行 CLI quit
+- 已完成：新增 `scripts/check-devtools-recovery.mjs`，用 Node assert 静态检查新参数、互斥校验、默认无副作用、osascript app quit、bundle id fallback、mode 文案、next steps 文案和输出 redaction/summarization；`package.json` 新增 `check:devtools-recovery` 与显式 side-effect 命令 `recover:devtools-app-quit`，没有把 app quit 接入 `npm run check`
+- 已完成：`scripts/check-devtools-readiness.mjs` 把新静态 guard 纳入 readiness gate，并要求 `harness/viral-real-evidence-recovery-product-brief.md` 与 `harness/viral-real-evidence-recovery-checklist.md` 存在；readiness 输出明确该 guard 不会 quit/reopen DevTools
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/recover-devtools-service-port.mjs`；`node --check scripts/check-devtools-recovery.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node scripts/check-devtools-recovery.mjs`；`node scripts/recover-devtools-service-port.mjs --dry-run --app-quit-reopen --project /tmp/street-tasks-iter-worktrees/viral-real-evidence-recovery --port 9420 --timeout-ms 5000`；互斥参数检查；`npm run recover:devtools-app-quit -- --timeout-ms 30000 --port 9420`；`node --no-warnings scripts/check-devtools-readiness.mjs`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/viral-real-evidence-recovery`，对应约定 `/tmp/street-tasks-iter-worktrees/viral-real-evidence-recovery`；最近提交为 `ef8f0a5 feat: add viral attribution events`；`bash harness/init.sh` 完整跑通；三条 `node --check` 均通过；`node scripts/check-devtools-recovery.mjs` 输出 `DevTools recovery static checks passed.`；dry-run app 模式只输出 `DevTools app quit` skipped，未执行副作用；同时传 `--quit-reopen` 和 `--app-quit-reopen` 会报 `Choose only one recovery mode`；实际 app-level recovery 输出 `DevTools app quit: completed` 且 bundle id 来自 `Info.plist CFBundleIdentifier`，但 `DevTools open` timed out，after 状态仍是 `blocked`，service port 9420 仍 `ECONNREFUSED`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `DevTools recovery static checks passed.` 与 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，并仍报告 DevTools 9420 `connect_refused` / smoke `blocked`，这不是 UI passed
+- 更新过的文件或工件：`scripts/recover-devtools-service-port.mjs`，`scripts/check-devtools-recovery.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：主 agent 已实际运行 `recover:devtools-app-quit`，证明 app-level quit 可以完成，但 CLI open 仍因 DevTools service HTTP listener 未就绪而超时；因此仍没有恢复真实 DevTools service port，也没有产生朋友圈菜单、系统分享面板、真实 payload、单页模式首屏、窄屏或真机 passed evidence
+- 下一步最佳动作：在 WeChat DevTools UI 中确认 Settings -> Security Settings -> Service Port 已开启且端口为 9420，或改用另一台真机/DevTools 环境；随后重新跑 `npm run inspect:devtools-port`、`npm run check:devtools-smoke`、`npm run prepare:viral-journey-run`，再用 ignored local evidence 文件记录七条真实 journey
