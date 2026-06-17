@@ -5,13 +5,13 @@ import { fileURLToPath } from 'node:url';
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const harnessDir = join(rootDir, 'harness');
-const summaryFilePattern = /^manual-test-summary\.local(?!-viral-journey)(.*)\.md$/;
+const summaryFilePattern = /^manual-test-summary\.local-viral-journey(.*)\.md$/;
 
 function runGuard(resultsPath, summaryPath) {
   const result = spawnSync(
     process.execPath,
     [
-      'scripts/check-map-list-blocked-summary.mjs',
+      'scripts/check-viral-manual-summary-integrity.mjs',
       '--results',
       resultsPath,
       '--summary',
@@ -24,11 +24,11 @@ function runGuard(resultsPath, summaryPath) {
   );
 
   if (result.error) {
-    return `Unable to run guard for ${summaryPath}: ${result.error.message}`;
+    return `Unable to run viral manual summary integrity guard for ${summaryPath}: ${result.error.message}`;
   }
 
   if (result.status !== 0) {
-    return `Guard failed for ${summaryPath} with exit code ${result.status}.`;
+    return `Viral manual summary integrity guard failed for ${summaryPath} with exit code ${result.status}.`;
   }
 
   return '';
@@ -41,8 +41,8 @@ try {
     .sort();
 
   if (summaries.length === 0) {
-    console.log('No local blocked summary files found; nothing checked.');
-    console.log('Preflight is not UI passed evidence; it only checks ignored local blocked summaries when they exist.');
+    console.log('No local viral journey summary files found; nothing checked.');
+    console.log('Preflight is not UI passed evidence; it only checks ignored local viral journey JSON/summary pairs when they exist.');
     process.exit(0);
   }
 
@@ -51,12 +51,12 @@ try {
 
   summaries.forEach((summaryFileName) => {
     const [, suffix] = summaryFilePattern.exec(summaryFileName);
-    const resultsFileName = `manual-test-results.local${suffix}.json`;
+    const resultsFileName = `manual-test-results.local-viral-journey${suffix}.json`;
     const summaryPath = `harness/${summaryFileName}`;
     const resultsPath = `harness/${resultsFileName}`;
 
     if (!existsSync(join(harnessDir, resultsFileName))) {
-      failures.push(`Missing results JSON for ${summaryPath}; expected ${resultsPath}.`);
+      failures.push(`Missing viral journey results JSON for ${summaryPath}; expected ${resultsPath}.`);
       return;
     }
 
@@ -73,11 +73,13 @@ try {
 
   if (failures.length > 0) {
     failures.forEach((failure) => console.error(failure));
-    throw new Error(`Map-list blocked summary preflight failed for ${failures.length} item(s).`);
+    throw new Error(`Viral manual summary integrity preflight failed for ${failures.length} item(s).`);
   }
 
-  console.log(`Map-list blocked summary preflight passed. Checked ${checkedCount} pair(s).`);
-  console.log('Preflight is not UI passed evidence; rerun the real map-list visual smoke when DevTools or device access is available.');
+  console.log(`Viral manual summary integrity preflight passed. Checked ${checkedCount} pair(s).`);
+  console.log(
+    'Preflight is not UI passed evidence; DevTools UI, real-device, and viral journey passed status still require real manual evidence.'
+  );
 } catch (error) {
   console.error(error.message);
   process.exit(1);

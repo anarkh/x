@@ -14,6 +14,8 @@ const requiredFiles = [
   'scripts/check-receiver-conversion.mjs',
   'scripts/check-viral-journey-evidence.mjs',
   'scripts/check-viral-journey-manual-evidence.mjs',
+  'scripts/check-viral-manual-summary-integrity.mjs',
+  'scripts/check-viral-manual-summary-integrity-preflight.mjs',
   'scripts/prepare-viral-journey-manual-evidence.mjs',
   'scripts/prepare-viral-journey-devtools-run.mjs',
   'scripts/inspect-devtools-port-state.mjs',
@@ -70,7 +72,9 @@ const requiredFiles = [
   'harness/devtools-service-port-ui-confirmation-product-brief.md',
   'harness/devtools-service-port-ui-confirmation-checklist.md',
   'harness/viral-manual-journey-evidence-packet-product-brief.md',
-  'harness/viral-manual-journey-evidence-packet-checklist.md'
+  'harness/viral-manual-journey-evidence-packet-checklist.md',
+  'harness/viral-manual-summary-integrity-product-brief.md',
+  'harness/viral-manual-summary-integrity-checklist.md'
 ];
 
 const readinessDocs = [
@@ -109,7 +113,9 @@ const readinessDocs = [
   'harness/devtools-service-port-ui-confirmation-product-brief.md',
   'harness/devtools-service-port-ui-confirmation-checklist.md',
   'harness/viral-manual-journey-evidence-packet-product-brief.md',
-  'harness/viral-manual-journey-evidence-packet-checklist.md'
+  'harness/viral-manual-journey-evidence-packet-checklist.md',
+  'harness/viral-manual-summary-integrity-product-brief.md',
+  'harness/viral-manual-summary-integrity-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -207,6 +213,9 @@ console.log('Running DevTools UI confirmation static guard. This does not run th
 runCheck('scripts/check-devtools-ui-confirmation.mjs', 'DevTools UI confirmation static guard');
 console.log('Running viral manual journey evidence packet static guard. This does not run scripts/prepare-viral-journey-evidence-packet.mjs because that prepare script needs UI-state parameters.');
 runCheck('scripts/check-viral-journey-evidence-packet.mjs', 'viral manual journey evidence packet static guard');
+console.log('Running viral manual summary integrity preflight. This only checks ignored local viral journey JSON/summary pairs when they exist and does not prove UI passed.');
+runCheck('scripts/check-viral-manual-summary-integrity-preflight.mjs', 'viral manual summary integrity preflight');
+console.log('Viral manual summary integrity preflight completed; DevTools UI, real-device, and viral journey passed status still require real manual evidence.');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');
