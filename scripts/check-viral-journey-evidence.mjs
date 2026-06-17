@@ -15,6 +15,15 @@ const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 const { buildShareReceiverActionStrip } = await import('../utils/share-receiver-actions.js');
 
 const manualExample = JSON.parse(readFileSync('harness/viral-journey-manual-results.example.json', 'utf8'));
+const requiredManualJourneyIds = [
+  'first-hop-share-entry',
+  'receiver-confirm-conversion',
+  'receiver-comment-conversion',
+  'second-hop-receiver-source',
+  'ordinary-and-risk-entries',
+  'timeline-share-channel',
+  'timeline-risk-gating'
+];
 const forbiddenShareReasonTerms = [
   '属实',
   '已验证',
@@ -453,11 +462,20 @@ assert.match(
   /Do not treat this example as release evidence/,
   'manual evidence example should warn against release evidence use'
 );
+assert.deepEqual(
+  manualExample.journeys.map((journey) => journey.id),
+  requiredManualJourneyIds,
+  'manual evidence template should include exactly the five receiver journeys plus two timeline journeys in order'
+);
 
 const confirmManualJourney = manualExample.journeys.find((journey) => journey.id === 'receiver-confirm-conversion');
 const commentManualJourney = manualExample.journeys.find((journey) => journey.id === 'receiver-comment-conversion');
+const timelineShareJourney = manualExample.journeys.find((journey) => journey.id === 'timeline-share-channel');
+const timelineRiskJourney = manualExample.journeys.find((journey) => journey.id === 'timeline-risk-gating');
 assert.ok(confirmManualJourney, 'manual evidence template should include receiver confirm conversion journey');
 assert.ok(commentManualJourney, 'manual evidence template should include receiver comment conversion journey');
+assert.ok(timelineShareJourney, 'manual evidence template should include timeline share channel journey');
+assert.ok(timelineRiskJourney, 'manual evidence template should include timeline risk gating journey');
 assert.ok(
   confirmManualJourney.expected.some((item) => /share reason|确认|re-check/.test(item)),
   'manual confirm journey should ask testers to observe the confirm share reason'
@@ -473,6 +491,26 @@ assert.ok(
 assert.ok(
   commentManualJourney.expected.some((item) => /relay channel|场景建议|适合转/.test(item)),
   'manual comment journey should ask testers to observe relay channel suggestions'
+);
+assert.ok(
+  timelineShareJourney.expected.some((item) => /friend share|send-to-friend|发送给朋友|timeline share|share-to-timeline|朋友圈/.test(item)),
+  'manual timeline share journey should ask testers to observe both friend and timeline menu entries'
+);
+assert.ok(
+  timelineShareJourney.expected.some((item) => /id|from=share|source=timeline|shareChannel=timeline/.test(item)),
+  'manual timeline share journey should ask testers to inspect timeline query values'
+);
+assert.ok(
+  timelineShareJourney.expected.some((item) => /single-page|单页|first screen|首屏/.test(item)),
+  'manual timeline share journey should ask testers to observe single-page first-screen readability'
+);
+assert.ok(
+  timelineRiskJourney.expected.some((item) => /shareTimeline|timeline|朋友圈/.test(item)),
+  'manual timeline risk journey should ask testers to observe shareTimeline absence'
+);
+assert.ok(
+  timelineRiskJourney.expected.some((item) => /cautious|谨慎|待核对|closed|expired|hidden|关闭|过期|隐藏/.test(item)),
+  'manual timeline risk journey should require cautious risk-state semantics'
 );
 for (const journey of manualExample.journeys) {
   assert.equal(journey.status, 'not_run', `manual journey ${journey.id} should start as not_run`);

@@ -203,8 +203,8 @@ function compactOutput(output) {
 function readExampleJourneys() {
   const example = JSON.parse(readFileSync(examplePath, 'utf8'));
 
-  if (!Array.isArray(example.journeys) || example.journeys.length !== 5) {
-    throw new Error('Example viral journey manual results must contain exactly five journeys.');
+  if (!Array.isArray(example.journeys) || example.journeys.length !== 7) {
+    throw new Error('Example viral journey manual results must contain exactly seven journeys.');
   }
 
   return example.journeys;
@@ -279,11 +279,11 @@ function buildBlockedJourney(journey, context) {
     route: replaceRoutePlaceholders(journey.route, context.port),
     steps: journey.steps,
     expected: journey.expected,
-    actual: `UI journey was blocked before the first route interaction because DevTools service port ${context.port} was unavailable; no visual state, tap flow, comment flow, system share card, or payload observation was captured.`,
+    actual: `UI journey was blocked before the first route interaction because DevTools service port ${context.port} was unavailable; no visual state, tap flow, comment flow, system share card, timeline menu, single-page mode, or payload observation was captured.`,
     evidence: [],
     blocker: context.blockerSummary,
     risks: journey.risks,
-    followUp: `${journey.followUp} After restoring WeChat DevTools Service Port ${context.port}, rerun P preparation command: node scripts/prepare-viral-journey-devtools-run.mjs --project ${context.projectPath} --port ${context.port} --out ${context.relativeOut}. Then perform the five viral UI journeys in DevTools or on a real device and replace this blocked-only local JSON with concrete observations and evidence.`
+    followUp: `${journey.followUp} After restoring WeChat DevTools Service Port ${context.port}, rerun P preparation command: node scripts/prepare-viral-journey-devtools-run.mjs --project ${context.projectPath} --port ${context.port} --out ${context.relativeOut}. Then perform the seven viral UI journeys in DevTools or on a real device and replace this blocked-only local JSON with concrete observations and evidence.`
   };
 }
 
@@ -318,7 +318,7 @@ function buildResults(options, diagnostics) {
     }),
     summary: {
       overallStatus: 'blocked',
-      recommendation: `Blocked local evidence only for DevTools service port ${options.port}. This JSON does not prove UI passed; use it only to document the current blocker before recovering Service Port and rerunning the P preparation command plus all five real viral journeys.`,
+      recommendation: `Blocked local evidence only for DevTools service port ${options.port}. This JSON does not prove UI passed; use it only to document the current blocker before recovering Service Port and rerunning the P preparation command plus all seven real viral journeys.`,
       notes: [
         blockerSummary,
         'The capture command wrote only this ignored local JSON and ran the existing manual evidence checker.',
@@ -406,7 +406,7 @@ try {
   console.log('');
   console.log(`Captured blocked viral journey evidence: ${projectRelativePath(options.outPath)}`);
   console.log(`overallStatus: ${results.summary.overallStatus}`);
-  console.log(`Next step: restore WeChat DevTools Service Port ${options.port}, rerun node scripts/prepare-viral-journey-devtools-run.mjs --project ${options.projectPath} --port ${options.port} --out ${projectRelativePath(options.outPath)}, then perform the five real viral UI journeys.`);
+  console.log(`Next step: restore WeChat DevTools Service Port ${options.port}, rerun node scripts/prepare-viral-journey-devtools-run.mjs --project ${options.projectPath} --port ${options.port} --out ${projectRelativePath(options.outPath)}, then perform the seven real viral UI journeys.`);
   console.log('Reminder: this is blocked local evidence only, not UI passed evidence.');
 } catch (error) {
   console.error(error.message);

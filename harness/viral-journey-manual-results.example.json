@@ -165,6 +165,59 @@
         "Expired status can depend on current time and fixture timestamps."
       ],
       "followUp": "Record every post id and status fixture used, including staleCount/reportCount values."
+    },
+    {
+      "id": "timeline-share-channel",
+      "title": "低风险 active 详情页朋友圈系统渠道",
+      "status": "not_run",
+      "route": "/pages/detail/detail?id=<activeLowRiskPostId>",
+      "steps": [
+        "Open a low-risk active detail page after the latest post state has loaded.",
+        "Open the real WeChat system menu from the detail page.",
+        "Inspect whether both friend share and timeline share are present.",
+        "Trigger or hook onShareTimeline if the environment allows inspecting the payload.",
+        "Open the timeline card or an equivalent single-page-mode entry and inspect the first screen."
+      ],
+      "expected": [
+        "The real system menu shows both send-to-friend and share-to-timeline entries for the low-risk active task.",
+        "onShareTimeline evidence records title, query, and imageUrl or a concrete reason the field could not be inspected.",
+        "If query is inspectable, it contains id, from=share, source=timeline, and shareChannel=timeline.",
+        "The timeline or equivalent single-page-mode first screen keeps the task title, status, place, and receiver context readable.",
+        "The timeline channel does not replace the existing receiver conversion journeys in this same result package."
+      ],
+      "actual": "Not run in this example. Replace with real menu, payload, and single-page first-screen observations.",
+      "evidence": [],
+      "risks": [
+        "Some DevTools or device environments may not expose the raw timeline payload and require a concrete inspection limitation note.",
+        "Single-page mode can differ from direct detail routing, so record which entry method was used."
+      ],
+      "followUp": "Record system menu evidence, onShareTimeline title/query/imageUrl or the exact inspection blocker, and first-screen readability evidence."
+    },
+    {
+      "id": "timeline-risk-gating",
+      "title": "风险和闭合任务不开放鼓励性朋友圈",
+      "status": "not_run",
+      "route": "multiple",
+      "steps": [
+        "Open detail fixtures with weak stale and report signals.",
+        "Open stale, resolved, expired, hidden, and unknown-task fixtures when available.",
+        "Inspect the real system menu for shareTimeline availability.",
+        "If a timeline payload can still be inspected through a hook, record the actual title/query/image fields."
+      ],
+      "expected": [
+        "Weak stale/report, stale, resolved, expired, hidden, and unknown tasks do not expose an encouraging timeline entry.",
+        "Passed evidence records that shareTimeline is absent; blocked evidence records the concrete reason the menu/payload could not be triggered.",
+        "Any inspectable title or actual copy uses cautious semantics such as stale, reported, closed, expired, hidden, or unavailable.",
+        "No risk or closed state shows an encouraging timeline CTA or task image meant for broad spread.",
+        "The existing ordinary-and-risk-entries receiver journey still verifies receiver guide/action strip risk gating."
+      ],
+      "actual": "Not run in this example. Replace with risk fixture menu and cautious-copy observations.",
+      "evidence": [],
+      "risks": [
+        "Hidden and unknown tasks may need controlled fixtures or admin setup before the menu state can be observed.",
+        "A missing menu inspection must be recorded as blocked rather than passed when no equivalent evidence exists."
+      ],
+      "followUp": "Record every risk fixture id, status, stale/report counts, menu absence or inspection blocker, and any cautious title/payload observed."
     }
   ]
 }

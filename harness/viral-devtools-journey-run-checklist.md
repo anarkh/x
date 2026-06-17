@@ -2,7 +2,7 @@
 
 日期：2026-06-16
 
-范围：用于 P 组在 `codex/iter-viral-devtools-journey-launch` 分支验收“传播链真实手测 DevTools 启动诊断包”。本清单帮助测试者在进入真实 WeChat DevTools 或真机前，先读懂诊断输出、证据草稿和五条传播 journey，避免把 readiness、dry-run、blocked draft 或端口诊断误写成 UI passed。
+范围：用于 P 组在 `codex/iter-viral-devtools-journey-launch` 分支验收“传播链真实手测 DevTools 启动诊断包”，并在 W 组扩展为七条 required journey 后继续作为 readiness 文档。本清单帮助测试者在进入真实 WeChat DevTools 或真机前，先读懂诊断输出、证据草稿和七条传播 journey，避免把 readiness、dry-run、blocked draft 或端口诊断误写成 UI passed。
 
 ## 0. 运行前检查
 
@@ -70,7 +70,7 @@
   - 若出现未 ignored 路径、模板文件、占位符、缺少 evidence 或 share payload 错误，先修本地结果文件，再复跑 checker。
 
 - [ ] 看 `Viral Journey Manual Run Package` 和 `Next Steps`。
-  - 必须列出五条 journey：`first-hop-share-entry`、`receiver-confirm-conversion`、`receiver-comment-conversion`、`second-hop-receiver-source`、`ordinary-and-risk-entries`。
+  - 必须列出七条 journey：`first-hop-share-entry`、`receiver-confirm-conversion`、`receiver-comment-conversion`、`second-hop-receiver-source`、`ordinary-and-risk-entries`、`timeline-share-channel`、`timeline-risk-gating`。
   - `Next Steps` 若要求先恢复端口，就保持 blocked，不进入 UI 手测结论。
   - 输出最后的提醒“not UI passed evidence”必须保留在汇报口径中。
 
@@ -98,7 +98,7 @@
   - blocked draft 创建成功。
   - evidence checker 对 blocked 文件通过。
 
-## 3. Ready 后进入五条 journey 要确认什么
+## 3. Ready 后进入七条 journey 要确认什么
 
 - [ ] 进入真实手测前，记录环境字段。
   - WeChat DevTools 版本、基础库版本、模拟器/真机型号、微信版本或设备系统、网络、CloudBase 是否启用、`posts` 云函数是否部署。
@@ -140,6 +140,21 @@
   - 确认有 stale/report 信号时隐藏 receiver action strip。
   - 确认 stale/resolved/expired/hidden 不暴露接收侧 public relay CTA。
   - 记录每个 fixture 的 post id、状态、`staleCount`、`reportCount`、闭合原因和 UI 观察。
+
+- [ ] `timeline-share-channel`：低风险 active 详情页朋友圈系统渠道。
+  - 打开同一 active、非 stale、非 reported、非 closed 的任务详情页。
+  - 打开真实微信系统菜单，确认同时可见“发送给朋友”和“分享到朋友圈”。
+  - 触发或 inspect `onShareTimeline`；若 query 可见，必须包含任务 `id`、`from=share`、`source=timeline`、`shareChannel=timeline`。
+  - 记录 `title`、`query`、`imageUrl` 或具体无法 inspect 的字段和原因。
+  - 从朋友圈卡片、DevTools 单页模式或等价入口进入，确认首屏标题、地点/距离、状态、正文、图片或占位和接收语境可读。
+  - 记录菜单、payload 和单页首屏证据；这条不能替代前五条 receiver journeys。
+
+- [ ] `timeline-risk-gating`：风险和闭合任务不开放鼓励性朋友圈。
+  - 打开弱 stale/report、`stale`、`resolved`、`expired`、`hidden`、unknown 或远端刷新失败 fixture。
+  - 打开真实微信系统菜单，确认没有鼓励性 `shareTimeline` / “分享到朋友圈”入口。
+  - 若仍能 inspect 分享标题、query 或页面文案，确认它们使用谨慎语义，不鼓励继续扩散。
+  - 如果菜单无法打开、payload 无法 inspect、fixture 无法准备或设备不支持当前检查，只能记录 blocked 和 follow-up，不能写 passed。
+  - 记录每个 fixture 的 post id、状态、`staleCount`、`reportCount`、闭合原因、菜单缺失证据和谨慎文案观察。
 
 ## 4. Share payload 怎么记录
 
@@ -205,7 +220,7 @@
 ## 6. 汇报口径
 
 - [ ] 可以写：`DevTools 端口诊断 ready，已进入真实手测待记录 UI evidence`。
-- [ ] 可以写：`DevTools service port blocked，五条传播 journey 未执行，blocked draft/evidence gate 仅记录环境阻塞`。
+- [ ] 可以写：`DevTools service port blocked，七条传播 journey 未执行，blocked draft/evidence gate 仅记录环境阻塞`。
 - [ ] 可以写：`ignored local viral journey evidence schema 通过，仍需人工复核真实截图/录屏/payload`。
 - [ ] 不得写：`readiness 通过，所以 UI passed`。
 - [ ] 不得写：`dry-run 通过，所以 DevTools recovered`。

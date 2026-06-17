@@ -17,7 +17,7 @@
   ```
 
 - [ ] checker 通过只证明 local JSON schema、分支、commit、环境字段、journey 唯一性、blocked 字段和聚合状态合法；不证明任何页面渲染、点击、分享 payload 或真机链路通过。
-- [ ] 若当前 blocker 来自 DevTools port/smoke，五条传播 journeys 全部 `blocked` 是合理结果，因为真实首跳、确认、评论、二跳和风险态观察均无法执行。
+- [ ] 若当前 blocker 来自 DevTools port/smoke，七条传播 journeys 全部 `blocked` 是合理结果，因为真实首跳、确认、评论、二跳、风险态、朋友圈菜单、timeline payload 和单页模式观察均无法执行。
 
 ## 1. 运行前检查
 
@@ -113,6 +113,8 @@ node scripts/capture-viral-journey-blocked-evidence.mjs \
   - `receiver-comment-conversion`
   - `second-hop-receiver-source`
   - `ordinary-and-risk-entries`
+  - `timeline-share-channel`
+  - `timeline-risk-gating`
 
 每条 journey：
 
@@ -123,13 +125,15 @@ node scripts/capture-viral-journey-blocked-evidence.mjs \
 - [ ] `evidence` 可以为空；若填写，只能是 blocker 诊断摘要、local log 摘要或命令输出摘要，不能伪造截图、录屏、payload 或页面观察。
 - [ ] `risks` 应保留或补充真实 UI 未验证风险，例如分享 payload、系统分享面板、二跳 query、评论链路、风险态隐藏 CTA、窄屏换行仍未观察。
 
-## 5. 五条 journeys 均 blocked 的合理性
+## 5. 七条 journeys 均 blocked 的合理性
 
 - [ ] `first-hop-share-entry` blocked：DevTools port/smoke 未通过时，无法打开首跳分享入口并观察 receiver guide/action strip。
 - [ ] `receiver-confirm-conversion` blocked：无法点击接收者确认，也无法产生真实二跳分享 payload。
 - [ ] `receiver-comment-conversion` blocked：无法提交真实评论，也无法确认评论后的 conversion prompt 或 payload。
 - [ ] `second-hop-receiver-source` blocked：无法从真实系统分享卡片或可信 route 观察二跳接力语境。
 - [ ] `ordinary-and-risk-entries` blocked：无法逐个验证普通入口、stale/report signal、stale/resolved/expired/hidden fixture 是否隐藏接收侧扩散 CTA。
+- [ ] `timeline-share-channel` blocked：无法打开真实系统菜单、检查朋友圈入口、inspect `onShareTimeline` payload 或验证单页模式首屏。
+- [ ] `timeline-risk-gating` blocked：无法逐个验证风险/闭合 fixture 的真实系统菜单是否缺少 `shareTimeline`，也无法记录谨慎标题或 payload 反证。
 - [ ] 全 blocked 时 `summary.overallStatus=blocked` 是唯一合理聚合；`overallStatus=passed` 或任意 journey `passed` 都必须被视为误报。
 
 ## 6. Capture 后复跑 guard
@@ -251,7 +255,7 @@ git check-ignore -v harness/manual-test-results.local-viral-journey-blocked.json
 可以写：
 
 - [ ] `已生成 ignored local blocked viral journey result JSON，并自动通过 manual evidence checker；该结果只记录 DevTools port/smoke blocker。`
-- [ ] `五条 viral journeys 均为 blocked，因为当前环境没有执行真实 WeChat DevTools UI 或真机传播链观察。`
+- [ ] `七条 viral journeys 均为 blocked，因为当前环境没有执行真实 WeChat DevTools UI 或真机传播链观察。`
 - [ ] `blocked evidence capture 不包含截图、录屏、真实分享 payload 或 UI passed 结论；下一步是恢复 DevTools service port/smoke 后重跑真实手测。`
 - [ ] `复跑了 check-viral-journey-manual-evidence、check-devtools-readiness、check-json、check-harness 和 git diff --check。`
 
@@ -259,7 +263,7 @@ git check-ignore -v harness/manual-test-results.local-viral-journey-blocked.json
 
 - [ ] `UI passed`
 - [ ] `DevTools smoke passed`
-- [ ] `五条传播链通过`
+- [ ] `七条传播链通过`
 - [ ] `checker 通过，所以真实分享 payload 通过`
 - [ ] `blocked draft 通过，所以可以发布`
 - [ ] `没有截图但视为通过`
@@ -268,5 +272,5 @@ git check-ignore -v harness/manual-test-results.local-viral-journey-blocked.json
 建议最终交付摘要：
 
 ```markdown
-已验收 blocked evidence capture：输出为 ignored local JSON，branch/commit/environment/summary/journeys 字段完整，五条 journeys 均为 blocked，blocker/followUp 非空，evidence 未伪造；capture 后自动运行 viral manual evidence checker。该结果不能声明 UI passed，真实传播链仍需恢复 DevTools service port/smoke 后手测。
+已验收 blocked evidence capture：输出为 ignored local JSON，branch/commit/environment/summary/journeys 字段完整，七条 journeys 均为 blocked，blocker/followUp 非空，evidence 未伪造；capture 后自动运行 viral manual evidence checker。该结果不能声明 UI passed，真实传播链仍需恢复 DevTools service port/smoke 后手测。
 ```

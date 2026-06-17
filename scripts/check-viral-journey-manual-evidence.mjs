@@ -14,13 +14,21 @@ const requiredJourneyIds = [
   'receiver-confirm-conversion',
   'receiver-comment-conversion',
   'second-hop-receiver-source',
-  'ordinary-and-risk-entries'
+  'ordinary-and-risk-entries',
+  'timeline-share-channel',
+  'timeline-risk-gating'
 ];
 const sharePayloadRequiredJourneyIds = new Set([
   'receiver-confirm-conversion',
   'receiver-comment-conversion',
   'second-hop-receiver-source'
 ]);
+const timelineShareJourneyId = 'timeline-share-channel';
+const timelineRiskJourneyId = 'timeline-risk-gating';
+const unableToInspectPattern = /(无法|不能|不可|未能|无法触发|无法检查|无法查看|unable|cannot|could not|not exposed|unavailable)/i;
+const noTimelinePattern = /((?:\bno\b|\babsent\b|\bwithout\b|\bmissing\b|未|无|没有|不显示|不开放|未开放|隐藏|缺失).{0,30}(?:shareTimeline|timeline|朋友圈)|(?:shareTimeline|timeline|朋友圈).{0,30}(?:\babsent\b|not exposed|not shown|not displayed|\bmissing\b|无|没有|未显示|不显示|不开放|未开放|隐藏|缺失))/i;
+const cautiousTimelinePattern = /(谨慎|待核对|可能过时|已关闭|已过期|暂不可查看|已隐藏|不开放|未开放|不可|无|没有|cautious|not exposed|absent|unavailable|closed|expired|hidden|stale|risk)/i;
+const encouragingTimelinePattern = /((?:马上|立即|快去|赶快|继续|放心|帮忙).{0,8}(?:朋友圈|timeline|转发|分享|扩散)|(?:朋友圈|timeline).{0,12}(?:扩散起来|继续扩散|放心转发|马上转发|立即分享|帮忙转发)|(?:扩散起来|继续扩散|放心转发|马上转发|立即分享|帮忙转发))/i;
 const localResultFilePatterns = [
   /^manual-test-results\.local-viral-journey.*\.json$/,
   /^local-viral-journey-results.*\.json$/
@@ -162,6 +170,109 @@ function validateConcreteField(object, field, label, errors) {
   if (!hasOwn(object, field) || !isConcrete(object[field])) {
     errors.push(`${label} must include concrete ${field}.`);
   }
+}
+
+function textFrom(value) {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => textFrom(item)).join(' ');
+  }
+
+  if (isPlainObject(value)) {
+    return Object.values(value).map((item) => textFrom(item)).join(' ');
+  }
+
+  return '';
+}
+
+function journeyText(journey) {
+  return textFrom([
+    journey.actual,
+    journey.evidence,
+    journey.timelinePayload,
+    journey.sharePayload,
+    journey.timelinePayloadInspection,
+    journey.sharePayloadInspection,
+    journey.timelineMenuInspection,
+    journey.menuInspection,
+    journey.singlePageMode,
+    journey.singlePageObservation,
+    journey.singlePageFirstScreen,
+    journey.firstScreenObservation
+  ]);
+}
+
+function isExplicitUnableToInspect(value) {
+  return typeof value === 'string' && isConcrete(value) && unableToInspectPattern.test(value);
+}
+
+function hasExplicitUnableToInspect(journey, fields) {
+  return fields.some((field) => isExplicitUnableToInspect(journey[field]));
+}
+
+function getTimelinePayload(journey) {
+  if (isPlainObject(journey.timelinePayload)) {
+    return journey.timelinePayload;
+  }
+
+  if (isPlainObject(journey.sharePayload)) {
+    return journey.sharePayload;
+  }
+
+  return null;
+}
+
+function queryFromPayload(payload) {
+  if (!isPlainObject(payload)) {
+    return '';
+  }
+
+  if (typeof payload.query === 'string') {
+    return payload.query.replace(/^\?/, '');
+  }
+
+  if (typeof payload.path === 'string') {
+    return payload.path.split('?')[1] || '';
+  }
+
+  return '';
+}
+
+function hasQueryParam(query, key, value) {
+  return new URLSearchParams(query || '').get(key) === value;
+}
+
+function getQueryParam(query, key) {
+  return new URLSearchParams(query || '').get(key) || '';
+}
+
+function hasTimelineImageObservation(journey, payload) {
+  return ['imageUrl', 'image', 'imageInspection', 'imageUrlInspection', 'imageNote']
+    .some((field) => (isPlainObject(payload) && isConcrete(payload[field])) || isConcrete(journey[field]));
+}
+
+function hasTimelineMenuObservation(journey) {
+  const text = journeyText(journey);
+  const hasFriendShare = /(发送给朋友|shareAppMessage|send to friend|friend share)/i.test(text);
+  const hasTimelineShare = /(分享到朋友圈|朋友圈|shareTimeline|timeline share)/i.test(text);
+
+  return hasFriendShare && hasTimelineShare;
+}
+
+function hasSinglePageObservation(journey) {
+  if (
+    isConcrete(journey.singlePageMode) ||
+    isConcrete(journey.singlePageObservation) ||
+    isConcrete(journey.singlePageFirstScreen) ||
+    isConcrete(journey.firstScreenObservation)
+  ) {
+    return true;
+  }
+
+  return /(单页|首屏|single[- ]?page|first screen|readable|可读)/i.test(journeyText(journey));
 }
 
 function validateBranchAndCommit(results, errors) {
@@ -313,13 +424,79 @@ function validateSharePayload(journey, label, errors) {
   }
 
   const inspection = journey.sharePayloadInspection;
-  const explicitlyUnableToInspect =
-    typeof inspection === 'string' &&
-    isConcrete(inspection) &&
-    /(无法|不能|不可|未能|unable|cannot|could not|not exposed|unavailable)/i.test(inspection);
+  const explicitlyUnableToInspect = isExplicitUnableToInspect(inspection);
 
   if (!explicitlyUnableToInspect) {
     errors.push(`${label} is passed but lacks sharePayload or an explicit sharePayloadInspection inability note.`);
+  }
+}
+
+function validateTimelineShareChannel(journey, label, errors) {
+  const payload = getTimelinePayload(journey);
+  const cannotInspectPayload = hasExplicitUnableToInspect(journey, [
+    'timelinePayloadInspection',
+    'sharePayloadInspection'
+  ]);
+
+  if (!hasTimelineMenuObservation(journey)) {
+    errors.push(`${label} must record that the real system menu exposed both friend share and timeline share.`);
+  }
+
+  if (!hasSinglePageObservation(journey)) {
+    errors.push(`${label} must record that the timeline or equivalent single-page first screen was readable.`);
+  }
+
+  if (!payload) {
+    if (!cannotInspectPayload) {
+      errors.push(`${label} is passed but lacks timelinePayload/sharePayload or a concrete payload inspection inability reason.`);
+    }
+    return;
+  }
+
+  validateConcreteField(payload, 'title', `${label}.timelinePayload`, errors);
+
+  const query = queryFromPayload(payload);
+  if (query) {
+    if (!getQueryParam(query, 'id')) {
+      errors.push(`${label}.timelinePayload.query must include a concrete id value.`);
+    }
+
+    for (const [key, value] of [
+      ['from', 'share'],
+      ['source', 'timeline'],
+      ['shareChannel', 'timeline']
+    ]) {
+      if (!hasQueryParam(query, key, value)) {
+        errors.push(`${label}.timelinePayload.query must include ${key}=${value}.`);
+      }
+    }
+  } else if (!cannotInspectPayload) {
+    errors.push(`${label}.timelinePayload must include query, path query, or a concrete inability reason.`);
+  }
+
+  if (!hasTimelineImageObservation(journey, payload) && !cannotInspectPayload) {
+    errors.push(`${label}.timelinePayload must include imageUrl/image information or a concrete image inspection note.`);
+  }
+}
+
+function validateTimelineRiskGating(journey, label, errors) {
+  const text = journeyText(journey);
+  const payload = getTimelinePayload(journey);
+
+  if (encouragingTimelinePattern.test(text)) {
+    errors.push(`${label} must not contain encouraging timeline CTA copy.`);
+  }
+
+  if (!cautiousTimelinePattern.test(text)) {
+    errors.push(`${label} actual/evidence must use cautious no-timeline semantics.`);
+  }
+
+  if (!noTimelinePattern.test(text)) {
+    errors.push(`${label} must record observed shareTimeline/timeline menu absence; inability to inspect belongs in a blocked journey, not passed.`);
+  }
+
+  if (payload && isConcrete(payload.title) && !cautiousTimelinePattern.test(payload.title)) {
+    errors.push(`${label}.timelinePayload.title must be cautious when a risk-state payload can be inspected.`);
   }
 }
 
@@ -375,6 +552,14 @@ function validateJourney(journey, index, errors) {
 
     if (sharePayloadRequiredJourneyIds.has(journey.id)) {
       validateSharePayload(journey, label, errors);
+    }
+
+    if (journey.id === timelineShareJourneyId) {
+      validateTimelineShareChannel(journey, label, errors);
+    }
+
+    if (journey.id === timelineRiskJourneyId) {
+      validateTimelineRiskGating(journey, label, errors);
     }
   }
 

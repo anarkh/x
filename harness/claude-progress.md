@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：V 组详情页分享到朋友圈系统渠道
-- 当前 blocker：V 组自动检查已覆盖低风险 active 任务才开启 `shareTimeline`、`onShareTimeline` 只返回 `query` 不返回 `path`、timeline query 使用 `from=share&source=timeline&shareChannel=timeline`、弱 stale/report/关闭/隐藏态不暴露朋友圈菜单且文案谨慎；但真实 WeChat DevTools service port 9420 仍未监听，系统菜单截图、朋友圈分享卡片、单页模式打开、真机 iOS/Android 和真实用户是否愿意从朋友圈继续行动仍未验证
+- 当前正在实现的用户请求：W 组朋友圈真实渠道手测证据 schema
+- 当前 blocker：W 组自动检查已把 viral journey manual evidence 从 5 条扩到 7 条，新增 `timeline-share-channel` 与 `timeline-risk-gating`，并让 prepare/capture/readiness 都输出或校验七条 journey；但真实 WeChat DevTools service port 9420 仍未监听，朋友圈菜单、分享卡片、单页模式、真实 query/payload、风险态菜单缺失和真机转化仍未产生 passed evidence
 
 ## 会话记录
 
@@ -979,3 +979,19 @@
 - 更新过的文件或工件：`utils/timeline-share.js`，`pages/detail/detail.js`，`scripts/check-timeline-share.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-timeline-share-product-brief.md`，`harness/viral-timeline-share-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证右上角系统菜单是否真实出现“分享到朋友圈”、朋友圈卡片标题/图片、从朋友圈打开的单页模式首屏、tabBar 缺失下的信息可读性、基础库/微信版本差异、iOS/Android 差异、云端未登录读取路径和真实用户是否会从朋友圈继续确认/评论
 - 下一步最佳动作：提交 V 组，并发送给用户评测 agent 与 U=99 的结果比较，重点看“真实新增系统渠道”是否比 U 的“转给谁/哪里”建议更接近自发裂变；若继续迭代，优先把朋友圈手测 evidence schema 加入现有五条 viral journey manual-run 包
+
+### Session 073ViralTimelineEvidence
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-timeline-evidence`
+- 本轮目标：W 组产品/设计/开发把 V 组朋友圈渠道纳入现有 ignored/local viral journey manual evidence schema，让真实手测必须覆盖 timeline 菜单、payload、单页模式、风险态无 timeline 和 U 轮 receiver 链路不回退
+- 产品假设：V 已补上微信朋友圈系统渠道，继续润色分享文案边际收益低；要突破 V=99 的扣分点，必须把真实菜单、朋友圈卡片、单页模式、query/payload 和风险态反证写进可复跑 evidence schema，而不是继续依赖 readiness 或口头描述
+- 已完成：产品 agent 新增 `harness/viral-timeline-evidence-product-brief.md`；设计/QA agent 新增 `harness/viral-timeline-evidence-checklist.md`；开发 agent 将 `harness/viral-journey-manual-results.example.json` 从五条 required journeys 扩为七条，新增 `timeline-share-channel` 与 `timeline-risk-gating`；提交前 review 收紧 `timeline-risk-gating`，使无法 inspect 系统菜单只能作为 blocked，不能替代 passed 的菜单缺失观察
+- 检查变化：`scripts/check-viral-journey-manual-evidence.mjs` 现在要求七条 required journeys；`timeline-share-channel` passed 必须记录真实系统菜单同时有好友分享和朋友圈、timeline payload/query 或无法检查原因、图片或图片说明、单页/首屏可读；inspectable query 必须包含 `id`、`from=share`、`source=timeline`、`shareChannel=timeline`
+- 风险态变化：`timeline-risk-gating` passed 必须记录 shareTimeline 缺失或具体无法触发原因、谨慎 no-timeline 语义，且不得包含鼓励性朋友圈 CTA；风险态若能 inspect payload，标题也必须谨慎
+- 工具链变化：`scripts/prepare-viral-journey-devtools-run.mjs` 输出七条 run package，并区分 receiverAction share payload 与 timeline payload；`scripts/capture-viral-journey-blocked-evidence.mjs` 生成七条 blocked journeys；`scripts/check-viral-journey-evidence.mjs` 要求 example 中七条 journey 顺序和 timeline 观察点；`scripts/check-devtools-readiness.mjs` 要求 W 组产品/QA 文档存在；旧 P 组 run-package 文档和 Q 组 blocked-capture 文档已更新为“前五条 receiver 基线 + 两条 timeline，总计七条”
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check` 覆盖五个改动脚本；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/prepare-viral-journey-devtools-run.mjs`；临时 ignored good sample 七条 journeys；临时 bad sample 缺 `shareChannel=timeline`；临时 bad risk sample 只有 inability-to-inspect 而无 observed no-shareTimeline；临时 positive risk sample 记录 observed no-shareTimeline；临时 blocked capture 七条 blocked journeys；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：manual evidence 默认输出 `No viral journey manual evidence files found; nothing checked.` 且声明不是 UI passed；good sample 输出 `Checked viral journey manual evidence ... (overallStatus=passed)`；bad sample 被拒绝并报 `journey timeline-share-channel.timelinePayload.query must include shareChannel=timeline`；risk bad sample 被拒绝并报 `journey timeline-risk-gating must record observed shareTimeline/timeline menu absence; inability to inspect belongs in a blocked journey, not passed.`；risk positive sample 通过；blocked capture 输出 `overallStatus: blocked` 且 JSON 包含 7 条 journey；prepare/readiness 输出七条 run package 并仍报告 DevTools 9420 `connect_refused` / smoke `blocked`，这不是 UI passed；JSON、harness、diff、npm check 和最终 init 均通过
+- 更新过的文件或工件：`harness/viral-journey-manual-results.example.json`，`harness/viral-timeline-evidence-product-brief.md`，`harness/viral-timeline-evidence-checklist.md`，`harness/viral-devtools-journey-run-product-brief.md`，`harness/viral-devtools-journey-run-checklist.md`，`harness/viral-blocked-evidence-capture-product-brief.md`，`harness/viral-blocked-evidence-capture-checklist.md`，`scripts/check-viral-journey-manual-evidence.mjs`，`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/capture-viral-journey-blocked-evidence.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未恢复 WeChat DevTools service port，未产生真实系统菜单截图、朋友圈卡片、单页模式首屏、真实 timeline query/payload、风险态菜单缺失截图或真机 iOS/Android 证据；W 只是让这些证据不可跳过，不能证明朋友圈渠道已经跑通或提升真实转化
+- 下一步最佳动作：提交 W 组并发送给用户评测 agent 与 V=99 比较；若继续迭代，优先恢复 DevTools service port 或生成符合七条 schema 的真实 blocked/passed local evidence，而不是继续扩展文案

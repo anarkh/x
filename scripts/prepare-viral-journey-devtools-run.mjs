@@ -13,6 +13,12 @@ const sharePayloadJourneyIds = new Set([
   'receiver-comment-conversion',
   'second-hop-receiver-source'
 ]);
+const timelinePayloadJourneyIds = new Set([
+  'timeline-share-channel'
+]);
+const timelineRiskJourneyIds = new Set([
+  'timeline-risk-gating'
+]);
 
 function usage() {
   return [
@@ -134,8 +140,8 @@ function readExampleJourneys() {
     throw new Error('Example viral journey manual results must contain a journeys array.');
   }
 
-  if (example.journeys.length !== 5) {
-    throw new Error(`Expected exactly five viral journeys in the example JSON, found ${example.journeys.length}.`);
+  if (example.journeys.length !== 7) {
+    throw new Error(`Expected exactly seven viral journeys in the example JSON, found ${example.journeys.length}.`);
   }
 
   return example.journeys;
@@ -162,6 +168,14 @@ function printJourneyPackage(journeys) {
       // The manual checker accepts either a concrete sharePayload.path or an explicit inability note.
       console.log('   share payload check: confirm/comment evidence must include from=share&source=receiver and receiverAction=confirm/comment; source evidence must include from=share&source=receiver, or record a concrete reason why the payload could not be inspected.');
     }
+
+    if (timelinePayloadJourneyIds.has(journey.id)) {
+      console.log('   timeline payload check: record the real system menu with both friend share and timeline share, plus onShareTimeline title/query/imageUrl or a concrete inability reason; inspectable query must include id, from=share, source=timeline, and shareChannel=timeline. This is distinct from the receiverAction second-hop share path.');
+    }
+
+    if (timelineRiskJourneyIds.has(journey.id)) {
+      console.log('   timeline risk check: passed evidence must record observed no-shareTimeline/no-timeline menu entry for weak stale/report, stale/resolved/expired/hidden, or unknown tasks; if the menu/payload cannot be triggered, record the concrete blocker and keep the journey blocked. Any title/actual copy must stay cautious.');
+    }
   });
 }
 
@@ -183,7 +197,7 @@ function printNextSteps({ options, portStatus, smokeStatus }) {
 
   if (serviceReady) {
     console.log(`1. Open this worktree in the WeChat DevTools UI: ${options.projectPath}`);
-    console.log('2. Run the five viral journeys above in DevTools or on a real device and record actual UI observations plus payload/log/screenshot/recording evidence.');
+    console.log('2. Run the seven viral journeys above in DevTools or on a real device and record actual UI observations plus payload/log/screenshot/recording evidence.');
   } else if (portStatus === 'blocked' || smokeStatus === 'blocked') {
     console.log('1. First recover the WeChat DevTools service port using the diagnosis from the port forensics and smoke access reports above.');
     console.log(`2. Re-run this preparation command after port ${options.port} becomes ready, then open the worktree in the WeChat DevTools UI.`);
