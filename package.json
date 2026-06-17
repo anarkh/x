@@ -16,10 +16,12 @@
     "check:harness": "node harness/check-harness.mjs",
     "check:json": "node scripts/check-json.mjs",
     "check:readiness": "node --no-warnings scripts/check-devtools-readiness.mjs",
+    "check:viral-journey-evidence-packet": "node scripts/check-viral-journey-evidence-packet.mjs",
     "inspect:devtools-port": "node scripts/inspect-devtools-port-state.mjs",
     "inspect:devtools-recovery": "node scripts/recover-devtools-service-port.mjs --dry-run",
     "prepare:devtools-recovery-report": "node scripts/prepare-devtools-recovery-report.mjs",
     "prepare:devtools-ui-confirmation": "node scripts/prepare-devtools-ui-confirmation-run.mjs",
+    "prepare:viral-journey-evidence-packet": "node scripts/prepare-viral-journey-evidence-packet.mjs",
     "prepare:viral-journey-run": "node --no-warnings scripts/prepare-viral-journey-devtools-run.mjs",
     "recover:devtools-app-quit": "node scripts/recover-devtools-service-port.mjs --app-quit-reopen"
   }

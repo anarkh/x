@@ -23,6 +23,8 @@ const requiredFiles = [
   'scripts/check-devtools-port-forensics.mjs',
   'scripts/check-devtools-ui-confirmation.mjs',
   'scripts/prepare-devtools-ui-confirmation-run.mjs',
+  'scripts/check-viral-journey-evidence-packet.mjs',
+  'scripts/prepare-viral-journey-evidence-packet.mjs',
   'scripts/capture-viral-journey-blocked-evidence.mjs',
   'scripts/check-share-receiver.mjs',
   'scripts/check-share-receiver-action.mjs',
@@ -66,7 +68,9 @@ const requiredFiles = [
   'harness/devtools-service-port-config-forensics-product-brief.md',
   'harness/devtools-service-port-config-forensics-checklist.md',
   'harness/devtools-service-port-ui-confirmation-product-brief.md',
-  'harness/devtools-service-port-ui-confirmation-checklist.md'
+  'harness/devtools-service-port-ui-confirmation-checklist.md',
+  'harness/viral-manual-journey-evidence-packet-product-brief.md',
+  'harness/viral-manual-journey-evidence-packet-checklist.md'
 ];
 
 const readinessDocs = [
@@ -103,7 +107,9 @@ const readinessDocs = [
   'harness/devtools-service-port-config-forensics-product-brief.md',
   'harness/devtools-service-port-config-forensics-checklist.md',
   'harness/devtools-service-port-ui-confirmation-product-brief.md',
-  'harness/devtools-service-port-ui-confirmation-checklist.md'
+  'harness/devtools-service-port-ui-confirmation-checklist.md',
+  'harness/viral-manual-journey-evidence-packet-product-brief.md',
+  'harness/viral-manual-journey-evidence-packet-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -199,6 +205,8 @@ console.log('Running DevTools port forensics static guard. This is read-only/sta
 runCheck('scripts/check-devtools-port-forensics.mjs', 'DevTools port forensics static guard');
 console.log('Running DevTools UI confirmation static guard. This does not run the UI-state-dependent prepare script and does not automate DevTools UI.');
 runCheck('scripts/check-devtools-ui-confirmation.mjs', 'DevTools UI confirmation static guard');
+console.log('Running viral manual journey evidence packet static guard. This does not run scripts/prepare-viral-journey-evidence-packet.mjs because that prepare script needs UI-state parameters.');
+runCheck('scripts/check-viral-journey-evidence-packet.mjs', 'viral manual journey evidence packet static guard');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');
