@@ -16,6 +16,7 @@
     "check:harness": "node harness/check-harness.mjs",
     "check:json": "node scripts/check-json.mjs",
     "check:readiness": "node --no-warnings scripts/check-devtools-readiness.mjs",
+    "check:viral-manual-artifact-manifest": "node scripts/check-viral-manual-artifact-manifest-preflight.mjs",
     "check:viral-manual-summary-integrity": "node scripts/check-viral-manual-summary-integrity-preflight.mjs",
     "check:viral-journey-evidence-packet": "node scripts/check-viral-journey-evidence-packet.mjs",
     "inspect:devtools-port": "node scripts/inspect-devtools-port-state.mjs",

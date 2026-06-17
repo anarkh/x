@@ -16,6 +16,8 @@ const requiredFiles = [
   'scripts/check-viral-journey-manual-evidence.mjs',
   'scripts/check-viral-manual-summary-integrity.mjs',
   'scripts/check-viral-manual-summary-integrity-preflight.mjs',
+  'scripts/check-viral-manual-artifact-manifest.mjs',
+  'scripts/check-viral-manual-artifact-manifest-preflight.mjs',
   'scripts/prepare-viral-journey-manual-evidence.mjs',
   'scripts/prepare-viral-journey-devtools-run.mjs',
   'scripts/inspect-devtools-port-state.mjs',
@@ -74,7 +76,9 @@ const requiredFiles = [
   'harness/viral-manual-journey-evidence-packet-product-brief.md',
   'harness/viral-manual-journey-evidence-packet-checklist.md',
   'harness/viral-manual-summary-integrity-product-brief.md',
-  'harness/viral-manual-summary-integrity-checklist.md'
+  'harness/viral-manual-summary-integrity-checklist.md',
+  'harness/viral-manual-artifact-manifest-product-brief.md',
+  'harness/viral-manual-artifact-manifest-checklist.md'
 ];
 
 const readinessDocs = [
@@ -115,7 +119,9 @@ const readinessDocs = [
   'harness/viral-manual-journey-evidence-packet-product-brief.md',
   'harness/viral-manual-journey-evidence-packet-checklist.md',
   'harness/viral-manual-summary-integrity-product-brief.md',
-  'harness/viral-manual-summary-integrity-checklist.md'
+  'harness/viral-manual-summary-integrity-checklist.md',
+  'harness/viral-manual-artifact-manifest-product-brief.md',
+  'harness/viral-manual-artifact-manifest-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -216,6 +222,9 @@ runCheck('scripts/check-viral-journey-evidence-packet.mjs', 'viral manual journe
 console.log('Running viral manual summary integrity preflight. This only checks ignored local viral journey JSON/summary pairs when they exist and does not prove UI passed.');
 runCheck('scripts/check-viral-manual-summary-integrity-preflight.mjs', 'viral manual summary integrity preflight');
 console.log('Viral manual summary integrity preflight completed; DevTools UI, real-device, and viral journey passed status still require real manual evidence.');
+console.log('Running viral manual artifact manifest preflight. This only checks ignored local viral journey artifact manifests when they exist and does not prove UI passed.');
+runCheck('scripts/check-viral-manual-artifact-manifest-preflight.mjs', 'viral manual artifact manifest preflight');
+console.log('Viral manual artifact manifest preflight completed; DevTools UI, real-device, and viral journey passed status still require real manual evidence.');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');
