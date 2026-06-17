@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：U 组接收者二跳转发场景建议
-- 当前 blocker：U 组自动检查已覆盖低风险 `from=share` 接收者完成 confirm/comment 后的 `relayChannels`、`shareReason`、三行 `targetRows`、`receiverAction=confirm/comment` 二跳 path 和风险/关闭/弱 stale/report 互斥；但真实 WeChat DevTools UI smoke/真机验证仍未执行，系统分享面板、真实二跳打开、窄屏换行、云端评论路径和用户是否会按场景建议转发仍待手动或数据验证
+- 当前正在实现的用户请求：V 组详情页分享到朋友圈系统渠道
+- 当前 blocker：V 组自动检查已覆盖低风险 active 任务才开启 `shareTimeline`、`onShareTimeline` 只返回 `query` 不返回 `path`、timeline query 使用 `from=share&source=timeline&shareChannel=timeline`、弱 stale/report/关闭/隐藏态不暴露朋友圈菜单且文案谨慎；但真实 WeChat DevTools service port 9420 仍未监听，系统菜单截图、朋友圈分享卡片、单页模式打开、真机 iOS/Android 和真实用户是否愿意从朋友圈继续行动仍未验证
 
 ## 会话记录
 
@@ -963,3 +963,19 @@
 - 更新过的文件或工件：`utils/receiver-conversion.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-receiver-conversion.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-relay-channel-picker-product-brief.md`，`harness/viral-relay-channel-picker-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 relay channel chips 的真实布局、系统分享面板关系、真实 payload、云端评论成功后提示、窄屏换行，以及用户是否会按“楼栋群/门卫/同路线”等场景建议手动转发；当前 DevTools service port 9420 仍是环境 blocker
 - 下一步最佳动作：提交 U 组，并发送给用户评测 agent 与 R/S/T=99 的结果比较，重点看“发给谁/哪里”的场景建议是否比 T 的“怎么说”更接近真实自发裂变
+
+### Session 072ViralTimelineShare
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-timeline-share`
+- 本轮目标：V 组产品/设计/开发在 U 的接收者二跳建议之外，补一个真正的微信系统传播渠道：详情页分享到朋友圈，同时遵守官方单页模式、`onShareTimeline` query 限制和不诱导分享边界
+- 产品假设：U 已经把“转给谁/怎么说”做到较高水平，但仍没有新增真实外部传播面；朋友圈分享降低具体选人的摩擦，可能让附近失物、地点动态和求助被弱关系看到，再回到 `from=share` 接收链路完成确认、评论或二跳
+- 已完成：产品 agent 新增 `harness/viral-timeline-share-product-brief.md`，明确朋友圈是系统渠道补齐而非替代 receiver relay；设计/QA agent 新增 `harness/viral-timeline-share-design-checklist.md`，列出官方 API、单页模式、风险互斥、文案和手测证据要求；开发 agent 新增 `utils/timeline-share.js` 和 `scripts/check-timeline-share.mjs`
+- 页面变化：`pages/detail/detail.js` 新增 `onShareTimeline()` 并复用 timeline helper；`configureShareMenu(post)` 默认只展示 `shareAppMessage`，只有已加载任务为 `active` 且 `staleCount/reportCount` 都为 0 时才把 `shareTimeline` 和 `shareAppMessage` 一起放进 `wx.showShareMenu`
+- 分享 payload：低风险 active 任务的 timeline query 为 `id=<postId>&from=share&source=timeline&shareChannel=timeline`，继续走现有 `from=share` 接收者说明；`onShareTimeline` 不返回自定义 `path`；风险、关闭、隐藏或未知任务即使 helper 被直接调用也只返回谨慎标题，且不带任务图片
+- 检查变化：`scripts/check-timeline-share.mjs` 覆盖 no-path payload、timeline query、低风险菜单门禁、onLoad 不提前启用 timeline、弱 stale/report 排除、风险态无 imageUrl、禁用诱导词；`scripts/check-devtools-readiness.mjs` 和 `scripts/check-viral-candidate.mjs` 已接入新检查和 V 组产品/设计文档
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/timeline-share.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-timeline-share.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-timeline-share.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`git diff --check`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：`node --no-warnings scripts/check-timeline-share.mjs` 输出 `Timeline share checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral journey evidence checks passed.`、`Timeline share checks passed.` 和 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `Timeline share checks passed.` 与最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，同时仍报告 DevTools port 9420 `connect_refused`、smoke `blocked`，这不是 UI passed；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；manual evidence gate 输出没有本地结果文件且不是 UI passed evidence；`git diff --check` 通过无输出；`npm run check` 完整跑通；最终 `bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/timeline-share.js`，`pages/detail/detail.js`，`scripts/check-timeline-share.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-timeline-share-product-brief.md`，`harness/viral-timeline-share-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证右上角系统菜单是否真实出现“分享到朋友圈”、朋友圈卡片标题/图片、从朋友圈打开的单页模式首屏、tabBar 缺失下的信息可读性、基础库/微信版本差异、iOS/Android 差异、云端未登录读取路径和真实用户是否会从朋友圈继续确认/评论
+- 下一步最佳动作：提交 V 组，并发送给用户评测 agent 与 U=99 的结果比较，重点看“真实新增系统渠道”是否比 U 的“转给谁/哪里”建议更接近自发裂变；若继续迭代，优先把朋友圈手测 evidence schema 加入现有五条 viral journey manual-run 包

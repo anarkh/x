@@ -13,6 +13,10 @@ process.on('warning', (warning) => {
 const { buildDetailShareMessage } = await import('../utils/share-message.js');
 const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 const { buildShareReceiverActionStrip } = await import('../utils/share-receiver-actions.js');
+const {
+  buildDetailTimelineShare,
+  shouldShowDetailTimelineShare
+} = await import('../utils/timeline-share.js');
 const { buildCommentRelayPrompt } = await import('../utils/comment-relay.js');
 const { buildActionRelayPrompt } = await import('../utils/action-relay.js');
 const { buildReceiverConversionPrompt } = await import('../utils/receiver-conversion.js');
@@ -62,6 +66,14 @@ const activePost = {
 const shareMessage = buildDetailShareMessage(activePost, 0);
 assert.equal(shareMessage.path, '/pages/detail/detail?id=post_candidate&from=share');
 assert.match(shareMessage.title, /失物招领|东门蓝色门禁卡/);
+
+const timelineShare = buildDetailTimelineShare(activePost);
+assert.equal(timelineShare.query, 'id=post_candidate&from=share&source=timeline&shareChannel=timeline');
+assert.ok(!Object.prototype.hasOwnProperty.call(timelineShare, 'path'));
+assert.match(timelineShare.title, /附近线索|东门蓝色门禁卡/);
+assert.equal(shouldShowDetailTimelineShare(activePost), true);
+assert.equal(shouldShowDetailTimelineShare({ ...activePost, staleCount: 1 }), false);
+assert.equal(shouldShowDetailTimelineShare({ ...activePost, reportCount: 1 }), false);
 
 const shareReceiverGuide = buildShareReceiverGuide(activePost, 2, { entryFrom: 'share' });
 assert.ok(shareReceiverGuide);
@@ -178,6 +190,17 @@ assert.equal(
   journeyEvidence.status,
   0,
   'viral candidate check should include the viral journey evidence model'
+);
+
+const timelineShareCheck = spawnSync(process.execPath, ['--no-warnings', 'scripts/check-timeline-share.mjs'], {
+  cwd: rootDir,
+  encoding: 'utf8',
+  stdio: 'inherit'
+});
+assert.equal(
+  timelineShareCheck.status,
+  0,
+  'viral candidate check should include timeline share payload checks'
 );
 
 console.log('Viral candidate checks passed.');

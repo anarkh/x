@@ -19,6 +19,10 @@ import {
 } from '../../utils/store.js';
 import { buildDetailShareMessage } from '../../utils/share-message.js';
 import {
+  buildDetailTimelineShare,
+  shouldShowDetailTimelineShare
+} from '../../utils/timeline-share.js';
+import {
   categoryLabel,
   formatCreatedAt,
   formatTimeLeft,
@@ -112,12 +116,7 @@ Page({
       shareReceiverActionStrip: null,
       receiverConversionPrompt: null
     });
-    if (wx.showShareMenu) {
-      wx.showShareMenu({
-        withShareTicket: true,
-        menus: ['shareAppMessage']
-      });
-    }
+    this.configureShareMenu(null);
   },
 
   onShow() {
@@ -166,6 +165,7 @@ Page({
 
   renderPost(raw) {
     if (!raw) {
+      this.configureShareMenu(null);
       this.setData({
         post: null,
         trustInsight: null,
@@ -180,6 +180,7 @@ Page({
       return;
     }
     const post = decorateDetailPost(raw);
+    this.configureShareMenu(post);
     this.setData({
       post,
       trustInsight: formatTrustInsight(post, this.data.comments.length),
@@ -199,6 +200,23 @@ Page({
     return buildDetailShareMessage(post, commentCount, {
       surface: this.data.showPublishSuccess ? 'publish' : 'detail'
     });
+  },
+
+  configureShareMenu(post) {
+    if (!wx.showShareMenu) {
+      return;
+    }
+    const menus = shouldShowDetailTimelineShare(post)
+      ? ['shareAppMessage', 'shareTimeline']
+      : ['shareAppMessage'];
+    try {
+      wx.showShareMenu({
+        withShareTicket: true,
+        menus
+      });
+    } catch (error) {
+      console.warn('[detail] failed to show share menu', error);
+    }
   },
 
   buildShareReceiverGuide(post, commentCount = 0) {
@@ -464,6 +482,10 @@ Page({
         ? buildPublishSpreadSharePath(post.id, this.data.entryQuery)
         : shareMessage.path
     };
+  },
+
+  onShareTimeline() {
+    return buildDetailTimelineShare(this.data.post);
   },
 
   goHome() {

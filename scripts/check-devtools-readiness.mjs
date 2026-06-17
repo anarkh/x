@@ -22,6 +22,7 @@ const requiredFiles = [
   'scripts/capture-viral-journey-blocked-evidence.mjs',
   'scripts/check-share-receiver.mjs',
   'scripts/check-share-receiver-action.mjs',
+  'scripts/check-timeline-share.mjs',
   'harness/check-trust-insight.mjs',
   'scripts/check-candidate-flow.mjs',
   'scripts/check-admin-auth-errors.mjs',
@@ -44,7 +45,9 @@ const requiredFiles = [
   'harness/viral-share-reason-product-brief.md',
   'harness/viral-share-reason-design-checklist.md',
   'harness/viral-relay-channel-picker-product-brief.md',
-  'harness/viral-relay-channel-picker-design-checklist.md'
+  'harness/viral-relay-channel-picker-design-checklist.md',
+  'harness/viral-timeline-share-product-brief.md',
+  'harness/viral-timeline-share-design-checklist.md'
 ];
 
 const readinessDocs = [
@@ -65,7 +68,9 @@ const readinessDocs = [
   'harness/viral-share-reason-product-brief.md',
   'harness/viral-share-reason-design-checklist.md',
   'harness/viral-relay-channel-picker-product-brief.md',
-  'harness/viral-relay-channel-picker-design-checklist.md'
+  'harness/viral-relay-channel-picker-design-checklist.md',
+  'harness/viral-timeline-share-product-brief.md',
+  'harness/viral-timeline-share-design-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -140,6 +145,7 @@ console.log('Viral journey DevTools manual-run preparation completed; port/smoke
 console.log('Viral blocked evidence capture command exists, but readiness does not run it because capture writes ignored local evidence files.');
 runCheck('scripts/check-share-receiver.mjs', 'share receiver guidance check');
 runCheck('scripts/check-share-receiver-action.mjs', 'share receiver action strip check');
+runCheck('scripts/check-timeline-share.mjs', 'timeline share payload check');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');
