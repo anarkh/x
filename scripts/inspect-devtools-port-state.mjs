@@ -1,5 +1,16 @@
 import { spawnSync } from 'node:child_process';
-import { accessSync, constants, existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import {
+  accessSync,
+  closeSync,
+  constants,
+  existsSync,
+  openSync,
+  readFileSync,
+  readSync,
+  realpathSync,
+  readdirSync,
+  statSync
+} from 'node:fs';
 import { createConnection } from 'node:net';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
@@ -8,6 +19,9 @@ import { fileURLToPath } from 'node:url';
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const defaultPort = 9420;
 const connectTimeoutMs = 800;
+const maxLogFilesToScan = 80;
+const recentLogWindowSize = 12;
+const maxLogTailBytes = 512 * 1024;
 
 function usage() {
   return [
@@ -332,6 +346,352 @@ function inspectAppBundle(cliInspection) {
   };
 }
 
+function getDevToolsUserDataRootCandidates() {
+  return [
+    join(homedir(), 'Library/Application Support/微信开发者工具'),
+    join(homedir(), 'Library/Application Support/WeChat Developer Tools'),
+    join(homedir(), 'Library/Application Support/wechatwebdevtools'),
+    join(homedir(), 'Library/Application Support/wechatdevtools')
+  ];
+}
+
+function safeStat(filePath) {
+  try {
+    return statSync(filePath);
+  } catch {
+    return null;
+  }
+}
+
+function inspectUserDataRoots() {
+  const roots = getDevToolsUserDataRootCandidates();
+  let presentRootCount = 0;
+  let readableRootCount = 0;
+  let profileDirCount = 0;
+  let logDirCount = 0;
+
+  for (const rootPath of roots) {
+    const rootStat = safeStat(rootPath);
+
+    if (!rootStat?.isDirectory()) {
+      continue;
+    }
+
+    presentRootCount += 1;
+
+    try {
+      const entries = readdirSync(rootPath, { withFileTypes: true });
+      readableRootCount += 1;
+      profileDirCount += entries.filter((entry) => entry.isDirectory()).length;
+
+      for (const entry of entries) {
+        if (!entry.isDirectory()) {
+          continue;
+        }
+
+        if (existsSync(join(rootPath, entry.name, 'WeappLog'))) {
+          logDirCount += 1;
+        }
+      }
+    } catch {
+      // User-data roots can contain private state. Only report readable/unreadable counts.
+    }
+  }
+
+  return {
+    ok: presentRootCount > 0,
+    checkedRootCount: roots.length,
+    presentRootCount,
+    readableRootCount,
+    profileDirCount,
+    logDirCount,
+    detail: presentRootCount > 0
+      ? `${presentRootCount} root candidate(s), ${logDirCount} log dir candidate(s)`
+      : 'no user-data root candidates found'
+  };
+}
+
+function collectLogFilesFromDir(dirPath, depth = 0, maxDepth = 3) {
+  if (depth > maxDepth) {
+    return [];
+  }
+
+  let entries = [];
+
+  try {
+    entries = readdirSync(dirPath, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  const files = [];
+
+  for (const entry of entries) {
+    const entryPath = join(dirPath, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...collectLogFilesFromDir(entryPath, depth + 1, maxDepth));
+      continue;
+    }
+
+    if (!entry.isFile() || !/\.log$/i.test(entry.name)) {
+      continue;
+    }
+
+    const fileStat = safeStat(entryPath);
+
+    if (!fileStat) {
+      continue;
+    }
+
+    files.push({
+      path: entryPath,
+      name: entry.name,
+      mtimeMs: fileStat.mtimeMs,
+      size: fileStat.size
+    });
+  }
+
+  return files;
+}
+
+function getDevToolsLogCandidates() {
+  const logDirs = [];
+
+  for (const rootPath of getDevToolsUserDataRootCandidates()) {
+    const rootStat = safeStat(rootPath);
+
+    if (!rootStat?.isDirectory()) {
+      continue;
+    }
+
+    let profileEntries = [];
+
+    try {
+      profileEntries = readdirSync(rootPath, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of profileEntries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      const logDir = join(rootPath, entry.name, 'WeappLog');
+
+      if (safeStat(logDir)?.isDirectory()) {
+        logDirs.push(logDir);
+      }
+    }
+  }
+
+  return logDirs
+    .flatMap((logDir) => collectLogFilesFromDir(logDir))
+    .sort((left, right) => right.mtimeMs - left.mtimeMs);
+}
+
+function readTailText(filePath, maxBytes = maxLogTailBytes) {
+  const fileStat = safeStat(filePath);
+
+  if (!fileStat?.isFile()) {
+    return '';
+  }
+
+  if (fileStat.size <= maxBytes) {
+    return readFileSync(filePath, 'utf8');
+  }
+
+  const fd = openSync(filePath, 'r');
+
+  try {
+    const buffer = Buffer.alloc(maxBytes);
+    const start = Math.max(0, fileStat.size - maxBytes);
+    const bytesRead = readSync(fd, buffer, 0, maxBytes, start);
+
+    return buffer.subarray(0, bytesRead).toString('utf8');
+  } finally {
+    closeSync(fd);
+  }
+}
+
+function countMatches(text, pattern) {
+  return (text.match(pattern) || []).length;
+}
+
+function hasTargetPortMention(text, port) {
+  const portPattern = new RegExp(`(?:^|\\D)${escapeRegExp(String(port))}(?:\\D|$)`);
+
+  return portPattern.test(text);
+}
+
+function summarizeLogText(text, port) {
+  const targetPattern = escapeRegExp(String(port));
+  const ideHttpPattern = new RegExp(`(?:--)?ide-http-port(?:=|\\s+)${targetPattern}\\b`, 'gi');
+  const startCliPattern = new RegExp(`start cli server[^\\n\\r]{0,120}local port\\s+${targetPattern}\\b`, 'gi');
+  const cliStartedPattern = new RegExp(`cli server started at\\s+127\\.0\\.0\\.1:${targetPattern}\\b`, 'gi');
+  const hasIdeHttpTarget = ideHttpPattern.test(text) || (
+    /(?:--)?ide-http-port/i.test(text) && hasTargetPortMention(text, port)
+  );
+
+  let launchTargetWithEnableCount = 0;
+  let launchTargetWithoutEnableCount = 0;
+
+  for (const line of text.split(/\r?\n/)) {
+    if (!/--ide-http-port/i.test(line) || !hasTargetPortMention(line, port)) {
+      continue;
+    }
+
+    if (/--enable-service-port/i.test(line)) {
+      launchTargetWithEnableCount += 1;
+    } else {
+      launchTargetWithoutEnableCount += 1;
+    }
+  }
+
+  return {
+    hasIdeHttpTarget,
+    ideHttpTargetCount: countMatches(text, ideHttpPattern),
+    launchTargetWithEnableCount,
+    launchTargetWithoutEnableCount,
+    enableServicePortCount: countMatches(text, /--enable-service-port/gi),
+    startCliServerTargetCount: countMatches(text, startCliPattern),
+    cliServerStartedTargetCount: countMatches(text, cliStartedPattern),
+    eaddrinuseCount: countMatches(text, /EADDRINUSE/gi),
+    eaccesCount: countMatches(text, /EACCES|permission denied/gi),
+    connectRefusedCount: countMatches(text, /ECONNREFUSED|connection refused/gi),
+    timeoutCount: countMatches(text, /\btimeout\b|timed out/gi),
+    crashOrExitCount: countMatches(text, /\bcrash(?:ed)?\b|\bexit(?:ed)?\b/gi),
+    disabledHintCount: countMatches(text, /IDE_SERVICE_PORT_DISABLED|service port disabled|服务端口.*(?:关闭|禁用)/gi)
+  };
+}
+
+function mergeLogCounters(target, summary) {
+  for (const [key, value] of Object.entries(summary)) {
+    if (typeof value === 'boolean') {
+      target[key] = (target[key] || 0) + (value ? 1 : 0);
+      continue;
+    }
+
+    target[key] = (target[key] || 0) + value;
+  }
+}
+
+function buildLogFileLabel(file, index) {
+  const date = Number.isFinite(file.mtimeMs)
+    ? new Date(file.mtimeMs).toISOString().slice(0, 10)
+    : 'unknown-date';
+  const genericName = /^(?:launch|report)\.log$/i.test(file.name)
+    ? file.name.toLowerCase()
+    : `devtools-log-${index + 1}`;
+
+  return `${genericName}@${date}`;
+}
+
+function inspectRecentDevToolsLogs(port) {
+  const files = getDevToolsLogCandidates();
+  const selectedFiles = files.slice(0, maxLogFilesToScan);
+  const recentFiles = selectedFiles.slice(0, recentLogWindowSize);
+  const allCounters = {};
+  const recentCounters = {};
+  let scannedFileCount = 0;
+  let unreadableFileCount = 0;
+
+  for (const file of selectedFiles) {
+    let text = '';
+
+    try {
+      text = readTailText(file.path);
+    } catch {
+      unreadableFileCount += 1;
+      continue;
+    }
+
+    scannedFileCount += 1;
+
+    const summary = summarizeLogText(text, port);
+    mergeLogCounters(allCounters, summary);
+
+    if (recentFiles.includes(file)) {
+      mergeLogCounters(recentCounters, summary);
+    }
+  }
+
+  return {
+    ok: scannedFileCount > 0,
+    candidateFileCount: files.length,
+    scannedFileCount,
+    unreadableFileCount,
+    recentWindowFileCount: recentFiles.length,
+    latestLogFileLabels: recentFiles.slice(0, 3).map(buildLogFileLabel),
+    recentIdeHttpTargetFileCount: recentCounters.hasIdeHttpTarget || 0,
+    recentLaunchTargetWithEnableCount: recentCounters.launchTargetWithEnableCount || 0,
+    recentLaunchTargetWithoutEnableCount: recentCounters.launchTargetWithoutEnableCount || 0,
+    recentEnableServicePortCount: recentCounters.enableServicePortCount || 0,
+    recentStartCliServerTargetCount: recentCounters.startCliServerTargetCount || 0,
+    recentCliServerStartedTargetCount: recentCounters.cliServerStartedTargetCount || 0,
+    historicalEnableServicePortCount: allCounters.enableServicePortCount || 0,
+    historicalLaunchTargetWithEnableCount: allCounters.launchTargetWithEnableCount || 0,
+    historicalLaunchTargetWithoutEnableCount: allCounters.launchTargetWithoutEnableCount || 0,
+    historicalStartCliServerTargetCount: allCounters.startCliServerTargetCount || 0,
+    historicalCliServerStartedTargetCount: allCounters.cliServerStartedTargetCount || 0,
+    eaddrinuseCount: allCounters.eaddrinuseCount || 0,
+    eaccesCount: allCounters.eaccesCount || 0,
+    connectRefusedCount: allCounters.connectRefusedCount || 0,
+    timeoutCount: allCounters.timeoutCount || 0,
+    crashOrExitCount: allCounters.crashOrExitCount || 0,
+    disabledHintCount: allCounters.disabledHintCount || 0,
+    detail: scannedFileCount > 0
+      ? `${scannedFileCount} sanitized log tail(s) scanned; raw log lines suppressed`
+      : 'no readable DevTools log tails found'
+  };
+}
+
+function inspectBundledCliServicePortGate(bundle) {
+  const sourcePath = bundle.path
+    ? join(bundle.path, 'Contents/Resources/package.nw/js/common/cli/index.js')
+    : '';
+
+  if (!sourcePath || !existsSync(sourcePath)) {
+    return {
+      ok: false,
+      sourceFound: false,
+      hasGlobalEnableCliGate: false,
+      hasEnableServicePortFlag: false,
+      hasDisabledSymbol: false,
+      detail: 'bundled CLI source unavailable'
+    };
+  }
+
+  let source = '';
+
+  try {
+    source = readFileSync(sourcePath, 'utf8');
+  } catch {
+    return {
+      ok: false,
+      sourceFound: true,
+      hasGlobalEnableCliGate: false,
+      hasEnableServicePortFlag: false,
+      hasDisabledSymbol: false,
+      detail: 'bundled CLI source unreadable'
+    };
+  }
+
+  const hasGlobalEnableCliGate = source.includes('global.enableCLI');
+  const hasEnableServicePortFlag = source.includes('--enable-service-port');
+  const hasDisabledSymbol = source.includes('IDE_SERVICE_PORT_DISABLED');
+
+  return {
+    ok: hasGlobalEnableCliGate && hasEnableServicePortFlag,
+    sourceFound: true,
+    hasGlobalEnableCliGate,
+    hasEnableServicePortFlag,
+    hasDisabledSymbol,
+    detail: `global.enableCLI gate: ${yesNo(hasGlobalEnableCliGate)}, enable-service-port flag: ${yesNo(hasEnableServicePortFlag)}, disabled symbol: ${yesNo(hasDisabledSymbol)}`
+  };
+}
+
 function readProcessList() {
   const attempts = [
     ['ps', ['-axo', 'pid=,command=']],
@@ -489,7 +849,7 @@ function yesNo(value) {
   return value ? 'yes' : 'no';
 }
 
-function buildDiagnosis({ project, cli, bundle, lsof, processes, connect }) {
+function buildDiagnosis({ project, cli, bundle, userData, logs, cliGate, lsof, processes, connect }) {
   const diagnosis = [];
 
   if (!project.ok) {
@@ -502,6 +862,10 @@ function buildDiagnosis({ project, cli, bundle, lsof, processes, connect }) {
 
   if (!bundle.ok) {
     diagnosis.push('devtools_bundle_unknown');
+  }
+
+  if (!userData.ok) {
+    diagnosis.push('devtools_user_data_unknown');
   }
 
   if (connect.ok) {
@@ -538,6 +902,34 @@ function buildDiagnosis({ project, cli, bundle, lsof, processes, connect }) {
     diagnosis.push('connect_timeout');
   }
 
+  if (
+    !connect.ok
+    && logs.ok
+    && logs.recentLaunchTargetWithoutEnableCount > 0
+    && logs.recentLaunchTargetWithEnableCount === 0
+    && logs.recentCliServerStartedTargetCount === 0
+  ) {
+    diagnosis.push('service_port_flag_missing');
+  }
+
+  if (
+    !connect.ok
+    && logs.ok
+    && logs.recentLaunchTargetWithoutEnableCount > 0
+    && logs.recentLaunchTargetWithEnableCount > 0
+    && logs.recentCliServerStartedTargetCount === 0
+  ) {
+    diagnosis.push('service_port_flag_mixed_recent_evidence');
+  }
+
+  if (logs.historicalCliServerStartedTargetCount > 0 || logs.historicalStartCliServerTargetCount > 0) {
+    diagnosis.push('historical_service_port_success');
+  }
+
+  if (cliGate.ok && !connect.ok) {
+    diagnosis.push('service_port_flag_gate_detected');
+  }
+
   if (diagnosis.length === 0) {
     diagnosis.push('insufficient_evidence');
   }
@@ -567,6 +959,9 @@ function buildReport(context) {
     project,
     cli,
     bundle,
+    userData,
+    logs,
+    cliGate,
     lsof,
     processes,
     connect,
@@ -588,6 +983,22 @@ function buildReport(context) {
     `- project config: ${yesNo(project.ok)} (${project.detail})`,
     `- DevTools CLI: ${yesNo(cli.ok)} (${cli.executableCount} executable / ${cli.existingCount} existing / ${cli.checkedCount} checked; env candidates: ${cli.configuredEnvCount}; not executable: ${cli.notExecutableCount})`,
     `- DevTools app bundle: ${yesNo(bundle.ok)} (${bundle.detail}; bundles found: ${bundle.existingCount}; name: ${bundle.name}; version: ${bundle.version}; build: ${bundle.build})`,
+    `- DevTools user data: ${yesNo(userData.ok)} (${userData.detail}; readable roots: ${userData.readableRootCount}; profile dirs: ${userData.profileDirCount})`,
+    `- DevTools log forensics: ${yesNo(logs.ok)} (${logs.detail}; candidates: ${logs.candidateFileCount}; unreadable: ${logs.unreadableFileCount}; recent window: ${logs.recentWindowFileCount})`,
+    `  recent ide-http-port target log files: ${logs.recentIdeHttpTargetFileCount}`,
+    `  recent launch target lines with --enable-service-port: ${logs.recentLaunchTargetWithEnableCount}`,
+    `  recent launch target lines without --enable-service-port: ${logs.recentLaunchTargetWithoutEnableCount}`,
+    `  recent --enable-service-port mentions: ${logs.recentEnableServicePortCount}`,
+    `  recent cli server target starts: ${logs.recentStartCliServerTargetCount}`,
+    `  recent cli server target ready lines: ${logs.recentCliServerStartedTargetCount}`,
+    `  historical --enable-service-port mentions: ${logs.historicalEnableServicePortCount}`,
+    `  historical launch target lines with --enable-service-port: ${logs.historicalLaunchTargetWithEnableCount}`,
+    `  historical launch target lines without --enable-service-port: ${logs.historicalLaunchTargetWithoutEnableCount}`,
+    `  historical cli server target starts: ${logs.historicalStartCliServerTargetCount}`,
+    `  historical cli server target ready lines: ${logs.historicalCliServerStartedTargetCount}`,
+    `  sanitized log error counters: EADDRINUSE=${logs.eaddrinuseCount}, EACCES=${logs.eaccesCount}, ECONNREFUSED=${logs.connectRefusedCount}, timeout=${logs.timeoutCount}, crash_or_exit=${logs.crashOrExitCount}, disabled_hint=${logs.disabledHintCount}`,
+    `  latest log file labels: ${logs.latestLogFileLabels.length > 0 ? logs.latestLogFileLabels.join(', ') : 'none'}`,
+    `- bundled CLI service-port gate: ${yesNo(cliGate.ok)} (${cliGate.detail})`,
     `- lsof listener: ${yesNo(lsof.ok)} (${lsof.detail})`,
     `- socket connect: ${yesNo(connect.ok)} (${connect.detail})`,
     `- process scan: ${processes.ok ? 'yes' : 'no'} (${processes.detail})`,
@@ -601,7 +1012,8 @@ function buildReport(context) {
     '- no DevTools quit/open commands were run',
     '- no processes were killed',
     '- no caches, project config, user config, or local files were modified',
-    '- process command lines were not printed'
+    '- process command lines were not printed',
+    '- raw DevTools log lines were not printed'
   ];
 
   return lines.join('\n');
@@ -618,22 +1030,29 @@ try {
   const project = checkProject(options.projectPath);
   const cli = inspectCliCandidates();
   const bundle = inspectAppBundle(cli);
+  const userData = inspectUserDataRoots();
+  const logs = inspectRecentDevToolsLogs(options.port);
+  const cliGate = inspectBundledCliServicePortGate(bundle);
   const lsof = inspectLsof(options.port);
   const processes = inspectProcesses(options.port);
   const connect = await inspectConnect(options.port);
-  const diagnosis = buildDiagnosis({ project, cli, bundle, lsof, processes, connect });
+  const diagnosis = buildDiagnosis({ project, cli, bundle, userData, logs, cliGate, lsof, processes, connect });
   const status = classifyStatus({ lsof, processes, connect });
   const extraLabels = [
     { path: options.projectPath, label: '<repo>' },
     { path: safeRealPath(options.projectPath), label: '<repo>' },
     { path: cli.selected?.path, label: '<devtools-cli>' },
-    { path: bundle.path, label: '<devtools-app>' }
+    { path: bundle.path, label: '<devtools-app>' },
+    ...getDevToolsUserDataRootCandidates().map((path) => ({ path, label: '<devtools-user-data>' }))
   ];
   const report = buildReport({
     options,
     project,
     cli,
     bundle,
+    userData,
+    logs,
+    cliGate,
     lsof,
     processes,
     connect,

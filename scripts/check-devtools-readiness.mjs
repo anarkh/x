@@ -20,6 +20,7 @@ const requiredFiles = [
   'scripts/check-devtools-smoke-access.mjs',
   'scripts/recover-devtools-service-port.mjs',
   'scripts/check-devtools-recovery.mjs',
+  'scripts/check-devtools-port-forensics.mjs',
   'scripts/capture-viral-journey-blocked-evidence.mjs',
   'scripts/check-share-receiver.mjs',
   'scripts/check-share-receiver-action.mjs',
@@ -57,7 +58,9 @@ const requiredFiles = [
   'harness/viral-attribution-events-product-brief.md',
   'harness/viral-attribution-events-checklist.md',
   'harness/viral-real-evidence-recovery-product-brief.md',
-  'harness/viral-real-evidence-recovery-checklist.md'
+  'harness/viral-real-evidence-recovery-checklist.md',
+  'harness/devtools-port-deep-forensics-product-brief.md',
+  'harness/devtools-port-deep-forensics-checklist.md'
 ];
 
 const readinessDocs = [
@@ -88,7 +91,9 @@ const readinessDocs = [
   'harness/viral-attribution-events-product-brief.md',
   'harness/viral-attribution-events-checklist.md',
   'harness/viral-real-evidence-recovery-product-brief.md',
-  'harness/viral-real-evidence-recovery-checklist.md'
+  'harness/viral-real-evidence-recovery-checklist.md',
+  'harness/devtools-port-deep-forensics-product-brief.md',
+  'harness/devtools-port-deep-forensics-checklist.md'
 ];
 
 function readProjectFile(relativePath) {
@@ -167,6 +172,8 @@ runCheck('scripts/check-timeline-share.mjs', 'timeline share payload check');
 runCheck('scripts/check-viral-attribution.mjs', 'viral attribution event check');
 console.log('Running DevTools recovery static guard. This does not quit or reopen DevTools.');
 runCheck('scripts/check-devtools-recovery.mjs', 'DevTools recovery static guard');
+console.log('Running DevTools port forensics static guard. This is read-only/static and does not quit or open DevTools.');
+runCheck('scripts/check-devtools-port-forensics.mjs', 'DevTools port forensics static guard');
 runCheck('harness/check-trust-insight.mjs', 'trust insight model check');
 runCheck('scripts/check-candidate-flow.mjs', 'candidate flow model check');
 runCheck('scripts/check-admin-auth-errors.mjs', 'admin auth error formatting check');

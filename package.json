@@ -10,6 +10,7 @@
     "check:devtools-recovery-report": "node scripts/check-devtools-recovery-report.mjs",
     "check:devtools-recovery-report-preflight": "node scripts/check-devtools-recovery-report-preflight.mjs",
     "check:devtools-recovery": "node scripts/check-devtools-recovery.mjs",
+    "check:devtools-port-forensics": "node scripts/check-devtools-port-forensics.mjs",
     "check:devtools-smoke": "node scripts/check-devtools-smoke-access.mjs --strict",
     "check:harness": "node harness/check-harness.mjs",
     "check:json": "node scripts/check-json.mjs",
