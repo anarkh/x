@@ -198,6 +198,69 @@ function assertNoEncouragingReceiverSurface(overrides, message) {
 }
 
 {
+  const timelineReceiverGuide = buildShareReceiverGuide(post(), 2, {
+    entryFrom: 'share',
+    source: 'timeline'
+  });
+  assert.ok(timelineReceiverGuide, 'source=timeline active low-risk entry should show receiver guide');
+  assert.equal(timelineReceiverGuide.kicker, '朋友圈看到');
+  assert.equal(timelineReceiverGuide.title, '附近任务，先核对一下');
+  assert.match(timelineReceiverGuide.summary, /朋友圈|附近任务/);
+  assert.match(timelineReceiverGuide.summary, /状态|评论/);
+  assert.match(timelineReceiverGuide.summary, /确认|线索/);
+  assert.match(timelineReceiverGuide.rows[0].value, /朋友圈|现场|线索/);
+  assert.match(timelineReceiverGuide.rows[1].value, /状态|确认信号|最新评论|确认|评论/);
+  assert.match(timelineReceiverGuide.rows[2].value, /不要盲目确认|更可能路过的人/);
+  assert.match(timelineReceiverGuide.note, /朋友圈|状态|评论|线索/);
+  assert.doesNotMatch(
+    [
+      timelineReceiverGuide.kicker,
+      timelineReceiverGuide.title,
+      timelineReceiverGuide.summary,
+      ...timelineReceiverGuide.rows.map((row) => row.value),
+      timelineReceiverGuide.note
+    ].join('\n'),
+    /已验证|属实|放心转发|帮忙扩散|必须转发|转发有奖|联系人|通讯录|群成员|好友列表/,
+    'source=timeline receiver guide should avoid proof, pressure, or contact-reading copy'
+  );
+
+  const timelineActionStrip = buildShareReceiverActionStrip(post(), {
+    entryFrom: 'share'
+  });
+  assert.ok(timelineActionStrip, 'source=timeline entry should still reuse the normal receiver first-action strip');
+  assert.equal(timelineActionStrip.confirmText, '我在附近，确认一下');
+  assert.equal(timelineActionStrip.commentText, '补一条线索');
+
+  const weakReportTimelineGuide = buildShareReceiverGuide(post({ reportCount: 1 }), 1, {
+    entryFrom: 'share',
+    source: 'timeline'
+  });
+  assert.ok(weakReportTimelineGuide, 'source=timeline weak report entry should still show cautious receiver guide');
+  assert.equal(weakReportTimelineGuide.title, '先核对现场变化');
+  assert.match(weakReportTimelineGuide.summary, /举报|核对/);
+  assert.doesNotMatch(weakReportTimelineGuide.title, /附近任务，先核对一下/);
+  assert.doesNotMatch(weakReportTimelineGuide.rows[2].value, /更可能路过的人/);
+
+  const highRiskTimelineGuide = buildShareReceiverGuide(post({ reportCount: 2 }), 2, {
+    entryFrom: 'share',
+    source: 'timeline'
+  });
+  assert.ok(highRiskTimelineGuide, 'source=timeline high report entry should keep high-risk guide');
+  assert.equal(highRiskTimelineGuide.title, '先谨慎核对');
+  assert.match(highRiskTimelineGuide.summary, /举报/);
+  assert.doesNotMatch(highRiskTimelineGuide.summary, /朋友圈里看到的附近任务|帮忙确认/);
+
+  const staleStatusTimelineGuide = buildShareReceiverGuide(post({ status: 'stale', staleCount: 0 }), 0, {
+    entryFrom: 'share',
+    source: 'timeline'
+  });
+  assert.ok(staleStatusTimelineGuide, 'source=timeline stale status entry should keep stale guide');
+  assert.equal(staleStatusTimelineGuide.title, '先看最新情况');
+  assert.match(staleStatusTimelineGuide.summary, /过时|最新情况/);
+  assert.doesNotMatch(staleStatusTimelineGuide.title, /附近任务，先核对一下/);
+}
+
+{
   const confirmConversion = buildReceiverConversionPrompt(post(), 'confirm', {
     entryFrom: 'share'
   });
@@ -503,6 +566,10 @@ assert.ok(
 assert.ok(
   timelineShareJourney.expected.some((item) => /single-page|单页|first screen|首屏/.test(item)),
   'manual timeline share journey should ask testers to observe single-page first-screen readability'
+);
+assert.ok(
+  timelineShareJourney.expected.some((item) => /source=timeline|朋友圈.*receiver|receiver context|接收/.test(item)),
+  'manual timeline share journey should ask testers to observe source=timeline receiver context'
 );
 assert.ok(
   timelineRiskJourney.expected.some((item) => /shareTimeline|timeline|朋友圈/.test(item)),

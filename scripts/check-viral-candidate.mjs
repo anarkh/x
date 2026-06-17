@@ -80,6 +80,30 @@ assert.ok(shareReceiverGuide);
 assert.match(shareReceiverGuide.summary, /评论|现场/);
 assert.equal(buildShareReceiverGuide(activePost, 0, { entryFrom: 'detail' }), null);
 
+const timelineReceiverGuide = buildShareReceiverGuide(activePost, 2, {
+  entryFrom: 'share',
+  source: 'timeline'
+});
+assert.ok(timelineReceiverGuide);
+assert.equal(timelineReceiverGuide.kicker, '朋友圈看到');
+assert.equal(timelineReceiverGuide.title, '附近任务，先核对一下');
+assert.match(timelineReceiverGuide.summary, /朋友圈|附近任务/);
+assert.match(timelineReceiverGuide.summary, /状态|评论/);
+assert.match(timelineReceiverGuide.summary, /确认|线索/);
+assert.match(timelineReceiverGuide.rows[1].value, /状态|确认信号|最新评论|确认|评论/);
+assert.match(timelineReceiverGuide.rows[2].value, /不要盲目确认|更可能路过的人/);
+assert.match(timelineReceiverGuide.note, /朋友圈|状态|评论|线索/);
+assert.doesNotMatch(
+  [
+    timelineReceiverGuide.kicker,
+    timelineReceiverGuide.title,
+    timelineReceiverGuide.summary,
+    ...timelineReceiverGuide.rows.map((row) => row.value),
+    timelineReceiverGuide.note
+  ].join('\n'),
+  /已验证|属实|放心转发|帮忙扩散|必须转发|转发有奖|联系人|通讯录|群成员|好友列表/
+);
+
 const shareReceiverActionStrip = buildShareReceiverActionStrip(activePost, { entryFrom: 'share' });
 assert.ok(shareReceiverActionStrip);
 assert.equal(shareReceiverActionStrip.confirmText, '我在附近，确认一下');
@@ -123,6 +147,23 @@ const riskyCommentSourceGuide = buildShareReceiverGuide({ ...activePost, reportC
 assert.ok(riskyCommentSourceGuide);
 assert.equal(riskyCommentSourceGuide.title, '先谨慎核对');
 assert.match(riskyCommentSourceGuide.summary, /举报/);
+
+const weakReportTimelineGuide = buildShareReceiverGuide({ ...activePost, reportCount: 1 }, 2, {
+  entryFrom: 'share',
+  source: 'timeline'
+});
+assert.ok(weakReportTimelineGuide);
+assert.equal(weakReportTimelineGuide.title, '先核对现场变化');
+assert.match(weakReportTimelineGuide.summary, /举报|核对/);
+assert.doesNotMatch(weakReportTimelineGuide.title, /附近任务，先核对一下/);
+
+const staleStatusTimelineGuide = buildShareReceiverGuide({ ...activePost, status: 'stale' }, 0, {
+  entryFrom: 'share',
+  source: 'timeline'
+});
+assert.ok(staleStatusTimelineGuide);
+assert.equal(staleStatusTimelineGuide.title, '先看最新情况');
+assert.match(staleStatusTimelineGuide.summary, /过时|最新情况/);
 
 const commentRelayPrompt = buildCommentRelayPrompt(activePost, {
   body: '我刚路过，东门保安说有人见过这张门禁卡。'

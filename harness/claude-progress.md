@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：W 组朋友圈真实渠道手测证据 schema
-- 当前 blocker：W 组自动检查已把 viral journey manual evidence 从 5 条扩到 7 条，新增 `timeline-share-channel` 与 `timeline-risk-gating`，并让 prepare/capture/readiness 都输出或校验七条 journey；但真实 WeChat DevTools service port 9420 仍未监听，朋友圈菜单、分享卡片、单页模式、真实 query/payload、风险态菜单缺失和真机转化仍未产生 passed evidence
+- 当前正在实现的用户请求：X 组朋友圈 source=timeline 落地页语境
+- 当前 blocker：X 组自动检查已覆盖低风险 active `source=timeline` receiver guide 的“朋友圈看到 / 附近任务 / 先看状态评论 / 确认或补线索”语境，并保持弱 stale/report、风险、关闭和 receiver/comment/confirm 来源不回退；但真实 WeChat DevTools service port 9420 仍未监听，朋友圈菜单、单页模式首屏、真实 payload、窄屏和真机转化仍未产生 passed evidence
 
 ## 会话记录
 
@@ -995,3 +995,19 @@
 - 更新过的文件或工件：`harness/viral-journey-manual-results.example.json`，`harness/viral-timeline-evidence-product-brief.md`，`harness/viral-timeline-evidence-checklist.md`，`harness/viral-devtools-journey-run-product-brief.md`，`harness/viral-devtools-journey-run-checklist.md`，`harness/viral-blocked-evidence-capture-product-brief.md`，`harness/viral-blocked-evidence-capture-checklist.md`，`scripts/check-viral-journey-manual-evidence.mjs`，`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/capture-viral-journey-blocked-evidence.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未恢复 WeChat DevTools service port，未产生真实系统菜单截图、朋友圈卡片、单页模式首屏、真实 timeline query/payload、风险态菜单缺失截图或真机 iOS/Android 证据；W 只是让这些证据不可跳过，不能证明朋友圈渠道已经跑通或提升真实转化
 - 下一步最佳动作：提交 W 组并发送给用户评测 agent 与 V=99 比较；若继续迭代，优先恢复 DevTools service port 或生成符合七条 schema 的真实 blocked/passed local evidence，而不是继续扩展文案
+
+### Session 074ViralTimelineLanding
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-timeline-landing`
+- 本轮目标：X 组产品/设计/开发在 V 的朋友圈系统渠道和 W 的七条 evidence schema 之上，补齐 `source=timeline` 打开详情后的接收语境，让朋友圈来的弱关系用户知道这是附近任务、先看状态和评论、能确认就确认、知道线索就补评论
+- 产品假设：朋友圈是弱关系和低上下文入口，普通 `来自转发` 不足以解释“为什么我看到这条”；把落地页语境从普通转发改为“朋友圈看到的附近任务，先核对再行动”，比继续叠加分享文案更贴近从曝光到 confirm/comment 的转化
+- 已完成：产品 agent 新增 `harness/viral-timeline-landing-product-brief.md`；设计/QA agent 新增 `harness/viral-timeline-landing-checklist.md`；开发 agent 在 `utils/share-receiver.js` 中识别 `source=timeline`
+- 页面语义变化：低风险 active 且无 stale/report 信号的 `from=share&source=timeline` 接收引导使用 `kicker: 朋友圈看到`、`title: 附近任务，先核对一下`，summary/rows/note 要求先看状态、确认信号和最新评论，能现场核对就确认，知道更多就评论补线索；不新增 UI 节点、按钮、联系人读取、奖励或诱导分享
+- 风险态变化：`hidden/resolved/expired/reportCount>=2/stale/status=stale` 仍优先原风险/关闭语义；weak stale/report 的 timeline 入口使用 `先核对现场变化` 和 warn tone，不出现鼓励性朋友圈扩散；`source=receiver`、`receiverAction=confirm/comment`、`source=comment`、`source=confirm` 和普通 `from=share` 不被 timeline 分支覆盖
+- 检查变化：`scripts/check-share-receiver.mjs`、`scripts/check-viral-journey-evidence.mjs`、`scripts/check-viral-candidate.mjs` 增加 `source=timeline` 低风险文案、禁用词、弱风险/高风险/closed 优先级和回归断言；`harness/viral-journey-manual-results.example.json` 与 `scripts/prepare-viral-journey-devtools-run.mjs` 把 source=timeline 落地页 receiver context 纳入 `timeline-share-channel` 观察点；`scripts/check-devtools-readiness.mjs` 要求 X 产品/QA 文档存在
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md`、`harness/feature_list.json`、`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/share-receiver.js`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-timeline-share.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`node --no-warnings scripts/check-devtools-readiness.mjs`
+- 已记录证据：`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-journey-evidence.mjs` 输出 `Viral journey evidence checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral journey evidence checks passed.`、`Timeline share checks passed.` 和 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出七条 run package，其中 `timeline-share-channel` 要求观察 `source=timeline` receiver context，并仍报告 DevTools 9420 `connect_refused` / smoke `blocked`，这不是 UI passed；JSON、harness 和 diff 检查均通过
+- 更新过的文件或工件：`utils/share-receiver.js`，`scripts/check-share-receiver.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-viral-candidate.mjs`，`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-timeline-landing-product-brief.md`，`harness/viral-timeline-landing-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证真实朋友圈菜单、卡片、payload、单页模式首屏、`source=timeline` 文案窄屏布局、action strip 点击、confirm/comment 后 U/R/S/T 链路和真实转化；当前 DevTools service port 9420 仍是环境 blocker
+- 下一步最佳动作：提交 X 组并发送给用户评测 agent 与 W=99 比较，重点看“朋友圈曝光后的落地理解”是否比纯证据基础设施更接近用户侧自发裂变；若继续迭代，优先拿真实 timeline evidence 或做真实转化/埋点准备

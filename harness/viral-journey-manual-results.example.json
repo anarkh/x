@@ -182,7 +182,8 @@
         "The real system menu shows both send-to-friend and share-to-timeline entries for the low-risk active task.",
         "onShareTimeline evidence records title, query, and imageUrl or a concrete reason the field could not be inspected.",
         "If query is inspectable, it contains id, from=share, source=timeline, and shareChannel=timeline.",
-        "The timeline or equivalent single-page-mode first screen keeps the task title, status, place, and receiver context readable.",
+        "The timeline or equivalent single-page-mode first screen keeps the task title, status, place, and source=timeline receiver context readable.",
+        "The source=timeline receiver context explains the user saw a nearby task from Moments and should inspect status/comments before confirming or adding a clue.",
         "The timeline channel does not replace the existing receiver conversion journeys in this same result package."
       ],
       "actual": "Not run in this example. Replace with real menu, payload, and single-page first-screen observations.",

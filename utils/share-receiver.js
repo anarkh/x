@@ -7,7 +7,19 @@ function normalizeReceiverAction(value) {
   return ['confirm', 'comment'].includes(action) ? action : '';
 }
 
-function buildTone(post, counts) {
+function hasStaleRisk(post, counts) {
+  return post.status === 'stale' || counts.staleCount >= 3;
+}
+
+function hasTimelineReviewSignal(post, counts, sourceTimeline) {
+  return sourceTimeline && post.status === 'active' && (counts.reportCount > 0 || counts.staleCount > 0);
+}
+
+function isTimelineLowRiskActive(post, counts, sourceTimeline) {
+  return sourceTimeline && post.status === 'active' && counts.reportCount === 0 && counts.staleCount === 0;
+}
+
+function buildTone(post, counts, sourceTimeline) {
   if (post.status === 'hidden') {
     return 'danger';
   }
@@ -17,13 +29,13 @@ function buildTone(post, counts) {
   if (counts.reportCount >= 2) {
     return 'danger';
   }
-  if (counts.staleCount >= 3) {
+  if (hasStaleRisk(post, counts) || hasTimelineReviewSignal(post, counts, sourceTimeline)) {
     return 'warn';
   }
   return 'good';
 }
 
-function buildSummary(post, counts, sourceComment, sourceConfirm, sourceReceiver, receiverAction) {
+function buildSummary(post, counts, sourceComment, sourceConfirm, sourceReceiver, sourceTimeline, receiverAction) {
   if (post.status === 'hidden') {
     return '这条记录已隐藏，只适合给发布者或管理员看历史处理。';
   }
@@ -36,8 +48,16 @@ function buildSummary(post, counts, sourceComment, sourceConfirm, sourceReceiver
   if (counts.reportCount >= 2) {
     return '已有较多举报，先核对评论和现场变化，再决定是否确认。';
   }
-  if (counts.staleCount >= 3) {
+  if (hasStaleRisk(post, counts)) {
     return '有过时反馈，先确认最新情况，别把旧信息继续传开。';
+  }
+  if (hasTimelineReviewSignal(post, counts, sourceTimeline)) {
+    return counts.reportCount > 0
+      ? '这条任务从朋友圈点进来，但已有举报提醒。先看评论和现场变化，再决定是否确认。'
+      : '这条任务从朋友圈点进来，但已有过时提醒。先看状态和评论，确认现场还一致再行动。';
+  }
+  if (isTimelineLowRiskActive(post, counts, sourceTimeline)) {
+    return '这条任务是从朋友圈点进来的附近任务，先看状态和评论。你在附近就帮忙确认，知道线索就补一条。';
   }
   if (sourceConfirm) {
     return '有人刚帮忙确认过，先看确认信号和评论，再决定要不要补充或转给更可能路过的人。';
@@ -63,7 +83,7 @@ function buildSummary(post, counts, sourceComment, sourceConfirm, sourceReceiver
   return '这条任务被转给你，多半是因为你更可能看见现场或补上线索。';
 }
 
-function buildReason(post, counts, sourceComment, sourceConfirm, sourceReceiver, receiverAction) {
+function buildReason(post, counts, sourceComment, sourceConfirm, sourceReceiver, sourceTimeline, receiverAction) {
   if (post.status === 'hidden') {
     return '内容已被隐藏，只保留给发布者或管理员处理。';
   }
@@ -76,8 +96,16 @@ function buildReason(post, counts, sourceComment, sourceConfirm, sourceReceiver,
   if (counts.reportCount >= 2) {
     return '已有举报提醒，先让熟悉现场的人核对。';
   }
-  if (counts.staleCount >= 3) {
+  if (hasStaleRisk(post, counts)) {
     return '有人提醒过时，先确认是不是已经变化。';
+  }
+  if (hasTimelineReviewSignal(post, counts, sourceTimeline)) {
+    return counts.reportCount > 0
+      ? '这条来自朋友圈，但已有举报提醒，先让熟悉现场的人核对。'
+      : '这条来自朋友圈，但有人提醒可能过时，先核对现场是否变化。';
+  }
+  if (isTimelineLowRiskActive(post, counts, sourceTimeline)) {
+    return '朋友圈里看到的人不一定在现场，你可能更接近地点，或知道新的位置、时间和处理情况。';
   }
   if (sourceConfirm) {
     return '这条分享来自确认接力，先看确认和评论会更完整。';
@@ -103,7 +131,7 @@ function buildReason(post, counts, sourceComment, sourceConfirm, sourceReceiver,
   return '你更可能在附近看见现场、知道最新变化，或者补上一条有用评论。';
 }
 
-function buildNextStep(post, counts, sourceComment, sourceConfirm, sourceReceiver, receiverAction) {
+function buildNextStep(post, counts, sourceComment, sourceConfirm, sourceReceiver, sourceTimeline, receiverAction) {
   if (post.status === 'hidden') {
     return '只看历史，不要继续公开扩散。';
   }
@@ -113,8 +141,14 @@ function buildNextStep(post, counts, sourceComment, sourceConfirm, sourceReceive
   if (counts.reportCount >= 2) {
     return '先看评论里的补充，再点确认或继续核对。';
   }
-  if (counts.staleCount >= 3) {
+  if (hasStaleRisk(post, counts)) {
     return '先确认现场是否还一致，别直接按旧信息处理。';
+  }
+  if (hasTimelineReviewSignal(post, counts, sourceTimeline)) {
+    return '先看评论和现场变化，不确定就先别确认，也别按旧信息继续转。';
+  }
+  if (isTimelineLowRiskActive(post, counts, sourceTimeline)) {
+    return '先看任务状态、确认信号和最新评论；能现场核对就确认，知道更多就评论补线索。';
   }
   if (sourceConfirm) {
     return '先看确认和评论，再决定补充、确认或继续转给更可能路过的人。';
@@ -140,7 +174,7 @@ function buildNextStep(post, counts, sourceComment, sourceConfirm, sourceReceive
   return '先看任务内容，能确认就确认，知道更多就补评论。';
 }
 
-function buildIfNotOnSite(post, counts, sourceComment, sourceConfirm, sourceReceiver, receiverAction) {
+function buildIfNotOnSite(post, counts, sourceComment, sourceConfirm, sourceReceiver, sourceTimeline, receiverAction) {
   if (post.status === 'hidden') {
     return '只当历史记录看，不要继续公开转。';
   }
@@ -149,6 +183,15 @@ function buildIfNotOnSite(post, counts, sourceComment, sourceConfirm, sourceRece
   }
   if (counts.reportCount >= 2 || counts.staleCount >= 3) {
     return '先别盲转，最好交给更熟悉现场的人。';
+  }
+  if (hasStaleRisk(post, counts)) {
+    return '先别盲转，最好交给更熟悉现场的人。';
+  }
+  if (hasTimelineReviewSignal(post, counts, sourceTimeline)) {
+    return '不在现场先别公开转，最好等更熟悉现场的人核对。';
+  }
+  if (isTimelineLowRiskActive(post, counts, sourceTimeline)) {
+    return '不要盲目确认；如果这条更适合别人核对，可以转给更可能路过的人。';
   }
   if (sourceConfirm) {
     return '不在现场也可以先看确认和评论，再决定要不要继续转给别人。';
@@ -183,6 +226,7 @@ export function buildShareReceiverGuide(post = {}, commentCount = 0, options = {
   const sourceComment = options.source === 'comment';
   const sourceConfirm = options.source === 'confirm';
   const sourceReceiver = options.source === 'receiver';
+  const sourceTimeline = options.source === 'timeline';
   const receiverAction = sourceReceiver ? normalizeReceiverAction(options.receiverAction) : '';
 
   let title = '先看评论再决定';
@@ -194,8 +238,12 @@ export function buildShareReceiverGuide(post = {}, commentCount = 0, options = {
     title = '已过期任务';
   } else if (counts.reportCount >= 2) {
     title = '先谨慎核对';
-  } else if (counts.staleCount >= 3) {
+  } else if (hasStaleRisk(currentPost, counts)) {
     title = '先看最新情况';
+  } else if (hasTimelineReviewSignal(currentPost, counts, sourceTimeline)) {
+    title = '先核对现场变化';
+  } else if (isTimelineLowRiskActive(currentPost, counts, sourceTimeline)) {
+    title = '附近任务，先核对一下';
   } else if (sourceConfirm) {
     title = '有人刚确认过';
   } else if (sourceReceiver && receiverAction === 'confirm') {
@@ -211,21 +259,21 @@ export function buildShareReceiverGuide(post = {}, commentCount = 0, options = {
   }
 
   return {
-    kicker: '来自转发',
+    kicker: sourceTimeline && currentPost.status === 'active' ? '朋友圈看到' : '来自转发',
     title,
-    summary: buildSummary(currentPost, counts, sourceComment, sourceConfirm, sourceReceiver, receiverAction),
+    summary: buildSummary(currentPost, counts, sourceComment, sourceConfirm, sourceReceiver, sourceTimeline, receiverAction),
     rows: [
       {
         label: '为什么到你这',
-        value: buildReason(currentPost, counts, sourceComment, sourceConfirm, sourceReceiver, receiverAction)
+        value: buildReason(currentPost, counts, sourceComment, sourceConfirm, sourceReceiver, sourceTimeline, receiverAction)
       },
       {
         label: '先做什么',
-        value: buildNextStep(currentPost, counts, sourceComment, sourceConfirm, sourceReceiver, receiverAction)
+        value: buildNextStep(currentPost, counts, sourceComment, sourceConfirm, sourceReceiver, sourceTimeline, receiverAction)
       },
       {
         label: '不在现场',
-        value: buildIfNotOnSite(currentPost, counts, sourceComment, sourceConfirm, sourceReceiver, receiverAction)
+        value: buildIfNotOnSite(currentPost, counts, sourceComment, sourceConfirm, sourceReceiver, sourceTimeline, receiverAction)
       }
     ],
     note:
@@ -235,21 +283,25 @@ export function buildShareReceiverGuide(post = {}, commentCount = 0, options = {
           ? '已关闭或已过期时，只把它当历史线索。'
           : counts.reportCount >= 2
             ? '有较多举报时，先核对再转，别把旧判断继续传开。'
-            : counts.staleCount >= 3
+            : hasStaleRisk(currentPost, counts)
               ? '有过时反馈时，先确认最新情况，再决定是否继续转发。'
-              : sourceReceiver && receiverAction === 'confirm'
-                ? '刚有确认信号，先看确认和现场信号再转会更稳妥。'
-                : sourceReceiver && receiverAction === 'comment'
-                  ? '评论区刚有新线索，先看最新评论再转会更完整。'
-                  : sourceReceiver
-                    ? '刚接力到你这里，先看确认和评论再转会更稳妥。'
-                    : sourceConfirm
-                      ? '刚有确认信号，先看确认和评论再转会更稳妥。'
-                      : sourceComment
-                        ? '评论区刚补了线索，先看最新评论再转会更完整。'
-                        : counts.comments > 0
-                          ? '评论里已有补充，转发前先看一眼会更完整。'
-                          : '如果你知道更多现场信息，也可以先补一条评论。',
-    tone: buildTone(currentPost, counts)
+              : hasTimelineReviewSignal(currentPost, counts, sourceTimeline)
+                ? '朋友圈只是入口；已有提醒时，先核对评论和现场变化，别继续公开转。'
+                : isTimelineLowRiskActive(currentPost, counts, sourceTimeline)
+                  ? '朋友圈只是入口，转发前先核对状态和评论；有线索时，先补评论会更有用。'
+                  : sourceReceiver && receiverAction === 'confirm'
+                    ? '刚有确认信号，先看确认和现场信号再转会更稳妥。'
+                    : sourceReceiver && receiverAction === 'comment'
+                      ? '评论区刚有新线索，先看最新评论再转会更完整。'
+                      : sourceReceiver
+                        ? '刚接力到你这里，先看确认和评论再转会更稳妥。'
+                        : sourceConfirm
+                          ? '刚有确认信号，先看确认和评论再转会更稳妥。'
+                          : sourceComment
+                            ? '评论区刚补了线索，先看最新评论再转会更完整。'
+                            : counts.comments > 0
+                              ? '评论里已有补充，转发前先看一眼会更完整。'
+                              : '如果你知道更多现场信息，也可以先补一条评论。',
+    tone: buildTone(currentPost, counts, sourceTimeline)
   };
 }

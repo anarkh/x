@@ -8,6 +8,8 @@ process.on('warning', (warning) => {
 
 const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
 
+const forbiddenTimelineCopyPattern = /已验证|属实|放心转发|帮忙扩散|必须转发|转发有奖|联系人|通讯录|群成员|好友列表/;
+
 function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '', extraOptions = {}) {
   return buildShareReceiverGuide(
     {
@@ -26,6 +28,20 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '
   );
 }
 
+function guideText(result) {
+  return [
+    result.kicker,
+    result.title,
+    result.summary,
+    ...(result.rows || []).map((row) => `${row.label}:${row.value}`),
+    result.note
+  ].join('\n');
+}
+
+function assertNoForbiddenTimelineCopy(result, message) {
+  assert.doesNotMatch(guideText(result), forbiddenTimelineCopyPattern, message);
+}
+
 {
   const result = guide({}, 2, 'share');
   assert.ok(result);
@@ -39,6 +55,42 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '
 }
 
 {
+  const result = guide({}, 2, 'share', 'timeline');
+  assert.ok(result);
+  assert.equal(result.kicker, '朋友圈看到');
+  assert.equal(result.title, '附近任务，先核对一下');
+  assert.equal(result.tone, 'good');
+  assert.match(result.summary, /朋友圈|附近任务/);
+  assert.match(result.summary, /状态|评论/);
+  assert.match(result.summary, /确认|线索/);
+  assert.match(result.rows[0].value, /朋友圈|现场|线索/);
+  assert.match(result.rows[1].value, /状态|确认信号|最新评论|确认|评论/);
+  assert.match(result.rows[2].value, /不要盲目确认|更可能路过的人/);
+  assert.match(result.note, /朋友圈|状态|评论|线索/);
+  assertNoForbiddenTimelineCopy(result, 'timeline low-risk guide should avoid proof, pressure, or contact-reading copy');
+}
+
+{
+  const weakReport = guide({ reportCount: 1 }, 1, 'share', 'timeline');
+  assert.ok(weakReport);
+  assert.equal(weakReport.title, '先核对现场变化');
+  assert.equal(weakReport.tone, 'warn');
+  assert.match(weakReport.summary, /举报|核对/);
+  assert.doesNotMatch(weakReport.title, /附近任务，先核对一下/);
+  assert.doesNotMatch(weakReport.rows[2].value, /更可能路过的人/);
+  assertNoForbiddenTimelineCopy(weakReport, 'timeline weak report guide should stay cautious');
+
+  const weakStale = guide({ staleCount: 1 }, 1, 'share', 'timeline');
+  assert.ok(weakStale);
+  assert.equal(weakStale.title, '先核对现场变化');
+  assert.equal(weakStale.tone, 'warn');
+  assert.match(weakStale.summary, /过时|核对/);
+  assert.doesNotMatch(weakStale.title, /附近任务，先核对一下/);
+  assert.doesNotMatch(weakStale.rows[2].value, /更可能路过的人/);
+  assertNoForbiddenTimelineCopy(weakStale, 'timeline weak stale guide should stay cautious');
+}
+
+{
   const result = guide({ reportCount: 2 }, 1);
   assert.ok(result);
   assert.equal(result.title, '先谨慎核对');
@@ -46,6 +98,13 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '
   assert.match(result.summary, /举报/);
   assert.match(result.rows[1].value, /评论|确认/);
   assert.match(result.note, /别把旧判断继续传开/);
+
+  const timelineRisk = guide({ reportCount: 2 }, 1, 'share', 'timeline');
+  assert.ok(timelineRisk);
+  assert.equal(timelineRisk.title, '先谨慎核对');
+  assert.equal(timelineRisk.tone, 'danger');
+  assert.match(timelineRisk.summary, /举报/);
+  assert.doesNotMatch(timelineRisk.summary, /朋友圈里看到的附近任务|帮忙确认/);
 }
 
 {
@@ -137,6 +196,13 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '
   assert.match(result.summary, /过时/);
   assert.match(result.rows[1].value, /现场是否还一致|旧信息/);
   assert.match(result.rows[2].value, /别盲转|更熟悉现场的人/);
+
+  const staleStatusTimeline = guide({ status: 'stale', staleCount: 0 }, 0, 'share', 'timeline');
+  assert.ok(staleStatusTimeline);
+  assert.equal(staleStatusTimeline.title, '先看最新情况');
+  assert.equal(staleStatusTimeline.tone, 'warn');
+  assert.match(staleStatusTimeline.summary, /过时|最新情况/);
+  assert.doesNotMatch(staleStatusTimeline.title, /附近任务，先核对一下/);
 }
 
 {
@@ -154,6 +220,13 @@ function guide(overrides = {}, commentCount = 0, entryFrom = 'share', source = '
   assert.equal(expired.tone, 'done');
   assert.match(expired.summary, /过期/);
   assert.match(expired.rows[2].value, /历史参考|公开扩散/);
+
+  const timelineResolved = guide({ status: 'resolved', confirmations: 3 }, 4, 'share', 'timeline');
+  assert.ok(timelineResolved);
+  assert.equal(timelineResolved.title, '已关闭任务');
+  assert.equal(timelineResolved.tone, 'done');
+  assert.match(timelineResolved.summary, /关闭|历史线索/);
+  assert.doesNotMatch(timelineResolved.summary, /朋友圈里看到的附近任务|帮忙确认/);
 }
 
 {

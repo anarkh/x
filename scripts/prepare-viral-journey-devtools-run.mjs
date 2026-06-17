@@ -170,7 +170,7 @@ function printJourneyPackage(journeys) {
     }
 
     if (timelinePayloadJourneyIds.has(journey.id)) {
-      console.log('   timeline payload check: record the real system menu with both friend share and timeline share, plus onShareTimeline title/query/imageUrl or a concrete inability reason; inspectable query must include id, from=share, source=timeline, and shareChannel=timeline. This is distinct from the receiverAction second-hop share path.');
+      console.log('   timeline payload check: record the real system menu with both friend share and timeline share, plus onShareTimeline title/query/imageUrl or a concrete inability reason; inspectable query must include id, from=share, source=timeline, and shareChannel=timeline. Also observe that the source=timeline landing page receiver context explains the Moments/nearby-task/status-comments/confirm-or-clue flow. This is distinct from the receiverAction second-hop share path.');
     }
 
     if (timelineRiskJourneyIds.has(journey.id)) {
