@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：T 组接收者二跳可转述理由
-- 当前 blocker：T 组自动检查已覆盖低风险 `from=share` 接收者完成 confirm/comment 后的 `shareReason`、三行 `targetRows`、`receiverAction=confirm/comment` 二跳 path 和风险/关闭/弱 stale/report 互斥；但真实 WeChat DevTools UI smoke/真机验证仍未执行，系统分享面板、真实二跳打开、窄屏换行、云端评论路径和用户是否会手动转述该理由仍待手动或数据验证
+- 当前正在实现的用户请求：U 组接收者二跳转发场景建议
+- 当前 blocker：U 组自动检查已覆盖低风险 `from=share` 接收者完成 confirm/comment 后的 `relayChannels`、`shareReason`、三行 `targetRows`、`receiverAction=confirm/comment` 二跳 path 和风险/关闭/弱 stale/report 互斥；但真实 WeChat DevTools UI smoke/真机验证仍未执行，系统分享面板、真实二跳打开、窄屏换行、云端评论路径和用户是否会按场景建议转发仍待手动或数据验证
 
 ## 会话记录
 
@@ -948,3 +948,18 @@
 - 更新过的文件或工件：`utils/receiver-conversion.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-receiver-conversion.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-share-reason-product-brief.md`，`harness/viral-share-reason-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 shareReason 的真实布局、系统分享面板关系、真实 `from=share&source=receiver&receiverAction=confirm/comment` payload、云端评论成功后提示、窄屏换行，以及用户是否会在聊天里手动转述该理由；当前 DevTools service port 9420 仍是环境 blocker
 - 下一步最佳动作：提交 T 组，并发送给用户评测 agent 与 R/S=99 的结果比较，重点看“可转述理由”是否比 S 的参数语义更接近真实自发裂变
+
+### Session 071ViralRelayChannelPicker
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-relay-channel-picker`
+- 本轮目标：U 组产品/设计/开发在 T 的可转述理由基础上增加“适合转给”的场景建议，让 `from=share` 接收者完成低风险 confirm/comment 后不只知道怎么说，也知道更适合发给哪类场景
+- 产品假设：T 已解决“怎么说”的表达成本，下一层瓶颈是“发给谁/哪里”的选择成本；给 2-3 个泛化场景建议，如楼栋群、门卫/前台、路过朋友、同路线邻居，比继续润色 shareReason 更可能推动用户侧二跳
+- 已完成：产品 agent 新增 `harness/viral-relay-channel-picker-product-brief.md`；设计/QA agent 新增 `harness/viral-relay-channel-picker-design-checklist.md`；开发 agent 在 `utils/receiver-conversion.js` 中为低风险 `receiverConversionPrompt.shouldRelay` 返回 `relayChannels`，按 `category`、`intent` 和 confirm/comment 生成 2-3 个 label/hint 场景建议；风险/关闭/弱 stale/report 或 stale/report action 下 `relayChannels` 为空
+- 页面变化：`pages/detail/detail.wxml` 在 receiver conversion 的三行 `targetRows` 后、`shareReason` 前渲染 `relayChannels`，chip 只是场景提示，不带 `open-type="share"` 或联系人/群选择绑定；`pages/detail/detail.wxss` 增加可换行 chip 样式，保持主分享按钮唯一
+- 检查变化：`scripts/check-receiver-conversion.mjs` 覆盖 relayChannels 数量、短文案、禁用联系人/群关系暗示词、confirm/comment 差异、lost/found 差异、真实分类选项、风险态为空、path 不新增联系人/群 query、WXML 顺序和 chip 非 share CTA；`scripts/check-viral-journey-evidence.mjs` 覆盖同一链路和手测模板必须观察 relay channel suggestions；`harness/viral-journey-manual-results.example.json` 的 confirm/comment journey 已加入 2-3 个场景建议观察点；`scripts/check-devtools-readiness.mjs` 把 U 组产品/设计文档纳入 required files 和 readiness docs
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/receiver-conversion.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-receiver-conversion.mjs`；`node --check scripts/check-viral-journey-evidence.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：`node --check` 语法检查均通过且无输出；`node --no-warnings scripts/check-receiver-conversion.mjs` 输出 `Receiver conversion checks passed.`；`node --no-warnings scripts/check-viral-journey-evidence.mjs` 输出 `Viral journey evidence checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral journey evidence checks passed.` 和 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，同时仍报告 DevTools 9420 `connect_refused`/smoke `blocked`，这不是 UI passed；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；manual evidence gate 输出没有本地结果文件且不是 UI passed evidence；`npm run check` 完整跑通并在 manual run package 中列出 relay channel suggestions 观察点；最终 `bash harness/init.sh` 完整跑通；产品/设计/开发 agent 均完成且未提交 commit
+- 更新过的文件或工件：`utils/receiver-conversion.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-receiver-conversion.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-relay-channel-picker-product-brief.md`，`harness/viral-relay-channel-picker-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 relay channel chips 的真实布局、系统分享面板关系、真实 payload、云端评论成功后提示、窄屏换行，以及用户是否会按“楼栋群/门卫/同路线”等场景建议手动转发；当前 DevTools service port 9420 仍是环境 blocker
+- 下一步最佳动作：提交 U 组，并发送给用户评测 agent 与 R/S/T=99 的结果比较，重点看“发给谁/哪里”的场景建议是否比 T 的“怎么说”更接近真实自发裂变

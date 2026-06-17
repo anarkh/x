@@ -80,6 +80,7 @@
       ],
       "expected": [
         "receiverConversionPrompt is visible after confirm.",
+        "2-3 relay channel suggestions are visible between targetRows and the share reason; they are scene suggestions, not share buttons or contact/group pickers.",
         "The share reason is visible between targetRows and the share button, and the copy says the sender just confirmed or can help re-check.",
         "actionRelayPrompt is not competing as the primary CTA.",
         "The share path contains from=share&source=receiver&receiverAction=confirm."
@@ -104,6 +105,7 @@
       ],
       "expected": [
         "receiverConversionPrompt is visible after comment submit.",
+        "2-3 relay channel suggestions are visible between targetRows and the share reason; they are scene suggestions, not share buttons or contact/group pickers.",
         "The share reason is visible between targetRows and the share button, and the copy says the sender just added a clue or the next receiver should read latest comments.",
         "commentRelayPrompt is not competing as the primary CTA.",
         "The share path contains from=share&source=receiver&receiverAction=comment."
@@ -152,6 +154,7 @@
       "expected": [
         "The ordinary entry does not show receiver guide or receiver action strip.",
         "Any stale/report signal hides the receiver action strip.",
+        "Any stale/report signal or closed state does not show relay channel suggestions.",
         "stale, resolved, expired, and hidden states do not expose a receiver public relay CTA.",
         "Risk-state copy asks users to inspect comments, confirmation, or latest status before taking action."
       ],

@@ -45,6 +45,108 @@ function buildShareReason(action) {
   };
 }
 
+function channel(label, hint, priorityReason) {
+  return { label, hint, priorityReason };
+}
+
+function actionChannels(confirmChannels, commentChannels, action) {
+  return action === 'comment' ? commentChannels : confirmChannels;
+}
+
+function lostFoundRelayChannels(post, action) {
+  if (post.intent === 'found') {
+    return actionChannels(
+      [
+        channel('楼栋群', '方便失主看到线索', 'found-confirm-owner-reach'),
+        channel('门卫/前台', '适合现场代管核对', 'found-confirm-onsite-handoff'),
+        channel('附近邻居', '可能知道失主', 'found-confirm-nearby-owner')
+      ],
+      [
+        channel('附近邻居', '刚补线索，先看评论', 'found-comment-local-clue'),
+        channel('门卫/前台', '方便按线索核对', 'found-comment-onsite-check'),
+        channel('楼栋群', '可能触达失主', 'found-comment-owner-reach')
+      ],
+      action
+    );
+  }
+
+  return actionChannels(
+    [
+      channel('路过朋友', '刚有确认，适合现场核对', 'lost-confirm-passerby-check'),
+      channel('门卫/前台', '方便留意丢失地点', 'lost-confirm-onsite-watch'),
+      channel('楼栋群', '可能有人刚经过', 'lost-confirm-building-pass')
+    ],
+    [
+      channel('楼栋群', '刚补线索，先看评论', 'lost-comment-building-clue'),
+      channel('门卫/前台', '方便按线索核对', 'lost-comment-onsite-check'),
+      channel('路过朋友', '可能见过细节', 'lost-comment-passerby-detail')
+    ],
+    action
+  );
+}
+
+function buildRelayChannels(post, action) {
+  if (post.category === 'lost_found') {
+    return lostFoundRelayChannels(post, action);
+  }
+  if (post.category === 'help_needed') {
+    return actionChannels(
+      [
+        channel('能搭把手的人', '刚有确认，可直接帮忙', 'help-confirm-capable-helper'),
+        channel('附近邻居', '离现场更近', 'help-confirm-nearby-neighbor'),
+        channel('店员/前台', '熟悉现场动线', 'help-confirm-onsite-staff')
+      ],
+      [
+        channel('店员/前台', '刚补线索，先看评论', 'help-comment-onsite-clue'),
+        channel('附近邻居', '方便理解现场需求', 'help-comment-nearby-context'),
+        channel('能搭把手的人', '适合接着行动', 'help-comment-capable-helper')
+      ],
+      action
+    );
+  }
+  if (post.category === 'street_update') {
+    return actionChannels(
+      [
+        channel('同路线邻居', '刚有确认，适合核对', 'street-confirm-same-route'),
+        channel('路过朋友', '可能马上经过', 'street-confirm-passerby'),
+        channel('楼栋群', '提醒同楼附近', 'street-confirm-building')
+      ],
+      [
+        channel('楼栋群', '刚补线索，先看评论', 'street-comment-building-clue'),
+        channel('同路线邻居', '方便判断是否绕行', 'street-comment-route-decision'),
+        channel('路过朋友', '可能补充现场情况', 'street-comment-passerby-context')
+      ],
+      action
+    );
+  }
+  if (post.category === 'check_in') {
+    return actionChannels(
+      [
+        channel('附近朋友', '刚有确认，适合参考', 'checkin-confirm-nearby-reference'),
+        channel('同社区邻居', '熟悉地点状态', 'checkin-confirm-community'),
+        channel('会到这里的人', '可能正要到场', 'checkin-confirm-arrival')
+      ],
+      [
+        channel('同社区邻居', '刚补线索，先看评论', 'checkin-comment-community-clue'),
+        channel('会到这里的人', '方便安排到场', 'checkin-comment-arrival-plan'),
+        channel('附近朋友', '可能补充体验', 'checkin-comment-nearby-context')
+      ],
+      action
+    );
+  }
+  return actionChannels(
+    [
+      channel('能核对地点的人', '刚有确认，适合核对', 'fallback-confirm-place-check'),
+      channel('可能路过的人', '方便补现场信息', 'fallback-confirm-passerby')
+    ],
+    [
+      channel('能核对地点的人', '刚补线索，先看评论', 'fallback-comment-place-check'),
+      channel('可能路过的人', '方便补现场信息', 'fallback-comment-passerby')
+    ],
+    action
+  );
+}
+
 function targetAudienceForPost(post) {
   if (post.category === 'lost_found') {
     if (post.intent === 'found') {
@@ -196,6 +298,7 @@ export function buildReceiverConversionPrompt(post = {}, action = '', options = 
     buttonText: shouldRelay ? '继续接力' : '先看确认和评论',
     note: buildNote(currentPost, counts, shouldRelay),
     targetRows: shouldRelay ? buildTargetRows(currentPost, normalizedAction) : [],
+    relayChannels: shouldRelay ? buildRelayChannels(currentPost, normalizedAction) : [],
     shareReason: shouldRelay ? buildShareReason(normalizedAction) : null,
     shareTitle: shouldRelay
       ? `${normalizedAction === 'comment' ? '已补充线索' : '已确认接力'}：${titleText(currentPost)}`

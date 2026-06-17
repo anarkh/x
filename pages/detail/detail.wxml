@@ -83,6 +83,15 @@
         <text class="receiver-conversion-target-value">{{item.value}}</text>
       </view>
     </view>
+    <view wx:if="{{receiverConversionPrompt.relayChannels && receiverConversionPrompt.relayChannels.length}}" class="receiver-conversion-relay-channels">
+      <text class="receiver-conversion-relay-title">适合转给</text>
+      <view class="receiver-conversion-relay-list">
+        <view wx:for="{{receiverConversionPrompt.relayChannels}}" wx:key="label" class="receiver-conversion-relay-chip">
+          <text class="receiver-conversion-relay-label">{{item.label}}</text>
+          <text class="receiver-conversion-relay-hint">{{item.hint}}</text>
+        </view>
+      </view>
+    </view>
     <view wx:if="{{receiverConversionPrompt.shareReason}}" class="receiver-conversion-share-reason">
       <text class="receiver-conversion-share-label">{{receiverConversionPrompt.shareReason.label}}</text>
       <text class="receiver-conversion-share-text">{{receiverConversionPrompt.shareReason.text}}</text>

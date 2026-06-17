@@ -24,6 +24,27 @@ const forbiddenShareReasonTerms = [
   '扩散起来'
 ];
 const forbiddenShareReasonPattern = new RegExp(forbiddenShareReasonTerms.join('|'));
+const forbiddenRelayChannelTerms = [
+  '真实联系人',
+  '推荐联系人',
+  '联系人',
+  '通讯录',
+  '微信群成员',
+  '微信群读取',
+  '读取微信群',
+  '系统识别',
+  '智能匹配',
+  '已找到群聊',
+  '认识的人',
+  '你认识',
+  '你的朋友',
+  '你所在的群',
+  '一键转群',
+  '好友列表',
+  '通讯录好友'
+];
+const forbiddenRelayChannelPattern = new RegExp(forbiddenRelayChannelTerms.join('|'));
+const forbiddenRelayPathQueryPattern = /[?&](?:contact|contacts|contactId|group|groupId|groupName|chatId|openId|unionId|userId|friend|friends|wxGroup|wechatGroup|relayChannel|channelLabel|target|audience)=/i;
 
 function post(overrides = {}) {
   return {
@@ -75,6 +96,61 @@ function assertTargetRows(prompt, message) {
   );
 }
 
+function relayChannelSummary(prompt) {
+  return (prompt.relayChannels || []).map((channel) => `${channel.label}:${channel.hint || ''}`);
+}
+
+function assertRelayChannels(prompt, message) {
+  assert.ok(Array.isArray(prompt.relayChannels), `${message}: relayChannels should be an array`);
+  assert.ok(prompt.relayChannels.length >= 2, `${message}: should include at least 2 relay channel suggestions`);
+  assert.ok(prompt.relayChannels.length <= 3, `${message}: should include at most 3 relay channel suggestions`);
+
+  const labels = new Set();
+  for (const [index, channel] of prompt.relayChannels.entries()) {
+    assert.equal(typeof channel.label, 'string', `${message}: relay channel ${index} should include a label`);
+    assert.equal(channel.label, channel.label.trim(), `${message}: relay channel ${index} label should not need trimming`);
+    assert.ok(channel.label.length >= 2, `${message}: relay channel ${index} label should be readable`);
+    assert.ok(channel.label.length <= 8, `${message}: relay channel ${index} label should stay short`);
+    assert.equal(typeof channel.hint, 'string', `${message}: relay channel ${index} should include a hint`);
+    assert.equal(channel.hint, channel.hint.trim(), `${message}: relay channel ${index} hint should not need trimming`);
+    assert.ok(channel.hint.length >= 4, `${message}: relay channel ${index} hint should be readable`);
+    assert.ok(channel.hint.length <= 24, `${message}: relay channel ${index} hint should stay short`);
+    assert.doesNotMatch(
+      `${channel.label} ${channel.hint} ${channel.priorityReason || ''}`,
+      forbiddenRelayChannelPattern,
+      `${message}: relay channel ${index} should avoid real contact/group or system-inference wording`
+    );
+    labels.add(channel.label);
+  }
+
+  assert.equal(labels.size, prompt.relayChannels.length, `${message}: relay channel labels should not duplicate`);
+}
+
+function assertNoRelayChannels(prompt, message) {
+  assert.ok(
+    !prompt.relayChannels || prompt.relayChannels.length === 0,
+    `${message}: should not include relay channel suggestions`
+  );
+}
+
+function assertRelaySharePath(path, message) {
+  assert.doesNotMatch(
+    path,
+    forbiddenRelayPathQueryPattern,
+    `${message}: share path should not carry contact/group/channel targeting query`
+  );
+
+  const query = path.split('?')[1] || '';
+  const params = new URLSearchParams(query);
+  const allowedKeys = new Set(['id', 'from', 'source', 'receiverAction']);
+  for (const key of params.keys()) {
+    assert.ok(allowedKeys.has(key), `${message}: unexpected share path query key ${key}`);
+  }
+  assert.equal(params.get('from'), 'share', `${message}: share path should keep from=share`);
+  assert.equal(params.get('source'), 'receiver', `${message}: share path should keep source=receiver`);
+  assert.match(params.get('receiverAction') || '', /^(confirm|comment)$/, `${message}: share path should keep receiver action only`);
+}
+
 {
   const confirmed = buildReceiverConversionPrompt(post(), 'confirm', { entryFrom: 'share' });
   assert.ok(confirmed, 'share-entry confirm should create a receiver conversion prompt');
@@ -91,6 +167,13 @@ function assertTargetRows(prompt, message) {
   assert.match(confirmed.targetRows[0].value, /丢失|路过|门卫|前台/);
   assert.match(confirmed.targetRows[1].value, /刚确认|确认/);
   assert.match(confirmed.targetRows[2].value, /物品|地点|评论/);
+  assertRelayChannels(confirmed, 'low-risk confirm');
+  assert.match(
+    relayChannelSummary(confirmed).join('|'),
+    /确认|核对|现场/,
+    'confirm relay channels should lean toward checking the scene'
+  );
+  assertRelaySharePath(confirmed.sharePath, 'low-risk confirm');
   assertShareReason(confirmed, 'confirm', 'low-risk confirm');
 
   const commented = buildReceiverConversionPrompt(post(), 'comment', { entryFrom: 'share' });
@@ -105,11 +188,23 @@ function assertTargetRows(prompt, message) {
   );
   assertTargetRows(commented, 'low-risk comment');
   assert.match(commented.targetRows[1].value, /刚补|线索|评论/);
+  assertRelayChannels(commented, 'low-risk comment');
+  assert.match(
+    relayChannelSummary(commented).join('|'),
+    /线索|评论|最新评论/,
+    'comment relay channels should lean toward latest comments or added clues'
+  );
+  assertRelaySharePath(commented.sharePath, 'low-risk comment');
   assertShareReason(commented, 'comment', 'low-risk comment');
   assert.notEqual(
     confirmed.shareReason.text,
     commented.shareReason.text,
     'confirm and comment should expose different share reasons'
+  );
+  assert.notDeepEqual(
+    relayChannelSummary(confirmed),
+    relayChannelSummary(commented),
+    'confirm and comment should expose different relay channel ordering or hints'
   );
 }
 
@@ -151,9 +246,15 @@ function assertTargetRows(prompt, message) {
   for (const risky of [weakStale, weakReport, stale, report, resolved]) {
     assert.ok(!risky.targetRows || risky.targetRows.length === 0, 'risk/closed prompts should not include encouraging target rows');
     assert.equal(risky.shareReason, null, 'risk/closed prompts should not include encouraging share reason');
+    assertNoRelayChannels(risky, 'risk/closed prompt');
     assert.doesNotMatch(risky.buttonText, /接力|转发/, 'risk/closed prompt should not expose public relay copy');
     assert.doesNotMatch(risky.sharePath, /receiverAction=/, 'risk/closed prompt should not carry receiver action source');
   }
+
+  const staleAction = buildReceiverConversionPrompt(post(), 'stale', { entryFrom: 'share' });
+  const reportAction = buildReceiverConversionPrompt(post(), 'report', { entryFrom: 'share' });
+  assertNoRelayChannels(staleAction, 'stale action prompt');
+  assertNoRelayChannels(reportAction, 'report action prompt');
 }
 
 {
@@ -161,18 +262,29 @@ function assertTargetRows(prompt, message) {
   const found = buildReceiverConversionPrompt(post({ intent: 'found' }), 'confirm', { entryFrom: 'share' });
   assertTargetRows(lost, 'lost_found lost');
   assertTargetRows(found, 'lost_found found');
+  assertRelayChannels(lost, 'lost_found lost');
+  assertRelayChannels(found, 'lost_found found');
   assert.notEqual(lost.targetRows[0].value, found.targetRows[0].value, 'lost and found should recommend different targets');
+  assert.notDeepEqual(
+    relayChannelSummary(lost),
+    relayChannelSummary(found),
+    'lost and found should recommend different relay channels'
+  );
   assert.match(lost.targetRows[0].value, /丢失|门卫|前台/);
   assert.match(found.targetRows[0].value, /丢东西|楼栋群|前台/);
+  assert.match(relayChannelSummary(lost).join('|'), /路过朋友|门卫\/前台|楼栋群/);
+  assert.match(relayChannelSummary(found).join('|'), /楼栋群|门卫\/前台|附近邻居/);
 
-  for (const [category, expected] of [
-    ['help_needed', /搭把手|邻居|店员|熟悉情况/],
-    ['street_update', /经过|同楼栋|同路线/],
-    ['check_in', /会到这里|附近朋友|同社区/]
+  for (const [category, expected, expectedChannel] of [
+    ['help_needed', /搭把手|邻居|店员|熟悉情况/, /能搭把手的人|附近邻居|店员\/前台/],
+    ['street_update', /经过|同楼栋|同路线/, /同路线邻居|路过朋友|楼栋群/],
+    ['check_in', /会到这里|附近朋友|同社区/, /附近朋友|同社区邻居|会到这里的人/]
   ]) {
     const prompt = buildReceiverConversionPrompt(post({ category, intent: '' }), 'comment', { entryFrom: 'share' });
     assertTargetRows(prompt, `${category} prompt`);
+    assertRelayChannels(prompt, `${category} prompt`);
     assert.match(prompt.targetRows[0].value, expected, `${category} should have category-specific relay target`);
+    assert.match(relayChannelSummary(prompt).join('|'), expectedChannel, `${category} should have category-specific relay channels`);
   }
 
   const streetUpdate = buildReceiverConversionPrompt(post({ category: 'street_update', intent: '' }), 'confirm', { entryFrom: 'share' });
@@ -184,7 +296,9 @@ function assertTargetRows(prompt, message) {
 
   const fallback = buildReceiverConversionPrompt(post({ category: 'other', intent: '' }), 'confirm', { entryFrom: 'share' });
   assertTargetRows(fallback, 'fallback prompt');
+  assertRelayChannels(fallback, 'fallback prompt');
   assert.match(fallback.targetRows[0].value, /熟悉这个地点|核对/);
+  assert.match(relayChannelSummary(fallback).join('|'), /能核对地点的人|可能路过的人/);
 }
 
 {
@@ -276,6 +390,7 @@ assert.match(detailJs, /actionRelayPrompt: receiverConversionPrompt \? null : bu
 assert.match(detailJs, /shareContext === 'receiverConversion'/, 'receiver conversion share button should have its own share payload');
 assert.match(detailWxml, /receiverConversionPrompt/, 'detail page should render receiver conversion panel');
 assert.match(detailWxml, /receiverConversionPrompt\.targetRows && receiverConversionPrompt\.targetRows\.length/, 'receiver conversion panel should safely render target rows');
+assert.match(detailWxml, /receiverConversionPrompt\.relayChannels && receiverConversionPrompt\.relayChannels\.length/, 'receiver conversion panel should safely render relay channel suggestions');
 assert.match(detailWxml, /receiverConversionPrompt\.shareReason/, 'detail page should render the receiver conversion share reason');
 assert.match(
   detailWxml,
@@ -290,11 +405,24 @@ assert.match(
 );
 {
   const targetsIndex = detailWxml.indexOf('class="receiver-conversion-targets"');
+  const relayChannelsIndex = detailWxml.indexOf('class="receiver-conversion-relay-channels"');
   const shareReasonIndex = detailWxml.indexOf('class="receiver-conversion-share-reason"');
   const actionsIndex = detailWxml.indexOf('class="receiver-conversion-actions"');
   assert.ok(targetsIndex >= 0, 'receiver conversion target rows should render before share reason');
+  assert.ok(relayChannelsIndex > targetsIndex, 'relay channels should render after targetRows');
+  assert.ok(shareReasonIndex > relayChannelsIndex, 'share reason should render after relay channels');
   assert.ok(shareReasonIndex > targetsIndex, 'share reason should render after targetRows');
   assert.ok(actionsIndex > shareReasonIndex, 'share reason should render before receiver conversion actions');
+  assert.doesNotMatch(
+    detailWxml.slice(targetsIndex, shareReasonIndex),
+    /receiver-conversion-target-row[\s\S]*?receiver-conversion-target-row[\s\S]*?receiver-conversion-target-row[\s\S]*?receiver-conversion-target-row/,
+    'relay channels should not be rendered as a fourth target row'
+  );
+  assert.doesNotMatch(
+    detailWxml.slice(relayChannelsIndex, shareReasonIndex),
+    /open-type="share"|bindtap=/,
+    'relay channel chips should not behave like share/contact/group buttons'
+  );
   assert.doesNotMatch(
     detailWxml.slice(shareReasonIndex, actionsIndex),
     /receiver-conversion-target-row/,
@@ -302,6 +430,9 @@ assert.match(
   );
 }
 assert.match(detailWxss, /\.receiver-conversion\b/, 'detail styles should include receiver conversion panel');
+assert.match(detailWxss, /\.receiver-conversion-relay-channels\b/, 'detail styles should include relay channel section');
+assert.match(detailWxss, /\.receiver-conversion-relay-list\s*\{[\s\S]*?flex-wrap:\s*wrap/, 'relay channel chips should wrap on narrow screens');
+assert.match(detailWxss, /\.receiver-conversion-relay-chip\b/, 'detail styles should include lightweight relay channel chips');
 assert.match(detailWxss, /\.receiver-conversion-share-reason\b/, 'detail styles should include low-density share reason styling');
 
 console.log('Receiver conversion checks passed.');
