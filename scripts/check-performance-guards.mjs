@@ -92,6 +92,10 @@ const posts = [
   }
 ];
 
+function idsWithoutShareDemo(items) {
+  return items.map((post) => post.id).filter((id) => id !== 'post_001');
+}
+
 let postsStorageReads = 0;
 let storage = {
   posts,
@@ -141,8 +145,8 @@ const { listPosts } = await import(storeModuleUrl);
 const first = await listPosts(center, { localOnly: true });
 const second = await listPosts(center, { localOnly: true });
 
-assert.equal(first.length, 1);
-assert.equal(second.length, 1);
+assert.deepEqual(idsWithoutShareDemo(first), ['perf_post_1']);
+assert.deepEqual(idsWithoutShareDemo(second), ['perf_post_1']);
 assert.equal(postsStorageReads, 1, 'localOnly listPosts should reuse cache for repeated reads.');
 
 const cloudPosts = await listPosts(center);
@@ -213,7 +217,7 @@ const localAfterCloudCreate = await listPostsAfterCloudWrite(center, { localOnly
 
 assert.equal(cloudCalls, 1, 'cloud create should call the posts cloud function once.');
 assert.deepEqual(
-  localAfterCloudCreate.map((post) => post.id),
+  idsWithoutShareDemo(localAfterCloudCreate),
   ['perf_post_1'],
   'cloud writes should not inject cloud-only posts into a localOnly cache.'
 );
@@ -294,12 +298,12 @@ const visibleEvenWithHiddenOption = await listVisiblePosts(center, {
 const includeHidden = await listAllPosts(center);
 
 assert.deepEqual(
-  visibleOnly.map((post) => post.id),
+  idsWithoutShareDemo(visibleOnly),
   ['perf_post_1'],
   'normal listPosts should still omit hidden posts after pre-filtering.'
 );
 assert.deepEqual(
-  visibleEvenWithHiddenOption.map((post) => post.id),
+  idsWithoutShareDemo(visibleEvenWithHiddenOption),
   ['perf_post_1'],
   'normal listPosts should ignore includeHidden and keep hidden posts out of public lists.'
 );

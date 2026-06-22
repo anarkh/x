@@ -8,6 +8,12 @@ process.on('warning', (warning) => {
 });
 
 const { buildShareReceiverActionStrip } = await import('../utils/share-receiver-actions.js');
+const { buildShareReceiverGuide } = await import('../utils/share-receiver.js');
+const {
+  default: mockPosts,
+  SHARE_DEMO_POST_ID,
+  SHARE_DEMO_TTL_MS
+} = await import('../utils/mock-posts.js');
 
 function post(overrides = {}) {
   return {
@@ -25,6 +31,10 @@ function post(overrides = {}) {
 
 function actionStrip(overrides = {}, entryFrom = 'share') {
   return buildShareReceiverActionStrip(post(overrides), { entryFrom });
+}
+
+function receiverGuide(overrides = {}, entryFrom = 'share') {
+  return buildShareReceiverGuide(post(overrides), 0, { entryFrom });
 }
 
 {
@@ -69,14 +79,35 @@ for (const riskyPost of [
   );
 }
 
+{
+  const expiredGuide = receiverGuide({ status: 'expired' });
+  assert.ok(expiredGuide, 'expired share-entry post should still show receiver context');
+  assert.equal(expiredGuide.title, '已过期任务');
+}
+
 const detailJs = readFileSync('pages/detail/detail.js', 'utf8');
 const detailWxml = readFileSync('pages/detail/detail.wxml', 'utf8');
 const detailWxss = readFileSync('pages/detail/detail.wxss', 'utf8');
+const storeJs = readFileSync('utils/store.js', 'utf8');
 const readinessScript = readFileSync('scripts/check-devtools-readiness.mjs', 'utf8');
 const viralCandidateScript = readFileSync('scripts/check-viral-candidate.mjs', 'utf8');
 const actionBlockStart = detailWxml.indexOf('shareReceiverActionStrip');
 const actionBlockEnd = detailWxml.indexOf('<view wx:if="{{receiverConversionPrompt}}"', actionBlockStart);
 const actionBlock = detailWxml.slice(actionBlockStart, actionBlockEnd);
+const shareGuideStart = detailWxml.indexOf('<view wx:if="{{shareReceiverGuide}}"');
+const shareGuideEnd = detailWxml.indexOf('<view wx:if="{{receiverConversionPrompt}}"', shareGuideStart);
+const shareGuideBlock = detailWxml.slice(shareGuideStart, shareGuideEnd);
+const mapReturnIndex = shareGuideBlock.indexOf('share-receiver-map-return');
+const actionStripIndex = shareGuideBlock.indexOf('shareReceiverActionStrip && !receiverConversionPrompt');
+const shareDemoPost = mockPosts.find((item) => item.id === SHARE_DEMO_POST_ID);
+
+assert.equal(SHARE_DEMO_POST_ID, 'post_001', 'manual share launch should keep using the stable demo post id');
+assert.equal(SHARE_DEMO_TTL_MS, 30 * 24 * 60 * 60 * 1000, 'manual share demo should stay valid for 30 days');
+assert.ok(shareDemoPost, 'mock data should include the manual share demo post');
+assert.ok(
+  shareDemoPost.expiresAt - Date.now() > 29 * 24 * 60 * 60 * 1000,
+  'manual share demo post should not expire during a normal test session'
+);
 
 assert.match(detailJs, /buildShareReceiverActionStrip/, 'detail page should import share receiver action helper');
 assert.match(detailJs, /shareReceiverActionStrip: null/, 'receiver action strip should default to hidden');
@@ -92,8 +123,12 @@ assert.match(
 assert.match(actionBlock, /data-action="confirm"/, 'receiver confirm action should call the existing confirm reaction');
 assert.match(actionBlock, /bindtap="react"/, 'receiver confirm action should reuse detail react handler');
 assert.match(actionBlock, /bindtap="openCommentDialog"/, 'receiver comment action should reuse detail comment dialog');
-assert.match(actionBlock, /bindtap="goHomeWithPost"/, 'receiver guide should offer an explicit return-to-home focused-map action');
-assert.match(actionBlock, /回首页查这条/, 'receiver guide return action should be visible and clear');
+assert.doesNotMatch(actionBlock, /bindtap="goHomeWithPost"/, 'focused home action should not depend on active-only receiver actions');
+assert.doesNotMatch(actionBlock, /回首页查这条/, 'focused home action should stay visible even when receiver actions are hidden');
+assert.match(shareGuideBlock, /wx:if="\{\{!receiverConversionPrompt\}\}"[^>]+class="share-receiver-map-return"/, 'receiver guide should offer a map return block outside the active-only action strip');
+assert.match(shareGuideBlock, /bindtap="goHomeWithPost"/, 'receiver guide should offer an explicit return-to-home focused-map action');
+assert.match(shareGuideBlock, /回首页查这条/, 'receiver guide return action should be visible and clear');
+assert.ok(mapReturnIndex >= 0 && actionStripIndex >= 0 && mapReturnIndex < actionStripIndex, 'map return should appear before active-only receiver actions so expired share pages can still show it');
 assert.doesNotMatch(actionBlock, /open-type="share"/, 'receiver action strip buttons must not trigger share');
 assert.match(detailJs, /focusedMapUrl\(postId\)/, 'detail page should build a focused map URL from the current post id');
 assert.match(detailJs, /wx\.reLaunch\(\{\s*url:\s*this\.focusedMapUrl\(postId\)/s, 'focused home action should reLaunch with query instead of switchTab without query');
@@ -102,6 +137,13 @@ assert.match(
   detailWxml,
   /!showPublishSuccess && !shareReceiverGuide && !receiverConversionPrompt && !actionRelayPrompt && !commentRelayPrompt && shareMessage/,
   'ordinary share panel should stay hidden while receiver guidance or relay prompts are active'
+);
+assert.match(storeJs, /ensureShareDemoPost/, 'store should refresh an expired locally stored share demo post');
+assert.match(storeJs, /SHARE_DEMO_MIN_TTL_MS/, 'store should refresh the share demo before it gets close to expiring');
+assert.match(
+  storeJs,
+  /localPost && localPost\.id === SHARE_DEMO_POST_ID/,
+  'manual share demo should prefer the fresh local fixture over stale cloud data'
 );
 assert.match(detailWxss, /\.share-receiver-actions\b/, 'detail styles should include receiver action strip styles');
 assert.match(
