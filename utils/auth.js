@@ -117,6 +117,17 @@ function saveCloudUser(previous, role, openid) {
   });
 }
 
+function saveAdminCheckFallbackUser(previous) {
+  // A failed admin check should revoke stale admin state, but must not turn a guest into a logged-in user.
+  return saveUser({
+    ...previous,
+    role: 'user',
+    authSource: '',
+    isGuest: Boolean(previous.isGuest),
+    loggedInAt: previous.isGuest ? previous.loggedInAt || 0 : previous.loggedInAt || Date.now()
+  });
+}
+
 function adminCheckInfo(data = {}, fallbackReason = '') {
   const reason = data.reason || fallbackReason;
   return {
@@ -155,7 +166,7 @@ export function formatAdminRoleError(error) {
 export async function refreshAdminRole() {
   const previous = getCurrentUser();
   if (!canUseCloudRole()) {
-    const user = saveCloudUser(previous, 'user');
+    const user = saveAdminCheckFallbackUser(previous);
     return {
       ok: false,
       message: '请先配置云开发环境',
@@ -169,7 +180,7 @@ export async function refreshAdminRole() {
       name: 'getMyRole'
     });
   } catch (error) {
-    const user = saveCloudUser(previous, 'user');
+    const user = saveAdminCheckFallbackUser(previous);
     const check = adminCheckInfo(formatAdminRoleError(error));
     return {
       ok: false,
@@ -179,13 +190,21 @@ export async function refreshAdminRole() {
     };
   }
   const data = result.result || {};
-  const nextRole = data.role === 'admin' ? 'admin' : 'user';
-  const user = saveCloudUser(previous, nextRole, data.openid);
+  if (data.role !== 'admin' || data.ok !== true) {
+    const user = saveAdminCheckFallbackUser(previous);
+    const check = adminCheckInfo(data);
+    return {
+      ok: false,
+      message: check.reason || '当前微信不是管理员',
+      check,
+      user
+    };
+  }
+  const user = saveCloudUser(previous, 'admin', data.openid);
   const check = adminCheckInfo(data);
-  const message = nextRole === 'admin' ? '' : (check.reason || '当前微信不是管理员');
   return {
-    ok: nextRole === 'admin',
-    message,
+    ok: true,
+    message: '',
     check,
     user
   };

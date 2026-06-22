@@ -12,6 +12,9 @@ const requiredFiles = [
   'scripts/check-comment-relay.mjs',
   'scripts/check-action-relay.mjs',
   'scripts/check-receiver-conversion.mjs',
+  'scripts/check-detail-action-guards.mjs',
+  'scripts/check-store-permission-guards.mjs',
+  'scripts/check-cloud-comment-order.mjs',
   'scripts/check-viral-journey-evidence.mjs',
   'scripts/check-viral-journey-manual-evidence.mjs',
   'scripts/check-viral-manual-summary-integrity.mjs',
@@ -199,6 +202,9 @@ runCheck('scripts/check-publish-spread.mjs', 'post-publish spread plan check');
 runCheck('scripts/check-comment-relay.mjs', 'comment relay prompt check');
 runCheck('scripts/check-action-relay.mjs', 'action relay prompt check');
 runCheck('scripts/check-receiver-conversion.mjs', 'receiver conversion relay check');
+runCheck('scripts/check-detail-action-guards.mjs', 'detail action busy guard check');
+runCheck('scripts/check-store-permission-guards.mjs', 'store permission guard check');
+runCheck('scripts/check-cloud-comment-order.mjs', 'cloud comment newest-first query check');
 runCheck('scripts/check-viral-journey-evidence.mjs', 'viral journey evidence model check');
 console.log('Running viral journey manual evidence gate. This scans ignored local result files only when they exist.');
 runCheck('scripts/check-viral-journey-manual-evidence.mjs', 'viral journey manual evidence gate');

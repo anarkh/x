@@ -135,5 +135,75 @@ assert.match(
   /launchFocus[\s\S]*?this\.setData\(\{[\s\S]*?showList:\s*launchFocus\.showList[\s\S]*?\},\s*\(\)\s*=>\s*\{[\s\S]*?this\.applyPostFilters\(posts,\s*'all',\s*null\);[\s\S]*?this\.hideDiagnostics\(\);[\s\S]*?\}\)/,
   'Focused map launches should hide startup diagnostics immediately after the list and selected task are ready.'
 );
+assert.match(
+  mapJs,
+  /this\.skipNextOnShowRefresh = true;[\s\S]*?this\.refresh\(\);[\s\S]*?onShow\(\)[\s\S]*?if \(this\.skipNextOnShowRefresh\) \{[\s\S]*?this\.skipNextOnShowRefresh = false;[\s\S]*?return;[\s\S]*?\}[\s\S]*?this\.refresh\(\);/,
+  'The first onShow should skip the refresh already started by onLoad.'
+);
+assert.match(
+  mapJs,
+  /onHide\(\) \{[\s\S]*?this\.deactivateMapPage\(\);[\s\S]*?\}[\s\S]*?onUnload\(\) \{[\s\S]*?this\.deactivateMapPage\(\);[\s\S]*?\}[\s\S]*?deactivateMapPage\(\) \{[\s\S]*?this\.mapPageActive = false;[\s\S]*?this\.initialLocationPending = false;[\s\S]*?this\.postsRequestId = \(this\.postsRequestId \|\| 0\) \+ 1;[\s\S]*?this\.locationRequestId = \(this\.locationRequestId \|\| 0\) \+ 1;[\s\S]*?this\.discoveryRequestId = \(this\.discoveryRequestId \|\| 0\) \+ 1;[\s\S]*?this\.clearDiagnosticHideTimer\(\);[\s\S]*?\}/,
+  'Map page should invalidate in-flight refreshes when hidden or unloaded.'
+);
+assert.match(
+  mapJs,
+  /hideDiagnosticsSoon\(\) \{[\s\S]*?if \(!this\.mapPageActive\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*?setTimeout\(\(\) => \{[\s\S]*?if \(!this\.mapPageActive\) \{[\s\S]*?this\.diagnosticHideTimer = null;[\s\S]*?return;[\s\S]*?\}/,
+  'Map diagnostics should not schedule or run delayed setData while the page is inactive.'
+);
+assert.match(
+  mapJs,
+  /async refresh\(\) \{[\s\S]*?if \(!this\.mapPageActive\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*?const requestId = this\.nextPostsRequestId\(\);/,
+  'Map refresh should not start while the page is inactive.'
+);
+assert.match(
+  mapJs,
+  /const posts = await this\.buildPosts\(this\.data\.center\);[\s\S]*?if \(requestId !== this\.postsRequestId\) \{[\s\S]*?return;[\s\S]*?\}/,
+  'Map refresh should drop stale post results after awaiting buildPosts.'
+);
+assert.match(
+  mapJs,
+  /this\.locationRequestId = \(this\.locationRequestId \|\| 0\) \+ 1;[\s\S]*?const locationRequestId = this\.locationRequestId;[\s\S]*?this\.setData\(\{ center, showLocation: true, mapRegion: null \}, \(\) => \{[\s\S]*?if \(!this\.mapPageActive \|\| locationRequestId !== this\.locationRequestId\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*?this\.initialLocationPending = false;[\s\S]*?this\.refresh\(\);/,
+  'Location setData callback should re-check page activity before refreshing.'
+);
+assert.match(
+  mapJs,
+  /showList: launchFocus\.showList,[\s\S]*?mapRegion: null[\s\S]*?\}, \(\) => \{[\s\S]*?if \(!this\.mapPageActive \|\| requestId !== this\.postsRequestId\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*?this\.applyPostFilters\(posts, 'all', null\);[\s\S]*?this\.hideDiagnostics\(\);/,
+  'Focused launch setData callback should re-check page activity and request generation before applying filters.'
+);
+assert.match(
+  mapJs,
+  /applyPostFilters\(posts, activeCategory, mapRegion, options = \{\}\) \{[\s\S]*?if \(!this\.mapPageActive\) \{[\s\S]*?return;[\s\S]*?\}/,
+  'Map filter application should not setData while inactive.'
+);
+assert.match(
+  mapJs,
+  /setBootStatus\(status\) \{[\s\S]*?if \(!this\.mapPageActive\) \{[\s\S]*?return;[\s\S]*?\}/,
+  'Map boot status should not setData while inactive.'
+);
+assert.match(
+  mapJs,
+  /hideDiagnostics\(\) \{[\s\S]*?this\.clearDiagnosticHideTimer\(\);[\s\S]*?if \(!this\.mapPageActive\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*?this\.setData\(\{ diagnosticVisible: false \}\);/,
+  'hideDiagnostics should not setData while inactive.'
+);
+assert.match(
+  mapJs,
+  /success: \(location\) => \{[\s\S]*?if \(!this\.mapPageActive \|\| locationRequestId !== this\.locationRequestId\) \{[\s\S]*?this\.initialLocationPending = false;[\s\S]*?return;[\s\S]*?\}[\s\S]*?this\.setData\(\{ center, showLocation: true, mapRegion: null \}/,
+  'Location success should not update map data after the page becomes inactive.'
+);
+assert.match(
+  mapJs,
+  /fail: \(error\) => \{[\s\S]*?if \(!this\.mapPageActive \|\| locationRequestId !== this\.locationRequestId\) \{[\s\S]*?this\.initialLocationPending = false;[\s\S]*?return;[\s\S]*?\}[\s\S]*?addDiagnostic\('map\.getLocation\.fail'/,
+  'Location failure should not update map diagnostics after the page becomes inactive.'
+);
+assert.match(
+  mapJs,
+  /async discoverNearby\(\) \{[\s\S]*?this\.discoveryRequestId = \(this\.discoveryRequestId \|\| 0\) \+ 1;[\s\S]*?const discoveryRequestId = this\.discoveryRequestId;[\s\S]*?await this\.discoveryCandidates\(this\.data\.activeCategory\);[\s\S]*?if \(!this\.mapPageActive \|\| discoveryRequestId !== this\.discoveryRequestId\) \{[\s\S]*?return;[\s\S]*?\}/,
+  'Discovery should not update map state after the page becomes inactive or a newer discovery starts.'
+);
+assert.match(
+  mapJs,
+  /clearDiagnosticHideTimer\(\) \{[\s\S]*?clearTimeout\(this\.diagnosticHideTimer\);[\s\S]*?this\.diagnosticHideTimer = null;[\s\S]*?\}/,
+  'Map diagnostic timer cleanup should cancel and reset the stored timer id.'
+);
 
 console.log('Map feed checks passed.');

@@ -281,6 +281,16 @@ function postClosedError() {
   return error;
 }
 
+function forbiddenError(message) {
+  const error = new Error(message || '没有权限执行此操作');
+  error.code = 'FORBIDDEN';
+  return error;
+}
+
+function canResolveLocalPost(post, user) {
+  return Boolean(post && user && (isAdmin(user) || post.publisherId === user.id));
+}
+
 function cleanCommentBody(body) {
   const text = String(body || '').trim();
   if (!text) {
@@ -553,6 +563,9 @@ export async function reactToPost(id, action) {
     return getPost(id);
   }
   const post = await findPost(id);
+  if (hasReactedToPost(id, action)) {
+    return viewablePost(post);
+  }
   if (!post || !canTrustReact(post, now)) {
     return viewablePost(post);
   }
@@ -591,6 +604,10 @@ export async function resolvePost(id) {
 
   const now = Date.now();
   const post = await findPost(id);
+  const user = getCurrentUser();
+  if (post && !canResolveLocalPost(post, user)) {
+    throw forbiddenError('只有发布者或管理员可关闭');
+  }
   let patch = null;
   if (post && canTrustReact(post, now)) {
     patch = { status: 'resolved' };
