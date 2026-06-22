@@ -52,7 +52,7 @@ function publisherInitial(name) {
 function decorateDetailPost(raw) {
   const user = getCurrentUser();
   const canReact = raw.status === 'active' || raw.status === 'stale';
-  const canResolve = canReact && (isAdmin(user) || raw.isMine || raw.publisherId === user.id);
+  const canResolve = canReact && (isAdmin(user) || raw.publisherId === user.id);
   const canShowResolve = canResolve && raw.category !== 'check_in';
   const publisherName = String(raw.publisher || '附近用户').trim() || '附近用户';
   return {
@@ -119,6 +119,8 @@ Page({
     commentDraftLength: 0,
     commentSubmitting: false,
     showCommentDialog: false,
+    busyAction: '',
+    resolving: false,
     maxCommentLength: MAX_COMMENT_LENGTH,
     actionRelayPrompt: null,
     commentRelayPrompt: null,
@@ -436,6 +438,9 @@ Page({
 
   async react(event) {
     const action = event.currentTarget.dataset.action;
+    if (this.data.busyAction) {
+      return;
+    }
     if (hasReactedToPost(this.data.id, action)) {
       wx.showToast({
         title: '这条已记录过',
@@ -443,21 +448,35 @@ Page({
       });
       return;
     }
-    const post = await reactToPost(this.data.id, action);
-    wx.showToast({
-      title: action === 'report' ? '已收到举报' : '已记录',
-      icon: 'success'
-    });
-    this.renderPost(post);
-    const receiverConversionPrompt = buildReceiverConversionPrompt(post, action, {
-      entryFrom: this.data.entryQuery.from
-    });
-    recordShareConversion(this.data.attributionSession, post, action);
-    this.setData({
-      actionRelayPrompt: receiverConversionPrompt ? null : buildActionRelayPrompt(post, action),
-      commentRelayPrompt: null,
-      receiverConversionPrompt
-    });
+    this.setData({ busyAction: action });
+    try {
+      const post = await reactToPost(this.data.id, action);
+      wx.showToast({
+        title: action === 'report' ? '已收到举报' : '已记录',
+        icon: 'success'
+      });
+      this.renderPost(post);
+      if (!post) {
+        return;
+      }
+      const receiverConversionPrompt = buildReceiverConversionPrompt(post, action, {
+        entryFrom: this.data.entryQuery.from
+      });
+      recordShareConversion(this.data.attributionSession, post, action);
+      this.setData({
+        actionRelayPrompt: receiverConversionPrompt ? null : buildActionRelayPrompt(post, action),
+        commentRelayPrompt: null,
+        receiverConversionPrompt
+      });
+    } catch (error) {
+      console.warn('[detail] failed to react to post', error);
+      wx.showToast({
+        title: action === 'report' ? '举报失败，请稍后再试' : '操作失败，请稍后再试',
+        icon: 'none'
+      });
+    } finally {
+      this.setData({ busyAction: '' });
+    }
   },
 
   resolve() {
@@ -468,20 +487,38 @@ Page({
       });
       return;
     }
+    if (this.data.resolving) {
+      return;
+    }
+    this.setData({ resolving: true });
     wx.showModal({
       title: this.data.post.resolveText,
       content: '关闭后仍会保留在列表里，方便附近用户知道这件事已经处理完。',
       confirmText: '关闭',
       success: async (result) => {
         if (!result.confirm) {
+          this.setData({ resolving: false });
           return;
         }
-        const post = await resolvePost(this.data.id);
-        wx.showToast({
-          title: '已关闭',
-          icon: 'success'
-        });
-        this.renderPost(post);
+        try {
+          const post = await resolvePost(this.data.id);
+          wx.showToast({
+            title: '已关闭',
+            icon: 'success'
+          });
+          this.renderPost(post);
+        } catch (error) {
+          console.warn('[detail] failed to resolve post', error);
+          wx.showToast({
+            title: error && error.code === 'FORBIDDEN' ? '没有权限关闭' : '关闭失败，请稍后再试',
+            icon: 'none'
+          });
+        } finally {
+          this.setData({ resolving: false });
+        }
+      },
+      fail: () => {
+        this.setData({ resolving: false });
       }
     });
   },

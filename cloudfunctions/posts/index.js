@@ -446,6 +446,7 @@ async function listComments(event, openid, isAdmin) {
       postId: post.id,
       status: 'visible'
     })
+    .orderBy('createdAt', 'desc')
     .limit(MAX_COMMENTS_PER_POST)
     .get();
   const comments = (result.data || [])

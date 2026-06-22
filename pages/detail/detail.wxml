@@ -64,7 +64,7 @@
         <view class="share-receiver-action-body">{{shareReceiverActionStrip.body}}</view>
       </view>
       <view class="share-receiver-action-row">
-        <button class="share-receiver-action-button share-receiver-action-confirm {{shareReceiverActionStrip.confirmDisabled ? 'disabled-action' : ''}}" disabled="{{shareReceiverActionStrip.confirmDisabled}}" data-action="confirm" bindtap="react">{{shareReceiverActionStrip.confirmText}}</button>
+        <button class="share-receiver-action-button share-receiver-action-confirm {{shareReceiverActionStrip.confirmDisabled || busyAction ? 'disabled-action' : ''}}" loading="{{busyAction === 'confirm'}}" disabled="{{shareReceiverActionStrip.confirmDisabled || busyAction}}" data-action="confirm" bindtap="react">{{shareReceiverActionStrip.confirmText}}</button>
         <button class="ghost-button share-receiver-action-button share-receiver-action-comment" bindtap="openCommentDialog">{{shareReceiverActionStrip.commentText}}</button>
       </view>
       <view class="share-receiver-map-return">
@@ -192,15 +192,15 @@
     <view class="trust-hint">{{trustInsight.hint}}</view>
 
     <view wx:if="{{post.canReact}}" class="trust-actions">
-      <button class="trust-button trust-confirm {{post.confirmedByMe ? 'disabled-action' : ''}}" disabled="{{post.confirmedByMe}}" data-action="confirm" bindtap="react">
+      <button class="trust-button trust-confirm {{post.confirmedByMe || busyAction ? 'disabled-action' : ''}}" loading="{{busyAction === 'confirm'}}" disabled="{{post.confirmedByMe || busyAction}}" data-action="confirm" bindtap="react">
         <text>{{post.confirmedByMe ? '已确认' : '确认'}}</text>
         <text class="action-count">{{post.confirmations}}</text>
       </button>
-      <button class="trust-button trust-stale {{post.staledByMe ? 'disabled-action' : ''}}" disabled="{{post.staledByMe}}" data-action="stale" bindtap="react">
+      <button class="trust-button trust-stale {{post.staledByMe || busyAction ? 'disabled-action' : ''}}" loading="{{busyAction === 'stale'}}" disabled="{{post.staledByMe || busyAction}}" data-action="stale" bindtap="react">
         <text>{{post.staledByMe ? '已过时' : '过时'}}</text>
         <text class="action-count">{{post.staleCount}}</text>
       </button>
-      <button class="trust-button trust-report {{post.reportedByMe ? 'disabled-action' : ''}}" disabled="{{post.reportedByMe}}" data-action="report" bindtap="react">
+      <button class="trust-button trust-report {{post.reportedByMe || busyAction ? 'disabled-action' : ''}}" loading="{{busyAction === 'report'}}" disabled="{{post.reportedByMe || busyAction}}" data-action="report" bindtap="react">
         <text>{{post.reportedByMe ? '已举报' : '举报'}}</text>
         <text class="action-count">{{post.reportCount}}</text>
       </button>
@@ -213,7 +213,7 @@
   </view>
 
   <view wx:if="{{post.canShowResolve}}" class="resolve-row">
-    <button class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
+    <button class="primary-button resolve-button" loading="{{resolving}}" disabled="{{resolving}}" bindtap="resolve">{{resolving ? '关闭中' : post.resolveText}}</button>
   </view>
 
   <view wx:if="{{actionRelayPrompt}}" class="panel comment-relay action-relay {{actionRelayPrompt.tone}}">

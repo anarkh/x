@@ -1190,3 +1190,35 @@
 - 更新过的文件或工件：`pages/map/map.js`，`pages/map/map.wxml`，`harness/check-map-feed.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：本轮只收敛“成功回首页后诊断浮层误遮挡”的问题，没有处理 DevTools 基础库偶发 `WAServiceMainContext timeout` 控制台日志；该日志此前已记录为 DevTools/native 层既有现象
 - 下一步最佳动作：继续真机验证 `回首页查这条` 后列表打开、目标任务定位和无诊断遮挡；若真机仍有 native timeout 日志，再单独按 DevTools/基础库兼容问题排查
+
+### Session 086FiveRoundStabilityReview
+
+- 日期：2026-06-22
+- 工作区：`/Users/bytedance/.codex/worktrees/0422/x`；AGENTS.md 里的历史根路径是 `/Users/bytedance/git/x`，本轮按当前 Codex worktree 执行并记录
+- 本轮目标：按用户要求建立小程序开发、JS、架构三个子 agent 方向，连续至少 5 轮检查并优化性能/稳定性；每轮实现后启动同身份 reviewer，至少 2 票 PASS 才进入下一轮
+- 已完成第 1 轮：admin 身份刷新稳定性。`utils/auth.js` 的 `refreshAdminRole` 现在在无 cloud runtime、getMyRole 失败、admins 集合缺失、非 admin 或 malformed 响应时保留 guest 状态并清除 stale admin；只有 `ok === true && role === 'admin'` 才升级管理员。`scripts/check-admin-auth-errors.mjs` 扩展了缺 cloud、调用失败、集合缺失、非管理员、legacy/malformed admin、stale admin 降级和严格 admin 成功用例。复审结果：Pauli PASS、Mill PASS、Copernicus PASS
+- 已完成第 2 轮：详情页信任动作与关闭动作防重复/失败恢复。`pages/detail/detail.js`/`.wxml` 新增 `busyAction` 和 `resolving`，确认/过时/举报/关闭有 loading/disabled、try/catch/finally 和失败 toast；`utils/store.js` 在本地 fallback 中围绕异步 post lookup 做重复 reaction recheck；新增 `scripts/check-detail-action-guards.mjs` 并接入 readiness。复审结果：Einstein PASS、Schrodinger PASS、Gauss PASS
+- 已完成第 3 轮：本地关闭权限边界。`utils/store.js` 的 local `resolvePost` 只允许当前发布者或管理员关闭，抛出 `FORBIDDEN`；详情页 `canResolve` 不再信任陈旧展示态 `isMine`；新增 `scripts/check-store-permission-guards.mjs` 覆盖非 owner 拒绝、owner 成功和 admin 成功并接入 readiness。复审结果：Jason PASS、Heisenberg PASS；Lagrange 已关闭，满足两票通过
+- 已完成第 4 轮：地图页生命周期/异步竞态。`pages/map/map.js` 新增 map active 标记和 posts/location/discovery request generation，onLoad 后第一次 onShow 跳过重复 refresh，hide/unload 统一 deactivate 并清 timer；refresh、location、focused launch callback、diagnostics timer 和 discoverNearby 都会丢弃 inactive/stale 回调；`harness/check-map-feed.mjs` 增加对应静态 guard。复审结果：Parfit PASS、Lorentz PASS、Plato PASS
+- 已完成第 5 轮：云端评论 newest-first 稳定性。`cloudfunctions/posts/index.js` 的 `listComments` 现在在 `.limit(MAX_COMMENTS_PER_POST)` 前调用 `.orderBy('createdAt', 'desc')`，避免云端集合超过 50 条时先截断再 JS 排序；新增 `scripts/check-cloud-comment-order.mjs` 断言 `where -> orderBy -> limit -> get` 和 defensive sort，并接入 readiness。复审结果：Sagan PASS、Rawls PASS、Dewey PASS
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 与 `harness/feature_list.json`；`git log --oneline -5`；带 bundled Node PATH 的 `bash harness/init.sh`；各轮专项 `node --check` 和 `node --no-warnings` 检查；`node --no-warnings scripts/check-devtools-readiness.mjs`；子 agent 分方向审阅；最终再次运行 `node --check` 覆盖 `pages/detail/detail.js`、`pages/map/map.js`、`utils/auth.js`、`utils/store.js`、`cloudfunctions/posts/index.js`、4 个新增/扩展检查脚本、readiness 和 `harness/check-map-feed.mjs`；最终运行 `node --no-warnings` 覆盖 admin auth、detail action、store permission、cloud comment order 和 map feed guards；最终运行 `node scripts/check-json.mjs`、`node harness/check-harness.mjs`、`node --no-warnings scripts/check-devtools-readiness.mjs`、`git diff --check`、`bash harness/init.sh`
+- 已记录证据：`harness/feature_list.json` 已补充 admin/detail/map 相关 round evidence，且保留原 feature 状态；专项输出包括 `Admin auth error checks passed.`、`Detail action guard checks passed.`、`Store permission guard checks passed.`、`Cloud comment order checks passed.` 和 `Map feed checks passed.`；JSON 输出 `Checked 11 JSON files.`；harness 输出 `Harness OK: 6 features checked.`；readiness 输出最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；`git diff --check` 无输出；`bash harness/init.sh` 输出 `Harness init complete.`
+- 验证限制：尝试运行 `npm run check` 时当前 shell 返回 `zsh:1: command not found: npm`；本轮已按仓库 fallback 用 bundled Node 逐项运行等价 node 门禁，但没有得到 npm wrapper 本身的通过证据
+- 已知风险或未解决问题：没有执行真实 WeChat DevTools/真机 UI 验收；readiness 仍报告 9420 service port/smoke blocker 属于环境阻塞，不是 UI passed。第 5 轮 reviewer 提醒线上高评论量场景建议在部署/运维侧确认 `post_comments(postId, status, createdAt desc)` 这类组合索引
+- 下一步最佳动作：先完成本轮最终验证命令；随后在 WeChat DevTools/真机上人工复查 admin 角色、详情信任动作、关闭权限、地图 hide/show/定位/找附近，以及云端评论列表 newest-first 行为
+
+### Session 087FiveRoundPerformanceReview
+
+- 日期：2026-06-22
+- 工作区：`/Users/bytedance/.codex/worktrees/0422/x`；AGENTS.md 里的历史根路径是 `/Users/bytedance/git/x`，本轮按当前 Codex worktree 执行并记录
+- 本轮目标：按用户要求以性能专家身份连续进行 5 轮优化；每轮提出性能优化并启动三个同身份性能子 agent 审阅，至少 2 票 PASS 才算该轮通过
+- 已完成第 1 轮：地图 `buildPosts` 保持 raw localOnly 派生帖子，不再预先对所有帖子 `decorateMapPost`；NearbyPreview 改从 raw `baseVisiblePosts` 构建，减少重复装饰。初审 Hypatia 指出 buildPosts 仍预装饰，修复后相关后续复审通过；`discoverNearby` 同步修复为只装饰 selectedPost，避免 raw selectedPost 写入 UI
+- 已完成第 2 轮：地图 `applyPostFilters` 将屏幕内筛选、分类计数和 openPostCount 合并到一次 `posts.forEach`，减少重复全量扫描。初审 Nash/Poincare 捕获 discovery raw selectedPost 回归，修复后 Galileo、Kant、Faraday 复审 PASS
+- 已完成第 3 轮：`utils/store.js` 为 localOnly `listPosts` 增加 source-aware 短 TTL posts cache，减少地图刷新时反复读取 `wx` storage；同时用 `postsCache.source`、内部 source 派生、cloud cache 写入限制和动态 guard 防止 local/cloud/cache source 串线。多轮复审捕获并修复 localOnly/cloud 混用、cloud mutator 污染和 caller-provided source poisoning，最终 Hilbert、Peirce、Godel PASS
+- 已完成第 4 轮：`sortedDerivedPosts` 在 raw posts 阶段预过滤 hidden，避免普通列表对 hidden 帖执行 `derivePost`、距离计算和排序；`listPosts` 强制 `includeHidden: false`，`listAllPosts` 继续保留 hidden。Banach 初审指出 `listPosts(center, { includeHidden: true })` 泄漏 hidden，修复并补 guard 后 Pascal、Gibbs、Popper 复审 PASS
+- 已完成第 5 轮：`pages/admin/admin-review.js` 新增 `buildAdminSummary`，用一次遍历汇总 admin filter counts 和 stats，移除计数/统计的多次 `decoratedPosts.filter` 扫描；`scripts/check-admin-review.mjs` 补强静态 guard 并接入 readiness。Raman 初审指出 guard 未证明 summary 被使用且可漏过 hoisted repeated scans，修复后 Aristotle、Curie、Bohr 复审 PASS
+- 运行过的验证：带 bundled Node PATH 的 `bash harness/init.sh`；`node --check` 覆盖 `pages/map/map.js`、`utils/store.js`、`pages/admin/admin-review.js`、`harness/check-map-feed.mjs`、`scripts/check-performance-guards.mjs`、`scripts/check-admin-review.mjs`、`scripts/check-devtools-readiness.mjs`；`node --no-warnings harness/check-map-feed.mjs`；`node --no-warnings scripts/check-performance-guards.mjs`；`node --no-warnings scripts/check-admin-review.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`
+- 已记录证据：`harness/feature_list.json` 已补充 map/admin 性能轮次证据；专项输出包括 `Map feed checks passed.`、`Performance guard checks passed.`、`Admin review helper checks passed.`；JSON 输出 `Checked 11 JSON files.`；harness 输出 `Harness OK: 6 features checked.`；readiness 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；`git diff --check` 无输出
+- 验证限制：当前 shell 中 `command -v npm` 无输出，未运行 npm wrapper；本轮使用 bundled Node 路径逐项运行仓库门禁。没有执行真实 WeChat DevTools/真机 UI 验收，readiness 中的 9420 service-port/smoke blocker 仍是环境阻塞，不是 UI passed evidence
+- 已知风险或未解决问题：这些是性能和静态/动态 guard 优化，不改变 feature_list 的人工验收状态；地图原生层、真实定位、管理台真实管理员账号和真机性能体感仍需 DevTools/真机观察
+- 下一步最佳动作：如果要把本轮性能改动合入现有 PR，需要先提交并推送当前工作区改动；之后在 WeChat DevTools/真机复查地图列表/附近预览、localOnly 首屏刷新、hidden 任务可见性边界和管理台筛选统计

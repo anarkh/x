@@ -67,11 +67,13 @@ Page({
 
   onLoad(options = {}) {
     addDiagnostic('map.onLoad', 'entered');
+    this.mapPageActive = true;
     const focusPostId = safeDecode(options.focusPostId || options.postId || options.id);
     this.pendingLaunchFocus = focusPostId
       ? { id: focusPostId, showList: shouldOpenList(options.showList) }
       : null;
     this.initialLocationPending = false;
+    this.skipNextOnShowRefresh = true;
     this.setBootStatus('地图页已加载，正在使用默认附近信息');
     if (wx.showShareMenu) {
       wx.showShareMenu({
@@ -88,6 +90,7 @@ Page({
   },
 
   onShow() {
+    this.mapPageActive = true;
     try {
       syncTabBar(this, '/pages/map/map');
     } catch (error) {
@@ -96,15 +99,42 @@ Page({
     if (this.initialLocationPending) {
       return;
     }
+    if (this.skipNextOnShowRefresh) {
+      this.skipNextOnShowRefresh = false;
+      return;
+    }
     this.refresh();
+  },
+
+  onHide() {
+    this.deactivateMapPage();
+  },
+
+  onUnload() {
+    this.deactivateMapPage();
+  },
+
+  deactivateMapPage() {
+    this.mapPageActive = false;
+    this.initialLocationPending = false;
+    this.postsRequestId = (this.postsRequestId || 0) + 1;
+    this.locationRequestId = (this.locationRequestId || 0) + 1;
+    this.discoveryRequestId = (this.discoveryRequestId || 0) + 1;
+    this.clearDiagnosticHideTimer();
   },
 
   locateCurrent() {
     this.initialLocationPending = true;
+    this.locationRequestId = (this.locationRequestId || 0) + 1;
+    const locationRequestId = this.locationRequestId;
     this.setBootStatus('正在获取当前位置');
     wx.getLocation({
       type: 'gcj02',
       success: (location) => {
+        if (!this.mapPageActive || locationRequestId !== this.locationRequestId) {
+          this.initialLocationPending = false;
+          return;
+        }
         addDiagnostic('map.getLocation.success', 'location ready');
         const center = {
           latitude: Number(location.latitude.toFixed(6)),
@@ -113,11 +143,18 @@ Page({
         };
         app.globalData.center = center;
         this.setData({ center, showLocation: true, mapRegion: null }, () => {
+          if (!this.mapPageActive || locationRequestId !== this.locationRequestId) {
+            return;
+          }
           this.initialLocationPending = false;
           this.refresh();
         });
       },
       fail: (error) => {
+        if (!this.mapPageActive || locationRequestId !== this.locationRequestId) {
+          this.initialLocationPending = false;
+          return;
+        }
         addDiagnostic('map.getLocation.fail', error || 'using default center');
         this.setBootStatus('定位未授权或暂不可用，继续使用默认位置');
         this.initialLocationPending = false;
@@ -127,6 +164,9 @@ Page({
   },
 
   async refresh() {
+    if (!this.mapPageActive) {
+      return;
+    }
     const requestId = this.nextPostsRequestId();
     this.setBootStatus('正在加载附近信息');
     try {
@@ -149,6 +189,9 @@ Page({
           showList: launchFocus.showList,
           mapRegion: null
         }, () => {
+          if (!this.mapPageActive || requestId !== this.postsRequestId) {
+            return;
+          }
           this.applyPostFilters(posts, 'all', null);
           this.hideDiagnostics();
         });
@@ -165,8 +208,7 @@ Page({
 
   async buildPosts(center) {
     // Keep the map first paint independent from cloud/network startup timing.
-    const posts = await listPosts(center, { localOnly: true });
-    return posts.map((post) => decorateMapPost(post));
+    return listPosts(center, { localOnly: true });
   },
 
   consumeLaunchFocus(posts) {
@@ -190,14 +232,25 @@ Page({
   },
 
   applyPostFilters(posts, activeCategory, mapRegion, options = {}) {
-    const viewportPosts = posts.filter((post) => isPostInRegion(post, mapRegion));
+    if (!this.mapPageActive) {
+      return;
+    }
+    const viewportPosts = [];
+    const categoryCounts = {};
+    let openPostCount = 0;
+    posts.forEach((post) => {
+      if (isOpenPost(post)) {
+        openPostCount += 1;
+      }
+      if (!isPostInRegion(post, mapRegion)) {
+        return;
+      }
+      viewportPosts.push(post);
+      categoryCounts[post.category] = (categoryCounts[post.category] || 0) + 1;
+    });
     const baseVisiblePosts = activeCategory === 'all'
       ? viewportPosts
       : viewportPosts.filter((post) => post.category === activeCategory);
-    const categoryCounts = {};
-    viewportPosts.forEach((post) => {
-      categoryCounts[post.category] = (categoryCounts[post.category] || 0) + 1;
-    });
     const categoryFilters = categoryOptions.map((item) => ({
       ...item,
       count: item.value === 'all' ? viewportPosts.length : categoryCounts[item.value] || 0
@@ -218,11 +271,11 @@ Page({
       : null;
     const nextData = {
       visiblePosts,
-      nearbyPreviewPosts: buildNearbyPreviewPosts(visiblePosts, selectedPostId),
+      nearbyPreviewPosts: buildNearbyPreviewPosts(baseVisiblePosts, selectedPostId),
       categoryFilters,
       activeCategory,
       activeCategoryText: activeFilter ? activeFilter.label : '全部',
-      openPostCount: posts.filter(isOpenPost).length,
+      openPostCount,
       viewportPostCount: viewportPosts.length,
       mapRegion,
       selectedPost,
@@ -240,6 +293,9 @@ Page({
   },
 
   setBootStatus(status) {
+    if (!this.mapPageActive) {
+      return;
+    }
     if (!this.data.diagnosticVisible) {
       return;
     }
@@ -253,7 +309,7 @@ Page({
     if (error) {
       addDiagnostic('map.runtime', error);
     }
-    clearTimeout(this.diagnosticHideTimer);
+    this.clearDiagnosticHideTimer();
     this.setData({
       diagnosticVisible: true,
       diagnosticTitle: title || '运行诊断',
@@ -263,15 +319,34 @@ Page({
   },
 
   hideDiagnosticsSoon() {
-    clearTimeout(this.diagnosticHideTimer);
+    if (!this.mapPageActive) {
+      return;
+    }
+    this.clearDiagnosticHideTimer();
     this.diagnosticHideTimer = setTimeout(() => {
+      if (!this.mapPageActive) {
+        this.diagnosticHideTimer = null;
+        return;
+      }
+      this.diagnosticHideTimer = null;
       this.setData({ diagnosticVisible: false });
     }, DIAGNOSTIC_HIDE_MS);
   },
 
   hideDiagnostics() {
-    clearTimeout(this.diagnosticHideTimer);
+    this.clearDiagnosticHideTimer();
+    if (!this.mapPageActive) {
+      return;
+    }
     this.setData({ diagnosticVisible: false });
+  },
+
+  clearDiagnosticHideTimer() {
+    if (!this.diagnosticHideTimer) {
+      return;
+    }
+    clearTimeout(this.diagnosticHideTimer);
+    this.diagnosticHideTimer = null;
   },
 
   retryFromDiagnostics() {
@@ -347,7 +422,12 @@ Page({
   },
 
   async discoverNearby() {
+    this.discoveryRequestId = (this.discoveryRequestId || 0) + 1;
+    const discoveryRequestId = this.discoveryRequestId;
     const { candidates, activeCategory } = await this.discoveryCandidates(this.data.activeCategory);
+    if (!this.mapPageActive || discoveryRequestId !== this.discoveryRequestId) {
+      return;
+    }
     if (!candidates.length) {
       wx.showToast({
         title: '附近暂时没有内容',
@@ -376,7 +456,7 @@ Page({
       center,
       activeCategory,
       showList: false,
-      selectedPost: post,
+      selectedPost: decorateMapPost(post, post.id),
       mapRegion: null
     }, () => this.refresh());
   },
