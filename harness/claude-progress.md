@@ -1222,3 +1222,30 @@
 - 验证限制：当前 shell 中 `command -v npm` 无输出，未运行 npm wrapper；本轮使用 bundled Node 路径逐项运行仓库门禁。没有执行真实 WeChat DevTools/真机 UI 验收，readiness 中的 9420 service-port/smoke blocker 仍是环境阻塞，不是 UI passed evidence
 - 已知风险或未解决问题：这些是性能和静态/动态 guard 优化，不改变 feature_list 的人工验收状态；地图原生层、真实定位、管理台真实管理员账号和真机性能体感仍需 DevTools/真机观察
 - 下一步最佳动作：如果要把本轮性能改动合入现有 PR，需要先提交并推送当前工作区改动；之后在 WeChat DevTools/真机复查地图列表/附近预览、localOnly 首屏刷新、hidden 任务可见性边界和管理台筛选统计
+
+### Session 088LongShareDemoData
+
+- 日期：2026-06-22
+- 分支：`main`
+- 本轮目标：修复用户反馈“分享页过期了，导致看不到返回首页按钮”，创建一条可长期体验的分享数据
+- 根因：`project.private.config.json` 的分享页启动模式固定打开 `post_001&from=share`；mock 里的 `post_001` 只有约 22 小时有效，而且本地 `wx` storage 一旦保存旧种子数据，后续启动不会自动刷新，可能继续读到过期的 `post_001`，从而隐藏分享接收动作区和 `回首页查这条` 入口
+- 已完成：`utils/mock-posts.js` 导出稳定的 `SHARE_DEMO_POST_ID='post_001'` 和 30 天 `SHARE_DEMO_TTL_MS`；`utils/store.js` 在 `seedPosts()` 中刷新缺失、过期或不足 7 天有效期的本地 `post_001`，并让详情页对该手测 fixture 优先使用本地长期样本，避免旧云端/旧缓存把体验入口变回过期态；`scripts/check-share-receiver-action.mjs` 新增长期分享数据和本地优先路径静态断言；`scripts/check-performance-guards.mjs` 在比较性能测试帖时忽略专用 `post_001` fixture，保留 localOnly 缓存读取次数断言
+- 运行过的验证：`pwd`；读取 `AGENTS.md`、`harness/claude-progress.md`、`harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node scripts/check-share-receiver-action.mjs`；`node --check utils/mock-posts.js`；`node --check utils/store.js`；`node --no-warnings scripts/check-performance-guards.mjs`；`node --check scripts/check-performance-guards.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；WeChat DevTools 当前项目 `/Users/bytedance/git/x` 的分享页视觉确认
+- 已记录证据：`node scripts/check-share-receiver-action.mjs` 输出 `Share receiver action checks passed.`；两条 `node --check` 无语法错误；`node --no-warnings scripts/check-performance-guards.mjs` 输出 `Performance guard checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；DevTools 分享页显示 `地铁口捡到蓝色门禁卡`、`30天后过期`，并且 `回首页查这条` 按钮可见
+- 更新过的文件或工件：`utils/mock-posts.js`，`utils/store.js`，`scripts/check-share-receiver-action.mjs`，`scripts/check-performance-guards.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：DevTools 控制台仍有既有 `WAServiceMainContext timeout`，当前观察页面仍可用且不影响长期分享样本显示；真机分享入口仍需独立验证
+- 下一步最佳动作：在 WeChat DevTools 点击 `回首页查这条`，确认首页仍会打开列表并定位 `post_001`；随后真机验证分享页在长期样本下的滚动、按钮可见性和首页回跳
+
+### Session 089ExpiredShareHomeReturn
+
+- 日期：2026-06-22
+- 分支：`main`
+- 本轮目标：修复用户反馈“已过期的分享页也需要有回到首页的按钮”
+- 根因：`回首页查这条` 之前放在 `shareReceiverActionStrip` 内，而 `buildShareReceiverActionStrip` 会对 `expired`、`resolved`、`hidden` 和风险态返回 `null`，所以过期分享页虽然仍有 `shareReceiverGuide`，但没有 action strip，也就没有回首页入口
+- 已完成：把 `share-receiver-map-return` 从 active-only action strip 中移到分享接收引导卡内，并用 `wx:if="{{!receiverConversionPrompt}}"` 避免二跳转化提示出现时抢主 CTA；过期分享页会保留 `shareReceiverGuide`，因此也会显示 `回首页查这条`
+- TDD 证据：先修改 `scripts/check-share-receiver-action.mjs`，要求 expired share entry 仍有 receiver guide、回首页块不依赖 action strip、且出现在 action strip 之前；首次运行按预期失败，错误为 `focused home action should not depend on active-only receiver actions`；移动 WXML 后同一脚本通过
+- 运行过的验证：`bash harness/init.sh`；`node scripts/check-share-receiver.mjs`；`node scripts/check-share-receiver-action.mjs`；`node --check scripts/check-share-receiver-action.mjs`；`node --check pages/detail/detail.js`；`node --no-warnings scripts/check-devtools-readiness.mjs`
+- 已记录证据：`node scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node scripts/check-share-receiver-action.mjs` 输出 `Share receiver action checks passed.`；readiness 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`
+- 更新过的文件或工件：`pages/detail/detail.wxml`，`scripts/check-share-receiver-action.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮通过静态结构和 helper 行为验证覆盖过期态；尚未用真实过期云端数据或真机分享链接做视觉验收
+- 下一步最佳动作：用一条真实 expired 分享链接打开详情页，确认 `已过期任务` 引导卡下方显示 `回首页查这条`，点击后回首页并展开附近列表

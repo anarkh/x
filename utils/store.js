@@ -1,4 +1,4 @@
-import mockPosts from './mock-posts.js';
+import mockPosts, { SHARE_DEMO_POST_ID, SHARE_DEMO_TTL_MS } from './mock-posts.js';
 import config from './config.js';
 import { distanceMeters } from './geo.js';
 import { getCurrentUser, isAdmin } from './auth.js';
@@ -11,6 +11,9 @@ const CLOSED_STATUSES = ['hidden', 'resolved'];
 const POSTS_CACHE_TTL_MS = 8000;
 const MAX_COMMENTS_PER_POST = 50;
 const MAX_COMMENT_LENGTH = 120;
+const SHARE_DEMO_MIN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SHARE_DEMO_CREATED_OFFSET_MS = 42 * 60 * 1000;
+const SHARE_DEMO_CONFIRMED_OFFSET_MS = 18 * 60 * 1000;
 let postsLoadPromise = null;
 let postsCache = {
   data: null,
@@ -138,10 +141,58 @@ async function callPostsFunction(action, data = {}) {
   return payload.data || {};
 }
 
+function shareDemoSeedPost() {
+  return mockPosts.find((post) => post.id === SHARE_DEMO_POST_ID) || null;
+}
+
+function refreshShareDemoPost(post, seed) {
+  const now = Date.now();
+  const remainingTtl = Number(post.expiresAt) - now;
+  if (post.status === 'active' && remainingTtl >= SHARE_DEMO_MIN_TTL_MS) {
+    return post;
+  }
+
+  // This fixture powers the manual share route in project.private.config.json.
+  // Keep it fresh even when local storage was seeded by an older run.
+  return {
+    ...post,
+    ...seed,
+    status: 'active',
+    confirmations: Number(post.confirmations) || seed.confirmations,
+    staleCount: 0,
+    reportCount: 0,
+    createdAt: now - SHARE_DEMO_CREATED_OFFSET_MS,
+    lastConfirmedAt: now - SHARE_DEMO_CONFIRMED_OFFSET_MS,
+    expiresAt: now + SHARE_DEMO_TTL_MS
+  };
+}
+
+function ensureShareDemoPost(posts) {
+  const seed = shareDemoSeedPost();
+  if (!seed) {
+    return { posts, changed: false };
+  }
+  const index = posts.findIndex((post) => post && post.id === SHARE_DEMO_POST_ID);
+  if (index < 0) {
+    return { posts: [refreshShareDemoPost(seed, seed), ...posts], changed: true };
+  }
+  const nextPost = refreshShareDemoPost(posts[index], seed);
+  if (nextPost === posts[index]) {
+    return { posts, changed: false };
+  }
+  const nextPosts = posts.slice();
+  nextPosts[index] = nextPost;
+  return { posts: nextPosts, changed: true };
+}
+
 function seedPosts() {
   const stored = wx.getStorageSync(STORAGE_KEY);
   if (Array.isArray(stored) && stored.length) {
-    return stored;
+    const ensured = ensureShareDemoPost(stored);
+    if (ensured.changed) {
+      wx.setStorageSync(STORAGE_KEY, ensured.posts);
+    }
+    return ensured.posts;
   }
   wx.setStorageSync(STORAGE_KEY, mockPosts);
   return mockPosts;
@@ -248,6 +299,9 @@ async function findPost(id) {
   }
   const localPost = localPostById(postId);
   if (!shouldUseCloud()) {
+    return localPost;
+  }
+  if (localPost && localPost.id === SHARE_DEMO_POST_ID) {
     return localPost;
   }
   const cached = cachedPosts({ includeHidden: true }) || cachedPosts();

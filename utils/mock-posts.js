@@ -1,8 +1,11 @@
 const now = Date.now();
 
+export const SHARE_DEMO_POST_ID = 'post_001';
+export const SHARE_DEMO_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 const mockPosts = [
   {
-    id: 'post_001',
+    id: SHARE_DEMO_POST_ID,
     markerId: 1,
     title: '地铁口捡到蓝色门禁卡',
     body: 'A口外侧共享单车旁，卡套上有一只小熊贴纸。',
@@ -17,7 +20,7 @@ const mockPosts = [
     staleCount: 0,
     reportCount: 0,
     createdAt: now - 42 * 60 * 1000,
-    expiresAt: now + 22 * 60 * 60 * 1000,
+    expiresAt: now + SHARE_DEMO_TTL_MS,
     publisher: '附近店员'
   },
   {
