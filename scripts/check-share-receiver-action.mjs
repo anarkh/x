@@ -92,7 +92,12 @@ assert.match(
 assert.match(actionBlock, /data-action="confirm"/, 'receiver confirm action should call the existing confirm reaction');
 assert.match(actionBlock, /bindtap="react"/, 'receiver confirm action should reuse detail react handler');
 assert.match(actionBlock, /bindtap="openCommentDialog"/, 'receiver comment action should reuse detail comment dialog');
+assert.match(actionBlock, /bindtap="goHomeWithPost"/, 'receiver guide should offer an explicit return-to-home focused-map action');
+assert.match(actionBlock, /回首页查这条/, 'receiver guide return action should be visible and clear');
 assert.doesNotMatch(actionBlock, /open-type="share"/, 'receiver action strip buttons must not trigger share');
+assert.match(detailJs, /focusedMapUrl\(postId\)/, 'detail page should build a focused map URL from the current post id');
+assert.match(detailJs, /wx\.reLaunch\(\{\s*url:\s*this\.focusedMapUrl\(postId\)/s, 'focused home action should reLaunch with query instead of switchTab without query');
+assert.match(detailWxss, /\.share-receiver-map-button\b/, 'detail styles should include the receiver focused-home button');
 assert.match(
   detailWxml,
   /!showPublishSuccess && !shareReceiverGuide && !receiverConversionPrompt && !actionRelayPrompt && !commentRelayPrompt && shareMessage/,

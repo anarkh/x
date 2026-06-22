@@ -586,6 +586,25 @@ Page({
     };
   },
 
+  focusedMapUrl(postId) {
+    const id = encodeURIComponent(postId || '');
+    return id ? `/pages/map/map?focusPostId=${id}&showList=1` : '/pages/map/map';
+  },
+
+  goHomeWithPost() {
+    const postId = this.data.post && this.data.post.id ? this.data.post.id : this.data.id;
+    wx.reLaunch({
+      url: this.focusedMapUrl(postId),
+      fail: (error) => {
+        console.warn('[detail] failed to open focused map', error);
+        wx.switchTab({
+          url: '/pages/map/map',
+          fail: () => wx.showToast({ title: '回首页失败，请稍后再试', icon: 'none' })
+        });
+      }
+    });
+  },
+
   goHome() {
     wx.switchTab({ url: '/pages/map/map' });
   }

@@ -67,6 +67,13 @@
         <button class="share-receiver-action-button share-receiver-action-confirm {{shareReceiverActionStrip.confirmDisabled ? 'disabled-action' : ''}}" disabled="{{shareReceiverActionStrip.confirmDisabled}}" data-action="confirm" bindtap="react">{{shareReceiverActionStrip.confirmText}}</button>
         <button class="ghost-button share-receiver-action-button share-receiver-action-comment" bindtap="openCommentDialog">{{shareReceiverActionStrip.commentText}}</button>
       </view>
+      <view class="share-receiver-map-return">
+        <view class="share-receiver-map-copy">
+          <view class="share-receiver-map-title">想先看它在哪？</view>
+          <view class="share-receiver-map-body">回到首页会定位这条任务，并展开附近列表。</view>
+        </view>
+        <button class="share-receiver-map-button" bindtap="goHomeWithPost">回首页查这条</button>
+      </view>
       <view class="share-receiver-action-note">{{shareReceiverActionStrip.note}}</view>
     </view>
   </view>

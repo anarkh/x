@@ -28,6 +28,21 @@ function isPostInRegion(post, region) {
     && post.longitude <= northeast.longitude;
 }
 
+function safeDecode(value) {
+  if (!value) {
+    return '';
+  }
+  try {
+    return decodeURIComponent(value);
+  } catch (error) {
+    return value;
+  }
+}
+
+function shouldOpenList(value) {
+  return value === true || value === '1' || value === 'true';
+}
+
 Page({
   data: {
     center: app.globalData.center,
@@ -50,8 +65,12 @@ Page({
     diagnosticLines: listDiagnostics()
   },
 
-  onLoad() {
+  onLoad(options = {}) {
     addDiagnostic('map.onLoad', 'entered');
+    const focusPostId = safeDecode(options.focusPostId || options.postId || options.id);
+    this.pendingLaunchFocus = focusPostId
+      ? { id: focusPostId, showList: shouldOpenList(options.showList) }
+      : null;
     this.initialLocationPending = false;
     this.setBootStatus('地图页已加载，正在使用默认附近信息');
     if (wx.showShareMenu) {
@@ -115,6 +134,26 @@ Page({
       if (requestId !== this.postsRequestId) {
         return;
       }
+      const launchFocus = this.consumeLaunchFocus(posts);
+      if (launchFocus) {
+        this.pendingSelectedPost = launchFocus.post;
+        const center = {
+          latitude: launchFocus.post.latitude,
+          longitude: launchFocus.post.longitude,
+          name: 'selected'
+        };
+        app.globalData.center = center;
+        this.setData({
+          center,
+          activeCategory: 'all',
+          showList: launchFocus.showList,
+          mapRegion: null
+        }, () => {
+          this.applyPostFilters(posts, 'all', null);
+          this.hideDiagnostics();
+        });
+        return;
+      }
       this.applyPostFilters(posts, this.data.activeCategory, this.data.mapRegion);
       this.hideDiagnosticsSoon();
     } catch (error) {
@@ -128,6 +167,26 @@ Page({
     // Keep the map first paint independent from cloud/network startup timing.
     const posts = await listPosts(center, { localOnly: true });
     return posts.map((post) => decorateMapPost(post));
+  },
+
+  consumeLaunchFocus(posts) {
+    const focus = this.pendingLaunchFocus;
+    if (!focus || !focus.id) {
+      return null;
+    }
+    this.pendingLaunchFocus = null;
+    const post = posts.find((item) => item.id === focus.id);
+    if (!post) {
+      wx.showToast({
+        title: '未找到这条任务',
+        icon: 'none'
+      });
+      return null;
+    }
+    return {
+      post,
+      showList: focus.showList
+    };
   },
 
   applyPostFilters(posts, activeCategory, mapRegion, options = {}) {

@@ -1152,3 +1152,41 @@
 - 更新过的文件或工件：`.gitignore`，`scripts/check-viral-manual-artifact-manifest.mjs`，`scripts/check-viral-manual-artifact-manifest-preflight.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/viral-manual-artifact-manifest-product-brief.md`，`harness/viral-manual-artifact-manifest-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：AF 只验证附件 manifest 的字段、脱敏、journey 对齐和 notClaimed 口径；它不执行 DevTools/真机，不查看真实截图/录屏，不 inspect 系统分享或朋友圈 payload，不读 CloudBase 真实记录，也不证明 viral journey passed
 - 下一步最佳动作：真实 DevTools/真机完成七条 journey 后，先让 ignored results JSON 通过 `node --no-warnings scripts/check-viral-journey-manual-evidence.mjs <local-json>`，再生成 matching summary 并运行 `npm run check:viral-manual-summary-integrity`，最后填写 `harness/manual-artifact-manifest.local-viral-journey*.json` 并运行 `npm run check:viral-manual-artifact-manifest`
+
+### Session 083MapFocusLaunch
+
+- 日期：2026-06-22
+- 分支：`codex/iter-viral-manual-artifact-manifest`
+- 本轮目标：回应用户希望从分享详情切回首页，并在首页定位到“地铁口捡到蓝色门禁卡”的体验诉求
+- 已完成：`pages/map/map.js` 支持启动参数 `focusPostId`、`postId` 或 `id`，并支持 `showList=1`；首页加载本地帖子后会一次性把地图中心移动到目标任务、设置选中态，并在列表打开时高亮该任务；本地 ignored 的 `project.private.config.json` 已从分享详情启动模式改为 `pages/map/map?focusPostId=post_001&showList=1`
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node scripts/check-json.mjs`；单独解析 `project.private.config.json`
+- 已记录证据：`bash harness/init.sh` 通过，输出 JSON 和 harness 检查成功；`node --check pages/map/map.js` 无语法错误；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`project.private.config.json` 单独 JSON.parse 通过
+- 更新过的文件或工件：`pages/map/map.js`，`harness/feature_list.json`，`harness/claude-progress.md`；本地 ignored 配置 `project.private.config.json`
+- 已知风险或未解决问题：当前 Computer Use 一度无法重新抓取微信开发者工具窗口，尚未能用模拟器截图证明首页定位视觉效果；但该路径只依赖首页本地帖子列表和已有选中态逻辑，仍需用户在 DevTools 点“编译”或重开项目后目视确认
+- 下一步最佳动作：在 WeChat DevTools 里选择“首页定位：蓝色门禁卡”编译模式并点击“编译”；期望页面路径为 `pages/map/map`，列表展开且“地铁口捡到蓝色门禁卡”卡片高亮，点击右侧 `›` 可进入普通详情页
+
+### Session 084ShareReceiverFocusedHomeCta
+
+- 日期：2026-06-22
+- 分支：`codex/iter-viral-manual-artifact-manifest`
+- 本轮目标：修复用户点击分享页左上角小房子返回首页时不够明显且无法定位当前任务的问题，并探索更清晰的回首页查询入口
+- 根因：左上角小房子是微信原生入口，返回 root `pages/map/map` 时不会携带 `focusPostId`，同时 DevTools 仍会显示既有原生 `WAServiceMainContext timeout`；页面可渲染，但不能满足“回首页查询这条”的产品意图
+- 已完成：在分享接收引导卡里新增“想先看它在哪？”区块和 `回首页查这条` 按钮；按钮调用 `goHomeWithPost`，通过 `wx.reLaunch` 打开 `/pages/map/map?focusPostId=<当前任务>&showList=1`，失败时回退普通首页
+- 运行过的验证：`bash harness/init.sh`；先让 `node scripts/check-share-receiver-action.mjs` 因缺少 `goHomeWithPost` 按钮失败；补实现后同一检查通过；`node --check pages/detail/detail.js`；`node --check pages/map/map.js`；`node scripts/check-json.mjs`；`git diff --check`；`node --no-warnings scripts/check-devtools-readiness.mjs`；WeChat DevTools 真实点击 `回首页查这条`
+- 已记录证据：新静态检查覆盖 `bindtap="goHomeWithPost"`、按钮文案、`focusedMapUrl(postId)`、`wx.reLaunch` focused map URL 和样式类；DevTools 中分享页显示新按钮，点击后进入 `pages/map/map`，信息列表展开且可见/定位“地铁口捡到蓝色门禁卡”
+- 更新过的文件或工件：`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-receiver-action.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：左上角微信原生小房子仍不可自定义，也不会带业务 query；本轮用更明显的业务 CTA 绕开该入口。DevTools 控制台仍有既有 `WAServiceMainContext timeout`，但本轮观察新按钮跳转和首页定位成功
+- 下一步最佳动作：继续在真机验证分享页新 CTA 的可见性、点击反馈和首页定位行为；必要时再考虑隐藏原生导航或改 custom navigation，但那会扩大改动范围
+
+### Session 085FocusedHomeDiagnosticsClear
+
+- 日期：2026-06-22
+- 分支：`codex/iter-viral-manual-artifact-manifest`
+- 本轮目标：修复用户从分享页点击 `回首页查这条` 后，首页列表已打开但“地图启动中”诊断面板仍盖在地图上的误报式体验
+- 根因：`pages/map/map.js` 的 focused launch 成功路径会打开 `showList=1` 并定位目标任务，但仍调用延迟 700ms 的 `hideDiagnosticsSoon()`；同时 `pages/map/map.wxml` 允许 `diagnosticVisible` 面板在列表打开时继续渲染，所以用户会看到一个像错误的历史启动诊断浮层
+- 已完成：focused launch 成功后改为立即 `hideDiagnostics()`；诊断面板渲染条件改为 `diagnosticVisible && !showList`，确保任务列表已打开时不会遮挡地图；`harness/check-map-feed.mjs` 新增静态回归断言覆盖这两点
+- 运行过的验证：`bash harness/init.sh`；先让 `node harness/check-map-feed.mjs` 因诊断面板仍覆盖列表失败；补实现后 `node harness/check-map-feed.mjs` 通过；`node --check pages/map/map.js`；`node --check harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；`node scripts/check-share-receiver-action.mjs`；WeChat DevTools 中从分享页点击 `回首页查这条`
+- 已记录证据：DevTools 手动点击后进入 `pages/map/map`，信息列表展开，`地铁口捡到蓝色门禁卡` 卡片可见且无“地图启动中”黑色诊断浮层遮挡；控制台仍保留既有 DevTools `WAServiceMainContext timeout`，但页面可用且视觉遮挡已消失
+- 更新过的文件或工件：`pages/map/map.js`，`pages/map/map.wxml`，`harness/check-map-feed.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮只收敛“成功回首页后诊断浮层误遮挡”的问题，没有处理 DevTools 基础库偶发 `WAServiceMainContext timeout` 控制台日志；该日志此前已记录为 DevTools/native 层既有现象
+- 下一步最佳动作：继续真机验证 `回首页查这条` 后列表打开、目标任务定位和无诊断遮挡；若真机仍有 native timeout 日志，再单独按 DevTools/基础库兼容问题排查

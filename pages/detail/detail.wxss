@@ -452,6 +452,49 @@
   color: #1f6658;
 }
 
+.share-receiver-map-return {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 228rpx;
+  gap: 14rpx;
+  align-items: center;
+  padding: 18rpx;
+  border: 1rpx solid rgba(31, 102, 88, 0.14);
+  border-radius: 16rpx;
+  background: rgba(234, 244, 239, 0.72);
+}
+
+.share-receiver-map-copy {
+  min-width: 0;
+}
+
+.share-receiver-map-title {
+  color: #14211d;
+  font-size: 25rpx;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.share-receiver-map-body {
+  margin-top: 4rpx;
+  color: #3c4c45;
+  font-size: 22rpx;
+  line-height: 1.42;
+}
+
+.share-receiver-map-button {
+  width: 228rpx;
+  min-width: 0;
+  height: 68rpx;
+  padding: 0 16rpx;
+  border-radius: 14rpx;
+  background: #d7673f;
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 68rpx;
+  white-space: normal;
+}
+
 .share-receiver-action-note {
   color: #697970;
   font-size: 22rpx;

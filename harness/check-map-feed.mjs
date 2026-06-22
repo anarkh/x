@@ -7,6 +7,7 @@ import { markerFromPost } from '../utils/geo.js';
 import { buildNearbyPreviewPosts } from '../utils/post-presenter.js';
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
+const mapJs = readFileSync(join(rootDir, 'pages/map/map.js'), 'utf8');
 const mapWxml = readFileSync(join(rootDir, 'pages/map/map.wxml'), 'utf8');
 const mapWxss = readFileSync(join(rootDir, 'pages/map/map.wxss'), 'utf8');
 const now = Date.now();
@@ -123,6 +124,16 @@ assert.match(
   mapWxss,
   /\.map-page\.list-open \.task-map\s*\{[\s\S]*?height:\s*38vh;[\s\S]*?\}/,
   'Opening the list should shrink the native map instead of placing the drawer over it.'
+);
+assert.match(
+  mapWxml,
+  /<cover-view[^>]+wx:if="\{\{diagnosticVisible && !showList\}\}"[^>]+class="diagnostic-panel"/,
+  'The startup diagnostics panel should not cover the map after the focused return opens the list.'
+);
+assert.match(
+  mapJs,
+  /launchFocus[\s\S]*?this\.setData\(\{[\s\S]*?showList:\s*launchFocus\.showList[\s\S]*?\},\s*\(\)\s*=>\s*\{[\s\S]*?this\.applyPostFilters\(posts,\s*'all',\s*null\);[\s\S]*?this\.hideDiagnostics\(\);[\s\S]*?\}\)/,
+  'Focused map launches should hide startup diagnostics immediately after the list and selected task are ready.'
 );
 
 console.log('Map feed checks passed.');

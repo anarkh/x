@@ -26,7 +26,7 @@
     <cover-view class="list-fab-line">列表 {{visiblePosts.length}}</cover-view>
   </cover-view>
 
-  <cover-view wx:if="{{diagnosticVisible}}" class="diagnostic-panel">
+  <cover-view wx:if="{{diagnosticVisible && !showList}}" class="diagnostic-panel">
     <cover-view class="diagnostic-title">{{diagnosticTitle}}</cover-view>
     <cover-view class="diagnostic-status">{{bootStatus}}</cover-view>
     <cover-view wx:for="{{diagnosticLines}}" wx:key="index" class="diagnostic-line">{{item}}</cover-view>
