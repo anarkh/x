@@ -1,5 +1,40 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildAdminReviewState } from '../pages/admin/admin-review.js';
+
+const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
+const adminReviewSource = readFileSync(join(rootDir, 'pages/admin/admin-review.js'), 'utf8');
+const stateStart = adminReviewSource.indexOf('export function buildAdminReviewState');
+assert.notEqual(stateStart, -1, 'Admin review should export buildAdminReviewState.');
+const adminReviewStateSource = adminReviewSource.slice(stateStart);
+
+assert.match(
+  adminReviewSource,
+  /function buildAdminSummary\(posts\) \{[\s\S]*?posts\.forEach\(\(post\) => \{[\s\S]*?filterCounts\.needs_review[\s\S]*?filterCounts\.reported[\s\S]*?filterCounts\.closed[\s\S]*?stats\.hidden[\s\S]*?\}\);[\s\S]*?return \{ filterCounts, stats \};[\s\S]*?\}/,
+  'Admin review filter counts and stats should be summarized in one pass.'
+);
+assert.match(
+  adminReviewStateSource,
+  /const summary = buildAdminSummary\(decoratedPosts\);[\s\S]*?count: summary\.filterCounts\[item\.value\] \|\| 0[\s\S]*?stats: summary\.stats/,
+  'buildAdminReviewState should use the one-pass summary for filter counts and stats.'
+);
+assert.doesNotMatch(
+  adminReviewSource,
+  /function countForFilter\(/,
+  'Admin review should not keep a per-filter full-list scan helper.'
+);
+assert.equal(
+  (adminReviewStateSource.match(/decoratedPosts\s*\.\s*filter/g) || []).length,
+  1,
+  'buildAdminReviewState should only filter decoratedPosts for visiblePosts, not for counts or stats.'
+);
+assert.doesNotMatch(
+  adminReviewStateSource,
+  /decoratedPosts\s*\.\s*filter\(\(post\) => (needsReview\(post\)|post\.status|post\.reportCount|filterPost\(post, item\.value\))/,
+  'Admin review stats should not rescan decoratedPosts for each metric.'
+);
 
 const now = new Date('2026-06-13T08:00:00Z').getTime();
 Date.now = () => now;

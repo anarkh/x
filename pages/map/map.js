@@ -208,8 +208,7 @@ Page({
 
   async buildPosts(center) {
     // Keep the map first paint independent from cloud/network startup timing.
-    const posts = await listPosts(center, { localOnly: true });
-    return posts.map((post) => decorateMapPost(post));
+    return listPosts(center, { localOnly: true });
   },
 
   consumeLaunchFocus(posts) {
@@ -236,14 +235,22 @@ Page({
     if (!this.mapPageActive) {
       return;
     }
-    const viewportPosts = posts.filter((post) => isPostInRegion(post, mapRegion));
+    const viewportPosts = [];
+    const categoryCounts = {};
+    let openPostCount = 0;
+    posts.forEach((post) => {
+      if (isOpenPost(post)) {
+        openPostCount += 1;
+      }
+      if (!isPostInRegion(post, mapRegion)) {
+        return;
+      }
+      viewportPosts.push(post);
+      categoryCounts[post.category] = (categoryCounts[post.category] || 0) + 1;
+    });
     const baseVisiblePosts = activeCategory === 'all'
       ? viewportPosts
       : viewportPosts.filter((post) => post.category === activeCategory);
-    const categoryCounts = {};
-    viewportPosts.forEach((post) => {
-      categoryCounts[post.category] = (categoryCounts[post.category] || 0) + 1;
-    });
     const categoryFilters = categoryOptions.map((item) => ({
       ...item,
       count: item.value === 'all' ? viewportPosts.length : categoryCounts[item.value] || 0
@@ -264,11 +271,11 @@ Page({
       : null;
     const nextData = {
       visiblePosts,
-      nearbyPreviewPosts: buildNearbyPreviewPosts(visiblePosts, selectedPostId),
+      nearbyPreviewPosts: buildNearbyPreviewPosts(baseVisiblePosts, selectedPostId),
       categoryFilters,
       activeCategory,
       activeCategoryText: activeFilter ? activeFilter.label : '全部',
-      openPostCount: posts.filter(isOpenPost).length,
+      openPostCount,
       viewportPostCount: viewportPosts.length,
       mapRegion,
       selectedPost,
@@ -449,7 +456,7 @@ Page({
       center,
       activeCategory,
       showList: false,
-      selectedPost: post,
+      selectedPost: decorateMapPost(post, post.id),
       mapRegion: null
     }, () => this.refresh());
   },

@@ -10,6 +10,11 @@ const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const mapJs = readFileSync(join(rootDir, 'pages/map/map.js'), 'utf8');
 const mapWxml = readFileSync(join(rootDir, 'pages/map/map.wxml'), 'utf8');
 const mapWxss = readFileSync(join(rootDir, 'pages/map/map.wxss'), 'utf8');
+const discoverNearbyStart = mapJs.indexOf('async discoverNearby()');
+const focusPostStart = mapJs.indexOf('\n\n  focusPost(', discoverNearbyStart);
+assert.notEqual(discoverNearbyStart, -1, 'Map page should define discoverNearby.');
+assert.notEqual(focusPostStart, -1, 'Map page should define focusPost after discoverNearby.');
+const discoverNearbyBody = mapJs.slice(discoverNearbyStart, focusPostStart);
 const now = Date.now();
 const posts = [
   {
@@ -134,6 +139,46 @@ assert.match(
   mapJs,
   /launchFocus[\s\S]*?this\.setData\(\{[\s\S]*?showList:\s*launchFocus\.showList[\s\S]*?\},\s*\(\)\s*=>\s*\{[\s\S]*?this\.applyPostFilters\(posts,\s*'all',\s*null\);[\s\S]*?this\.hideDiagnostics\(\);[\s\S]*?\}\)/,
   'Focused map launches should hide startup diagnostics immediately after the list and selected task are ready.'
+);
+assert.match(
+  discoverNearbyBody,
+  /async discoverNearby\(\) \{[\s\S]*?const post = nextCandidates\[Math\.floor\(Math\.random\(\) \* nextCandidates\.length\)\];[\s\S]*?selectedPost:\s*decorateMapPost\(post,\s*post\.id\),[\s\S]*?\}, \(\) => this\.refresh\(\)\);/,
+  'Discovery should decorate only the selected post before showing the selected card.'
+);
+assert.doesNotMatch(
+  discoverNearbyBody,
+  /selectedPost:\s*post\s*[,}]/,
+  'Discovery should not write a raw post into selectedPost while refresh is pending.'
+);
+assert.match(
+  mapJs,
+  /async buildPosts\(center\) \{[\s\S]*?return listPosts\(center,\s*\{ localOnly: true \}\);[\s\S]*?\}/,
+  'buildPosts should keep raw derived posts and leave map decoration to list/preview builders.'
+);
+assert.doesNotMatch(
+  mapJs,
+  /buildPosts\(center\)[\s\S]*?\.map\(\(post\) => decorateMapPost\(post\)\)/,
+  'buildPosts should not pre-decorate every post before filtering and preview building.'
+);
+assert.match(
+  mapJs,
+  /const viewportPosts = \[\];[\s\S]*?const categoryCounts = \{\};[\s\S]*?let openPostCount = 0;[\s\S]*?posts\.forEach\(\(post\) => \{[\s\S]*?if \(isOpenPost\(post\)\) \{[\s\S]*?openPostCount \+= 1;[\s\S]*?\}[\s\S]*?if \(!isPostInRegion\(post, mapRegion\)\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*?viewportPosts\.push\(post\);[\s\S]*?categoryCounts\[post\.category\]/,
+  'Map filtering should collect viewport posts, category counts, and open-post count in a single pass.'
+);
+assert.doesNotMatch(
+  mapJs,
+  /openPostCount:\s*posts\.filter\(isOpenPost\)\.length/,
+  'Map filtering should not rescan all posts just to compute openPostCount.'
+);
+assert.match(
+  mapJs,
+  /nearbyPreviewPosts:\s*buildNearbyPreviewPosts\(baseVisiblePosts,\s*selectedPostId\)/,
+  'NearbyPreview should be built from raw filtered posts so map cards are not decorated twice.'
+);
+assert.doesNotMatch(
+  mapJs,
+  /nearbyPreviewPosts:\s*buildNearbyPreviewPosts\(visiblePosts,\s*selectedPostId\)/,
+  'NearbyPreview should not re-decorate visiblePosts that were already prepared for the list.'
 );
 assert.match(
   mapJs,

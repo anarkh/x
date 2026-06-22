@@ -198,8 +198,57 @@ function matchesQuery(post, query) {
   return terms.every((term) => post.searchText.indexOf(term) >= 0);
 }
 
-function countForFilter(posts, filter) {
-  return posts.filter((post) => filterPost(post, filter)).length;
+function buildAdminSummary(posts) {
+  const filterCounts = adminFilterOptions.reduce((counts, item) => {
+    counts[item.value] = 0;
+    return counts;
+  }, {});
+  const stats = {
+    total: 0,
+    needsReview: 0,
+    active: 0,
+    stale: 0,
+    resolved: 0,
+    reported: 0,
+    hidden: 0
+  };
+
+  posts.forEach((post) => {
+    const postNeedsReview = needsReview(post);
+    stats.total += 1;
+    filterCounts.all += 1;
+
+    if (postNeedsReview) {
+      stats.needsReview += 1;
+      filterCounts.needs_review += 1;
+    }
+    if (post.reportCount > 0) {
+      stats.reported += 1;
+      filterCounts.reported += 1;
+    }
+    if (post.staleCount > 0 || post.status === 'stale') {
+      filterCounts.stale += 1;
+    }
+    if (post.status === 'active') {
+      stats.active += 1;
+      filterCounts.active += 1;
+    }
+    if (isClosed(post)) {
+      filterCounts.closed += 1;
+    }
+    if (post.status === 'stale') {
+      stats.stale += 1;
+    }
+    if (post.status === 'resolved') {
+      stats.resolved += 1;
+    }
+    if (post.status === 'hidden') {
+      stats.hidden += 1;
+      filterCounts.hidden += 1;
+    }
+  });
+
+  return { filterCounts, stats };
 }
 
 export function buildAdminReviewState(posts, options = {}) {
@@ -211,22 +260,15 @@ export function buildAdminReviewState(posts, options = {}) {
   const visiblePosts = decoratedPosts
     .filter((post) => filterPost(post, activeFilter))
     .filter((post) => matchesQuery(post, query));
+  const summary = buildAdminSummary(decoratedPosts);
 
   return {
     posts: decoratedPosts,
     visiblePosts,
     filterOptions: adminFilterOptions.map((item) => ({
       ...item,
-      count: countForFilter(decoratedPosts, item.value)
+      count: summary.filterCounts[item.value] || 0
     })),
-    stats: {
-      total: decoratedPosts.length,
-      needsReview: decoratedPosts.filter(needsReview).length,
-      active: decoratedPosts.filter((post) => post.status === 'active').length,
-      stale: decoratedPosts.filter((post) => post.status === 'stale').length,
-      resolved: decoratedPosts.filter((post) => post.status === 'resolved').length,
-      reported: decoratedPosts.filter((post) => post.reportCount > 0).length,
-      hidden: decoratedPosts.filter((post) => post.status === 'hidden').length
-    }
+    stats: summary.stats
   };
 }

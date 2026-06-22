@@ -15,12 +15,27 @@ let postsLoadPromise = null;
 let postsCache = {
   data: null,
   expiresAt: 0,
-  includeHidden: false
+  includeHidden: false,
+  source: ''
 };
+
+function postsCacheSource(options = {}, allowExplicitSource = false) {
+  if (allowExplicitSource && options.source) {
+    return options.source;
+  }
+  if (options.localOnly) {
+    return 'local';
+  }
+  return shouldUseCloud() ? 'cloud' : 'local';
+}
 
 function cachedPosts(options = {}) {
   const needsHidden = Boolean(options.includeHidden);
+  const source = postsCacheSource(options);
   if (!postsCache.data || postsCache.expiresAt <= Date.now()) {
+    return null;
+  }
+  if (postsCache.source !== source) {
     return null;
   }
   if (needsHidden && !postsCache.includeHidden) {
@@ -33,13 +48,14 @@ function rememberPosts(posts, options = {}) {
   postsCache = {
     data: Array.isArray(posts) ? posts : [],
     expiresAt: Date.now() + POSTS_CACHE_TTL_MS,
-    includeHidden: Boolean(options.includeHidden)
+    includeHidden: Boolean(options.includeHidden),
+    source: postsCacheSource(options, true)
   };
   return postsCache.data;
 }
 
 function rememberCloudPost(post) {
-  if (!post || !postsCache.data) {
+  if (!post || !postsCache.data || postsCache.source !== 'cloud') {
     return;
   }
   const existingIndex = postsCache.data.findIndex((item) => item.id === post.id);
@@ -54,7 +70,7 @@ function rememberCloudPost(post) {
 }
 
 function removeCachedPost(id) {
-  if (!postsCache.data) {
+  if (!postsCache.data || postsCache.source !== 'cloud') {
     return;
   }
   postsCache = {
@@ -133,7 +149,7 @@ function seedPosts() {
 
 function savePosts(posts) {
   wx.setStorageSync(STORAGE_KEY, posts);
-  rememberPosts(posts, { includeHidden: true });
+  rememberPosts(posts, { includeHidden: true, source: 'local' });
 }
 
 function localPostById(id) {
@@ -189,7 +205,13 @@ async function fetchPosts(options = {}) {
 
 async function loadPosts(options = {}) {
   if (options.localOnly) {
-    return seedPosts();
+    if (!options.force) {
+      const cached = cachedPosts(options);
+      if (cached) {
+        return cached;
+      }
+    }
+    return rememberPosts(seedPosts(), { includeHidden: true, source: 'local' });
   }
 
   if (!options.force) {
@@ -202,15 +224,19 @@ async function loadPosts(options = {}) {
     }
   }
 
+  const source = postsCacheSource(options);
   postsLoadPromise = fetchPosts(options)
     .then((posts) => {
       postsLoadPromise = null;
-      return rememberPosts(posts, options);
+      return rememberPosts(posts, {
+        includeHidden: Boolean(options.includeHidden),
+        source
+      });
     })
     .catch((error) => {
       postsLoadPromise = null;
       addDiagnostic('store.loadPosts', error);
-      return rememberPosts(seedPosts(), { includeHidden: true });
+      return rememberPosts(seedPosts(), { includeHidden: true, source: 'local' });
     });
   return postsLoadPromise;
 }
@@ -341,7 +367,10 @@ function viewablePost(post, center = config.defaultCenter) {
 async function sortedDerivedPosts(center, options = {}) {
   const now = Date.now();
   const posts = await loadPosts(options);
-  return posts
+  const sourcePosts = options.includeHidden
+    ? posts
+    : posts.filter((post) => post.status !== 'hidden');
+  return sourcePosts
     .map((post) => derivePost(post, now, center))
     .sort((a, b) => statusRank(a.status) - statusRank(b.status) || b.createdAt - a.createdAt);
 }
@@ -352,10 +381,9 @@ export async function listAllPosts(center = config.defaultCenter) {
 }
 
 export async function listPosts(center = config.defaultCenter, options = {}) {
-  const posts = await sortedDerivedPosts(center, options);
-  return posts
-    .filter((post) => post.status !== 'hidden')
-    .slice(0, config.maxVisiblePosts);
+  // Hidden posts are an admin-only surface; callers cannot opt normal lists into them.
+  const posts = await sortedDerivedPosts(center, { ...options, includeHidden: false });
+  return posts.slice(0, config.maxVisiblePosts);
 }
 
 export async function getPost(id) {
