@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：反馈建议云端集中存储修复；代码已推进，仍需 WeChat DevTools 和 CloudBase 部署验证
-- 当前 blocker：用户可见小程序流程仍需要 WeChat DevTools 或真机预览手动验证；反馈建议线上可见性还需要部署更新后的 `posts` 云函数并创建 `feedback_items` 集合
+- 当前正在实现的用户请求：AB 组 DevTools service-port config forensics，为 9420 blocker 增加只读配置层取证，确认 Service Port UI/config 是否 disabled、端口是否匹配，以及配置结果不能替代真实 UI evidence
+- 当前 blocker：AB 轮只读配置取证显示 DevTools 配置摘要中 `security.enableServicePort=false` 且 `security.port=9420`，同时端口仍无 listener、IPv4/IPv6 均 `ECONNREFUSED`；这说明下一步应由用户在 WeChat DevTools UI 中人工确认并开启 Settings -> Security Settings -> Service Port，真实朋友圈菜单、系统分享面板、payload、CloudBase attribution、窄屏和真机转化仍未产生 passed evidence
 
 ## 会话记录
 
@@ -45,3 +45,1148 @@
 - 更新过的文件或工件：`utils/feedback.js`，`pages/feedback/feedback.js`，`pages/admin/admin.js`，`pages/admin/admin.wxml`，`cloudfunctions/posts/index.js`，`utils/config.js`，`README.md`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在 WeChat DevTools 中提交真实反馈；尚未部署更新后的 `posts` 云函数；CloudBase 需要存在 `feedback_items` 集合，否则提交/管理台会显式失败而不是静默落本地
 - 下一步最佳动作：部署 `posts` 云函数并创建 `feedback_items` 集合后，用普通用户提交反馈，再用管理员账号打开管理台确认能看到该反馈
+
+### Session 004
+
+- 日期：2026-05-15
+- 本轮目标：修复发布图片只存在本地、其他用户浏览不到的问题，同时限制图片存储压力
+- 已完成：发布页选图改为最多 4 张，压缩后单张需小于 1.5MB；图片提交时必须上传 CloudBase Storage 并保存 `cloud://` fileID；图片帖子设置 `requireCloud`，云端帖子保存失败时不再回退成本地帖子；定位先于上传执行，上传后若帖子保存失败会清理新上传的云文件并重置图片项；`posts` 云函数图片数量上限同步为 4，并在 `prepareUpload` 返回大小上限；README 补充图片云存储要求；`harness/init.sh` 支持当前无 npm 且无依赖的 Codex 环境
+- 运行过的验证：`node --check pages/publish/publish.js`；`node --check utils/store.js`；`node --check cloudfunctions/posts/index.js`；`git diff --check`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`bash harness/init.sh`
+- 已记录证据：三条 `node --check` 均通过，无语法错误输出；`git diff --check` 通过；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 在 npm 不存在但 package-lock 无外部依赖时跳过安装，随后 JSON 和 harness 自检通过
+- 更新过的文件或工件：`pages/publish/publish.js`，`pages/publish/publish.wxml`，`utils/store.js`，`cloudfunctions/posts/index.js`，`README.md`，`harness/init.sh`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中实际选择图片发布；尚未部署更新后的 `posts` 云函数；CloudBase Storage 读权限和跨用户图片显示仍需线上验证
+- 下一步最佳动作：部署 `posts` 云函数后，用用户 A 发布含图片任务，再用用户 B 打开地图/详情确认能看到图片，并尝试上传超大图片确认被拦截
+
+### Session 005
+
+- 日期：2026-05-18
+- 本轮目标：按照小程序/TDesign 式设计系统改进现有 UI，降低 AI 生成页面的模板感和旧感
+- 已完成：新增 `DESIGN_SYSTEM.md`，明确本项目的用途、视觉方向、TDesign 策略、语义色、字号和 QA 清单；统一全局背景、卡片、标签、按钮、表单控件和语义状态色；优化自定义 tabBar 为浮动胶囊式底栏；重做地图页列表入口、工具按钮、选中卡片和列表抽屉样式；同步刷新详情、发布、反馈、管理、我的、我的发布和参与记录页面的主要视觉样式
+- 运行过的验证：`node scripts/check-json.mjs`；`git diff --check`；`node harness/check-harness.mjs`；`bash harness/init.sh`
+- 已记录证据：`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`git diff --check` 通过，无输出；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通，npm-free fallback 跳过安装，随后 JSON 和 harness 自检通过
+- 更新过的文件或工件：`DESIGN_SYSTEM.md`，`app.json`，`app.wxss`，`custom-tab-bar/index.wxml`，`custom-tab-bar/index.wxss`，`pages/map/map.wxml`，`pages/map/map.wxss`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`pages/publish/publish.wxss`，`pages/feedback/feedback.wxss`，`pages/admin/admin.wxss`，`pages/me/me.wxss`，`pages/my-posts/my-posts.wxss`，`pages/activities/activities.wxss`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：没有安装 `tdesign-miniprogram` 依赖，原因是当前仓库没有小程序 npm 构建链路且本地 baseline 会在 npm 不存在时跳过安装；本轮采用 TDesign 式 token 和控件规则落地。尚未在 WeChat DevTools 或真机中做截图验收，tabBar safe area、地图浮层和表单视觉仍需手动确认。
+- 下一步最佳动作：在 WeChat DevTools 中打开地图、发布、详情、我的和管理页，确认浮动 tab、地图抽屉、详情图片、评论弹窗和表单控件在常见手机宽度下无遮挡和溢出。
+
+### Session 006
+
+- 日期：2026-05-18
+- 本轮目标：修正底部 tabBar 悬浮导致表单页底部内容透出、主按钮被压在后方的视觉问题
+- 已完成：自定义 tabBar 从浮动胶囊改为贴底不透明导航栏，保留 active 背景和橙色短指示条；地图页工具按钮、选中任务卡和列表抽屉的底部偏移同步调整，列表抽屉贴到 tabBar 上沿；`DESIGN_SYSTEM.md` 增加“tabBar 贴底且不留透底间隙”的规则
+- 运行过的验证：`bash harness/init.sh`；`git diff --check`；`node harness/check-harness.mjs`
+- 已记录证据：`bash harness/init.sh` 完整跑通，npm-free fallback 跳过安装，随后 JSON 和 harness 自检通过；`git diff --check` 通过，无输出；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`
+- 更新过的文件或工件：`custom-tab-bar/index.wxss`，`pages/map/map.wxss`，`DESIGN_SYSTEM.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机中重新截图确认发布页底部、地图抽屉和 safe area 表现。
+- 下一步最佳动作：在 WeChat DevTools 中打开发布页，确认底部按钮不再从 tabBar 下方透出；再打开地图页列表抽屉，确认抽屉底部与 tabBar 上沿衔接自然。
+
+### Session 007
+
+- 日期：2026-05-19
+- 本轮目标：调用 `design-ui-designer` skill，把上一轮 UI 优化方案落地到核心页面，优先让发布页和地图页产生可见质感变化
+- 已完成：新增全局 `BottomAction` 固定底部操作区样式；发布页改成“任务内容”和“分类与位置”两个 `FormSection`，分类从 picker 改为两列直接点选按钮，提交按钮固定在 tabBar 上方；地图列表抽屉新增 `DrawerCounter` 屏幕内计数，任务卡信号改成确认/过时/有效期三枚 `SignalPill`；`DESIGN_SYSTEM.md` 补充 BottomAction、FormSection、CategoryOption、DrawerCounter、SignalPill 组件规范
+- 运行过的验证：`node --check pages/publish/publish.js`；`node scripts/check-json.mjs`；`git diff --check`；`node harness/check-harness.mjs`；`bash harness/init.sh`
+- 已记录证据：`node --check pages/publish/publish.js` 通过；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`git diff --check` 通过，无输出；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通，npm-free fallback 跳过安装，随后 JSON 和 harness 自检通过
+- 更新过的文件或工件：`app.wxss`，`pages/publish/publish.wxml`，`pages/publish/publish.wxss`，`pages/publish/publish.js`，`pages/map/map.wxml`，`pages/map/map.wxss`，`DESIGN_SYSTEM.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机中确认发布页固定底部操作区是否与键盘、tabBar、safe area 完全协调；地图抽屉新增计数和三指标信息栏仍需截图验收。
+- 下一步最佳动作：在 WeChat DevTools 中打开发布页逐项填写并滚动到底部，确认固定提交区不遮挡表单；打开地图页列表抽屉，确认任务卡三指标不挤压、不溢出。
+
+### Session 008
+
+- 日期：2026-05-21
+- 本轮目标：修复 UI 优化后小程序打开白屏/报错的问题
+- 已完成：检查项目日志、微信开发者工具本地日志、WXML/WXSS 全量本地编译和 JS 语法；未发现模板、样式或 JS 语法错误；将自定义 tabBar 中新增的空 `cover-view` 指示条、绝对定位和裁剪样式移除，保留贴底不透明导航栏与 active 背景，降低 `cover-view` 渲染兼容风险
+- 运行过的验证：微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node --check pages/map/map.js`；`node --check pages/publish/publish.js`；`node scripts/check-json.mjs`；`git diff --check`；`bash harness/init.sh`
+- 已记录证据：全量 WXML/WXSS 本地编译均通过，无错误输出；两条 `node --check` 均通过，无语法错误输出；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`git diff --check` 通过，无输出；`bash harness/init.sh` 完整跑通，npm install up to date，随后 JSON 和 harness 自检通过
+- 更新过的文件或工件：`custom-tab-bar/index.wxml`，`custom-tab-bar/index.wxss`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：无法在当前安全约束下调用 DevTools preview 生成预览包；仍需用户在已打开的 WeChat DevTools 中重新编译确认白屏是否消失。若仍白屏，需要记录控制台第一条红色错误。
+- 下一步最佳动作：在 WeChat DevTools 中重新编译项目，先看地图 tab 是否恢复；再切到发布 tab，确认底部固定提交区和贴底 tabBar 正常显示。
+
+### Session 009
+
+- 日期：2026-05-21
+- 本轮目标：继续修复“打开页面依然白屏，并且没有日志可确认错误原因”
+- 已完成：用 WeChat DevTools 直接确认模拟器先报 `TypeError: Cannot read property 'subPackages' of undefined`，该错误来自 DevTools hot reload/getAppConfig；新增 `utils/diagnostics.js` 记录运行诊断；`app.js` 对 CloudBase 初始化、用户初始化、全局错误和未处理 Promise 增加保护；`utils/store.js` 在云端读取失败时记录诊断并回落本地 mock；地图页新增启动诊断面板，启动失败时可直接在页面上看到最近错误；通过 DevTools UI 清除编译缓存、终止模拟器并重新编译后，地图页恢复显示，控制台清空后再次编译无调试器错误
+- 运行过的验证：`node --check app.js`；`node --check utils/diagnostics.js`；`node --check utils/store.js`；`node --check pages/map/map.js`；`node scripts/check-json.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node harness/check-harness.mjs`；`bash harness/init.sh`；WeChat DevTools 手动清编译缓存、终止模拟器、重新编译并观察地图页
+- 已记录证据：四条 `node --check` 均通过，无语法错误输出；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`git diff --check` 通过，无输出；全量 WXML/WXSS 本地编译均通过，无错误输出；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通，npm install up to date，随后 JSON 和 harness 自检通过；WeChat DevTools 地图页显示地图、底部 tabBar 和列表入口，页面路径为 `pages/map/map`；清空控制台后再次编译，调试器错误为 0
+- 更新过的文件或工件：`utils/diagnostics.js`，`app.js`，`utils/store.js`，`pages/map/map.js`，`pages/map/map.wxml`，`pages/map/map.wxss`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：DevTools CLI 清缓存需要开启服务端口，本轮没有开启该设置，改用 DevTools UI 完成清编译缓存；尚未真机验证定位授权、地图 marker 点击和发布页完整流程；云函数/CloudBase Storage 仍需部署后验证
+- 下一步最佳动作：在 DevTools 中点“列表”打开地图抽屉，再切到发布 tab 检查固定底部按钮和 tabBar 贴底效果；随后真机验证定位授权和云端数据路径
+
+### Session 010
+
+- 日期：2026-05-21
+- 本轮目标：修复清缓存后仍可能出现的 `Error: timeout`，并确认打开地图页不再白屏
+- 已完成：`utils/store.js` 新增 `listPosts(center, { localOnly: true })` 路径；地图首页首屏改为默认中心 + 本地帖子优先展示，不再启动时自动请求定位、不再启动时调用 CloudBase 列表、不再启动时读取 `mapContext.getRegion`；`map` 组件的 `show-location` 改为定位成功后才开启；地图抽屉文案从“屏幕内”调整为“附近”，避免取消首屏 region 读取后的语义不一致
+- 运行过的验证：`node --check utils/store.js`；`node --check pages/map/map.js`；`node scripts/check-json.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node harness/check-harness.mjs`；`bash harness/init.sh`；WeChat DevTools 清空控制台后重新编译地图页
+- 已记录证据：两条 `node --check` 均通过，无语法错误输出；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`git diff --check` 通过，无输出；`wcc` 和 `wcsc -lc` 全量编译退出码为 0；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通，npm install up to date，随后 JSON 和 harness 自检通过；WeChat DevTools 地图页显示地图、marker、底部 tabBar 和列表入口，清空控制台并重新编译后调试器显示 Errors: 0，未再出现 `Error: timeout`
+- 更新过的文件或工件：`utils/store.js`，`pages/map/map.js`，`pages/map/map.wxml`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：定位按钮仍会在用户点击时调用 `wx.getLocation`，需要真机验证授权/拒绝/超时三种路径；地图首屏现在以本地 mock/storage 数据兜底，云端列表不会阻塞首屏，后续若要实时云端 feed 需要加后台刷新策略；DevTools 仍有热重载、SharedArrayBuffer、getSystemInfo 三条非阻塞警告
+- 下一步最佳动作：在真机或 DevTools 中点击“返回当前位置”验证定位授权分支；再打开列表抽屉和任务详情确认交互链路完整
+
+### Session 011
+
+- 日期：2026-05-21
+- 本轮目标：解释并修复“任务列表里好几个任务点击详情提示任务不存在”
+- 已完成：确认根因是地图列表首屏使用本地 mock/storage 数据，而详情页 `getPost` 在 CloudBase 可用时只查云函数；当云端没有这些本地任务 id 时会返回 `post: null`，详情页因此显示不存在。`utils/store.js` 现在会先记住本地同 id 任务，云端 get 返回空或 `NOT_FOUND` 时回落本地；`NOT_FOUND` 也纳入评论/信任动作的本地 fallback 范围，保证本地列表任务进入详情后评论区和操作链路不再被云端缺失拦住。
+- 运行过的验证：`node --check utils/store.js`；`node --check pages/detail/detail.js`；`node scripts/check-json.mjs`；`git diff --check`；`bash harness/init.sh`；WeChat DevTools 从地图列表打开“测试”任务详情
+- 已记录证据：两条 `node --check` 均通过，无语法错误输出；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`git diff --check` 通过，无输出；`bash harness/init.sh` 完整跑通，npm install up to date，随后 JSON 和 harness 自检通过；WeChat DevTools 中打开列表后点击“测试”的“查看详情”，详情页显示任务标题、正文、状态、信任动作和评论区，没有再显示“任务不存在”
+- 更新过的文件或工件：`utils/store.js`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：DevTools 仍会偶发输出 `WAServiceMainContext timeout`，当前观察它来自小程序/地图原生层而不是详情数据缺失；若要彻底压掉，需要继续单独排查地图组件本身或 DevTools 模拟器行为
+- 下一步最佳动作：再点列表里的失物招领、求助问答、地点动态各一条进入详情，确认多分类 id 都能走本地 fallback；随后再决定是否继续单独处理原生 timeout
+
+### Session 012
+
+- 日期：2026-05-21
+- 本轮目标：详情页添加发布者头像和名称，并与地址/时间同排展示
+- 已完成：`pages/detail/detail.js` 为详情数据补充发布者名称、头像 URL 和无头像首字兜底；`pages/detail/detail.wxml` 将原底部元信息改成左侧发布者、右侧地点/距离/发布时间的同排布局；`pages/detail/detail.wxss` 增加头像、名称省略和右侧元信息右对齐样式
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/detail/detail.js`；`node scripts/check-json.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node harness/check-harness.mjs`；WeChat DevTools 查看详情页渲染
+- 已记录证据：`bash harness/init.sh` 完整跑通，npm install up to date，随后 JSON 和 harness 自检通过；`node --check pages/detail/detail.js`、`node scripts/check-json.mjs`、`git diff --check`、全量 WXML/WXSS 编译和 `node harness/check-harness.mjs` 均通过；WeChat DevTools 详情页可见左侧“匿名用户”和右侧“大钟寺广场 · 226m · 23天前”同排展示
+- 更新过的文件或工件：`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：DevTools 控制台仍显示既有的原生 `WAServiceMainContext timeout`，本轮观察该错误未阻断详情页渲染；发布者行的真实头像展示仍需在已设置头像的账号上验证
+- 下一步最佳动作：用一个已登录且设置头像的发布者发布任务后进入详情，确认真实头像展示；再在更长地点名称的数据上确认右侧文本省略符合预期
+
+### Session 013
+
+- 日期：2026-05-21
+- 本轮目标：按反馈优化地图信息列表卡片布局和抽屉高度
+- 已完成：地图列表抽屉改为 `flex` 纵向布局并撑满 tabBar 上方空间；任务卡取消三块指标卡，分类/状态标签移动到标题后面；标题下展示任务正文；底部左侧改为 `确认：数量`、`过时：数量` 的轻量文字，右侧显示发布时间和距离；右侧详情入口从粗边框箭头改为居中轻量 `›`
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node scripts/check-json.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node harness/check-harness.mjs`；WeChat DevTools 查看打开的信息列表
+- 已记录证据：`bash harness/init.sh` 完整跑通，npm install up to date，随后 JSON 和 harness 自检通过；`node --check pages/map/map.js`、`node scripts/check-json.mjs`、`git diff --check`、全量 WXML/WXSS 编译和 `node harness/check-harness.mjs` 均通过；WeChat DevTools 中信息列表铺到 tabBar 上沿，卡片显示“标题 + 打卡/已过期标签”、正文、底部统计和右侧时间距离
+- 更新过的文件或工件：`pages/map/map.wxml`，`pages/map/map.wxss`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：DevTools 控制台仍显示既有的原生 `WAServiceMainContext timeout`，本轮观察该错误未阻断地图列表渲染；更长标题和带图卡片仍建议真机再看一次
+- 下一步最佳动作：在真机或 DevTools 不同机型宽度下打开信息列表，确认标题较长、正文较长和带图卡片都不挤压底部统计
+
+### Session 014Docs
+
+- 日期：2026-05-26
+- 本轮目标：总结当前项目并写出 Markdown 文档
+- 已完成：新增根目录 `PROJECT_SUMMARY.md`，从项目定位、核心用户场景、技术栈、页面结构、共享模块、数据模型、状态规则、云端/本地降级、设计系统、运行验证方式、当前状态和后续风险等维度总结 Street Tasks 小程序
+- 运行过的验证：`bash harness/init.sh`；`git diff --check`；`rg --files -g 'AGENT*'`
+- 已记录证据：`bash harness/init.sh` 完整跑通；当前无 npm 时基于 package-lock 无外部依赖跳过安装，随后 `node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`rg --files -g 'AGENT*'` 仅输出 `AGENTS.md`，确认误建的 `AGENT.MD` 已移除
+- 更新过的文件或工件：`PROJECT_SUMMARY.md`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮仅新增项目总结文档，没有改变小程序运行逻辑；既有 WeChat DevTools/真机验证缺口仍然存在
+- 下一步最佳动作：继续围绕 `map-feed-001` 做地图首页、定位授权、marker 详情链路和不同机型列表抽屉的手动验证
+
+### Session 015Docs
+
+- 日期：2026-05-26
+- 本轮目标：生成/更新根目录 `AGENTS.md`
+- 已完成：按用户纠正移除误建的 `AGENT.MD`；更新现有 `AGENTS.md`，补充当前项目快照、CloudBase/本地降级、图片发布约束、关键模块与页面、验证命令、评论/反馈/反应数据说明和收尾要求
+- 运行过的验证：`bash harness/init.sh`
+- 已记录证据：`bash harness/init.sh` 完整跑通；当前无 npm 时基于 package-lock 无外部依赖跳过安装，随后 `node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`
+- 更新过的文件或工件：`AGENTS.md`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮仅新增 agent 文档，没有改变小程序运行逻辑；既有 WeChat DevTools/真机验证缺口仍然存在
+- 下一步最佳动作：继续围绕 `map-feed-001` 做地图首页、定位授权、marker 详情链路和不同机型列表抽屉的手动验证
+
+### Session 016Understand
+
+- 日期：2026-05-28
+- 本轮目标：运行 `understand` skill，为当前仓库生成 Understand Anything 知识图谱
+- 已完成：构建本地 understand-anything core 依赖；生成并调整 `.understand-anything/.understandignore`，排除 `.agents/`、`log/`、本地私有配置和分析器临时目录；扫描 73 个项目文件；生成 `.understand-anything/knowledge-graph.json`、`meta.json` 和 `fingerprints.json`
+- 运行过的验证：`bash harness/init.sh`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`node` 解析 `.understand-anything/knowledge-graph.json`、`meta.json`、`fingerprints.json`；Understand inline graph validation
+- 已记录证据：图谱验证结果为 0 issues、0 warnings；图谱包含 164 个节点、188 条边、7 个架构层和 8 个 guided tour steps；`build-fingerprints.mjs` 输出 `Fingerprints baseline: 73 files`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`.understand-anything/.understandignore`，`.understand-anything/knowledge-graph.json`，`.understand-anything/meta.json`，`.understand-anything/fingerprints.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮仅生成代码理解图谱，没有改变小程序运行逻辑；WeChat DevTools/真机验证缺口仍沿用既有记录
+- 下一步最佳动作：需要浏览架构时打开 Understand dashboard；产品验证仍继续围绕 `map-feed-001` 的定位授权、marker 详情链路和列表抽屉做手动确认
+
+### Session 014A
+
+- 日期：2026-06-12
+- 分支：`codex/iter-map-ux`
+- 本轮目标：A 组产品/设计/开发探索地图首页附近任务浏览迭代
+- 产品假设：地图首屏虽然有列表入口，但用户进入后仍需要打开抽屉才知道最近可处理任务；新增附近优先预览应降低首次浏览成本
+- 已完成：新增 `NearbyPreview` 首屏横向预览，按距离优先展示 active/stale 任务；地图任务装饰抽到 `utils/post-presenter.js`；marker、预览和列表选中态联动；选中 marker callout 使用深色强调；新增 `harness/check-map-feed.mjs`
+- 运行过的验证：`node --check pages/map/map.js`；`node --check utils/post-presenter.js`；`node --check utils/geo.js`；`node harness/check-map-feed.mjs`
+- 已记录证据：三条 `node --check` 通过；`node harness/check-map-feed.mjs` 输出 `Map feed checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证地图原生层、首屏预览是否遮挡地图工具、窄屏文案省略、marker 点击和详情链路
+- 下一步最佳动作：在 WeChat DevTools 打开地图页，观察 NearbyPreview、点击预览/marker/列表之间的选中联动，再决定是否合入主线
+
+### Session 015A
+
+- 日期：2026-06-12
+- 分支：`codex/iter-map-ux`
+- 本轮目标：按用户评测报告收敛 NearbyPreview 遮挡和长标题风险
+- 已完成：NearbyPreview 改用 `previewTitle` 短标题；`buildNearbyPreviewPosts` 为预览卡生成截断标题；检查脚本覆盖长标题截断，避免首屏预览被超长标题撑开
+- 运行过的验证：`node harness/check-map-feed.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`node harness/check-map-feed.mjs` 先因 `previewTitle` 缺失按预期失败，补实现后输出 `Map feed checks passed.`；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证真实地图覆盖层、横向滚动和 marker callout 渲染
+- 下一步最佳动作：跑完整自动验证后，用 DevTools 验证窄屏首屏遮挡关系
+
+### Session 014B
+
+- 日期：2026-06-12
+- 分支：`codex/iter-publish-flow`
+- 本轮目标：B 组产品/设计/开发探索发布流程迭代
+- 产品假设：用户在提交时才触发定位和校验会造成失败感；把发布准备度和位置确认前置，应提升表单完成率
+- 已完成：新增 `pages/publish/publish-state.js` 计算身份、内容、分类和位置准备度；发布页新增发布准备清单、标题/详情字数提示、当前位置显式确认、有效期直接按钮和动态底部提交文案；新增 `scripts/check-publish-flow.mjs`
+- 运行过的验证：`node --check pages/publish/publish.js`；`node --check pages/publish/publish-state.js`；`node --no-warnings scripts/check-publish-flow.mjs`
+- 已记录证据：两条 `node --check` 通过；`node --no-warnings scripts/check-publish-flow.mjs` 输出 `Publish flow checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权、键盘遮挡、位置确认失败恢复、图片上传和真实发布闭环
+- 下一步最佳动作：在 WeChat DevTools 用游客和登录用户分别打开发布页，验证准备度清单、定位确认、必填提示、图片和发布成功链路
+
+### Session 015B
+
+- 日期：2026-06-12
+- 分支：`codex/iter-publish-flow`
+- 本轮目标：按用户评测报告收敛发布准备度的定位失败和重试路径
+- 已完成：`buildPublishState` 细化 locating/failed/ready 文案；只缺当前位置时底部按钮可直接触发定位确认；定位失败文案改为检查授权或重试；发布检查脚本覆盖定位中、待确认、失败重试和失物招领方向补齐
+- 运行过的验证：`node --no-warnings scripts/check-publish-flow.mjs`
+- 已记录证据：`node --no-warnings scripts/check-publish-flow.mjs` 输出 `Publish flow checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权弹窗、拒绝/超时恢复、键盘遮挡和图片上传失败回滚
+- 下一步最佳动作：跑完整自动验证后，在真机或 DevTools 中验证定位允许、拒绝、重试三条路径
+
+### Session 016B
+
+- 日期：2026-06-12
+- 分支：`codex/iter-publish-flow`
+- 本轮目标：第三轮聚焦发布准备度状态机稳定性
+- 已完成：`buildPublishState` 新增 `primaryAction`，显式区分 `login`、`fill`、`confirmLocation`、`waitLocation`、`publish`、`submitting`；发布页 `submit()` 改为按 `primaryAction` 分派，避免页面层重复推断 missing 数组
+- 运行过的验证：`node --no-warnings scripts/check-publish-flow.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：检查脚本先因 `primaryAction` 缺失按预期失败，补实现后输出 `Publish flow checks passed.`；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证定位授权、键盘安全区、图片上传失败回滚和发布后详情跳转；CLI `open`/`preview` 已尝试启用服务端口并连接 9420，但均因 `wait IDE port timeout` 失败，`preview` 未产出二维码信息
+- 下一步最佳动作：在本机 WeChat DevTools UI 中确认“设置 -> 安全设置 -> 服务端口”已开启并重新打开 `/tmp/street-tasks-iter-worktrees/publish`，再执行游客、缺位置、定位失败/重试、图片发布和发布后详情跳转手测
+
+### Session 014C
+
+- 日期：2026-06-12
+- 分支：`codex/iter-detail-trust`
+- 本轮目标：C 组产品/设计/开发探索详情页信任判断迭代
+- 产品假设：详情页已有评论和信任动作，但用户仍需从原始计数自行判断可信度；信任判断摘要应让下一步行动更清楚
+- 已完成：新增 `formatTrustInsight` 将确认、过时、举报和评论数归纳为信任判断；详情页在信任动作前新增 TrustInsight 面板和分段指标；评论区标题右侧新增写评论入口，保留长页面上的悬浮评论按钮
+- 运行过的验证：`node --check pages/detail/detail.js`；`node --check utils/format.js`；Node import check for `formatTrustInsight`
+- 已记录证据：两条 `node --check` 通过；Node import check 输出 `Trust insight checks passed.`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证窄屏布局、信任动作后的面板刷新、游客登录评论引导、resolved/expired 只读状态和云端评论路径
+- 下一步最佳动作：在 WeChat DevTools 打开 active、stale、resolved、expired 任务详情，验证 TrustInsight 文案、指标换行和评论入口
+
+### Session 017F
+
+- 日期：2026-06-13
+- 分支：`codex/iter-candidate-publish-trust`
+- 本轮目标：组合 B 组发布准备度和 C 组详情信任解释，形成更接近合入候选的第六组实验
+- 已完成：从 `codex/iter-publish-flow` HEAD 创建候选分支，cherry-pick C 组详情信任三个提交；合并 `DESIGN_SYSTEM.md` 和 harness 记录冲突，保留 `PublishReadiness`、`LocationCheck` 和谨慎版 `TrustInsight` 规则；新增 `harness/candidate-publish-trust-report.md` 记录组合目标、验证和未手测项
+- 运行过的验证：`node --check pages/publish/publish.js`；`node --check pages/publish/publish-state.js`；`node --check pages/detail/detail.js`；`node --check utils/format.js`；`node --check harness/check-trust-insight.mjs`；`node --no-warnings scripts/check-publish-flow.mjs`；`node harness/check-trust-insight.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：发布检查输出 `Publish flow checks passed.`；详情信任检查输出 `Trust insight checks passed.`；JSON 检查输出 `Checked 11 JSON files.`；harness 检查输出 `Harness OK: 6 features checked.`；`git diff --check` 通过；全量 WXML/WXSS 本地编译退出码均为 0
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证发布定位授权、键盘安全区、图片上传失败回滚、发布后详情跳转；尚未验证详情页 TrustInsight 窄屏、评论入口、信任动作刷新和云端评论路径；DevTools CLI 9420 端口超时问题未在本组合分支重新尝试
+- 下一步最佳动作：启动用户评测 agent 对 F 组组合候选评分；随后在 WeChat DevTools UI 中优先手测 F 组发布闭环，再手测详情 TrustInsight
+
+### Session 018G
+
+- 日期：2026-06-14
+- 分支：`codex/iter-candidate-hardening`
+- 本轮目标：第七组候选硬化实验，为 F 组组合候选补充产品风险排序、视觉手测清单和跨页面 smoke 检查
+- 已完成：产品 agent 输出 `harness/hardening-product-brief.md`，明确发布闭环、位置确认、详情信任解释和边界状态是最高风险；设计 agent 输出 `harness/hardening-design-checklist.md`，覆盖发布准备度、定位卡片、底部按钮、TrustInsight、评论入口、信任动作、窄屏、键盘、安全区和图片状态；开发 agent 新增 `scripts/check-candidate-flow.mjs`，用纯逻辑同时覆盖发布 `primaryAction` 状态机和 TrustInsight 谨慎文案
+- 运行过的验证：`node --check scripts/check-candidate-flow.mjs`；`node scripts/check-candidate-flow.mjs`
+- 已记录证据：`node scripts/check-candidate-flow.mjs` 输出 `Candidate flow checks passed.`，同时出现项目既有的 `MODULE_TYPELESS_PACKAGE_JSON` ESM 警告
+- 更新过的文件或工件：`harness/hardening-product-brief.md`，`harness/hardening-design-checklist.md`，`scripts/check-candidate-flow.mjs`
+- 已知风险或未解决问题：本轮不改功能代码，仍未完成 WeChat DevTools/真机真实发布闭环、图片上传、定位授权、详情信任动作刷新、评论入口和云端路径验证
+- 下一步最佳动作：运行完整候选验证命令并提交 G 组硬化；随后更新用户评测报告，记录 G 组不是新功能合入候选，而是降低 F 组手测风险的验证增强
+
+### Session 015C
+
+- 日期：2026-06-12
+- 分支：`codex/iter-detail-trust`
+- 本轮目标：按用户评测报告收敛 TrustInsight 文案误导和冲突优先级风险
+- 已完成：确认文案从“有人确认有效”改为更谨慎的“有确认信号”；评论-only 场景改为“先看评论线索”；新增 `harness/check-trust-insight.mjs` 覆盖举报优先、过时优先、resolved/expired、comments-only 和四指标短 note
+- 运行过的验证：`node harness/check-trust-insight.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`node harness/check-trust-insight.mjs` 先因旧文案按预期失败，补实现后输出 `Trust insight checks passed.`；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机验证 TrustInsight 面板密度、信任动作点击刷新和云端评论路径
+- 下一步最佳动作：跑完整自动验证后，优先做 DevTools 手测以决定是否将 C 组合入主线
+
+### Session 019H
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-readiness`
+- 本轮目标：第八组 DevTools/真机手测准入实验，为 G/F 候选补齐产品准入、手测清单和自动前置门禁，避免把脚本结果误判为真实用户旅程通过
+- 已完成：产品 agent 输出 `harness/devtools-readiness-product-brief.md`，明确 H 组目标、非目标、自动检查门槛、必测用户旅程、证据升级规则和阻塞记录口径；设计/QA agent 输出 `harness/devtools-readiness-checklist.md`，覆盖测试环境记录、DevTools 编译/控制台、地图、发布、详情、跨用户和云端路径的待执行手测清单；开发 agent 新增 `scripts/check-devtools-readiness.mjs`，检查 readiness 文档和既有候选脚本齐备，并串联发布、TrustInsight、候选 flow 检查
+- 运行过的验证：`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`bash harness/init.sh`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `Publish flow checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`DevTools readiness checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通；`git diff --check` 通过；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出
+- 更新过的文件或工件：`harness/devtools-readiness-product-brief.md`，`harness/devtools-readiness-checklist.md`，`scripts/check-devtools-readiness.mjs`
+- 已知风险或未解决问题：H 组不新增功能，也不代表已经完成 WeChat DevTools/真机手测；真实定位授权、键盘/安全区、图片上传、发布后详情跳转、信任动作刷新、评论入口、跨用户和云端路径仍必须按清单执行并记录证据
+- 下一步最佳动作：启动用户评测 agent 评估 H 组相对 G 组的价值；若继续推进，优先在 WeChat DevTools UI 打开 `/tmp/street-tasks-iter-worktrees/devtools-readiness`，按 readiness 清单执行完整手测并把结果写回 harness
+
+### Session 020I
+
+- 日期：2026-06-14
+- 分支：`codex/iter-manual-evidence-gate`
+- 本轮目标：第九组手测证据完整性实验，为 H 组 readiness 后续真实手测补充机器可读结果模板和校验脚本，防止“已通过”缺少环境、步骤、实际结果和证据
+- 已完成：产品 agent 输出 `harness/manual-evidence-product-brief.md`，定义 `passed`、`failed`、`blocked`、`not_covered` 状态和发布准入影响；QA/数据 agent 输出 `harness/manual-test-results.example.json`，提供不声称真实通过的手测结果示例；开发 agent 新增 `scripts/check-manual-evidence.mjs`，校验顶层环境、journey 字段、状态枚举和不同状态的证据要求
+- 运行过的验证：`node --check scripts/check-manual-evidence.mjs`；`node scripts/check-manual-evidence.mjs`；`node -e` 解析 `harness/manual-test-results.example.json`；`git diff --check`；用 `/tmp/manual-evidence-bad.json` 临时坏样例验证缺 evidence 的 `passed` 会失败
+- 已记录证据：`node scripts/check-manual-evidence.mjs` 输出 `Manual evidence checks passed.`；JSON 解析输出 `manual evidence example JSON parsed`；坏样例检查输出 `Bad passed evidence rejected as expected.`
+- 更新过的文件或工件：`harness/manual-evidence-product-brief.md`，`harness/manual-test-results.example.json`，`scripts/check-manual-evidence.mjs`
+- 已知风险或未解决问题：I 组仍不代表已经完成真实 WeChat DevTools/真机手测；示例 JSON 只覆盖 `not_covered` 和 `blocked` 写法，没有真实 `passed` 证据；后续若填真实结果，必须附可复核截图、录屏、日志、任务 id 或云端记录
+- 下一步最佳动作：运行完整候选验证并提交 I 组；随后启动用户评测 agent，评估 I 组相对 H 组是否进一步降低“手测口头通过但证据不足”的风险
+
+### Session 021J
+
+- 日期：2026-06-14
+- 分支：`codex/iter-evidence-hygiene`
+- 本轮目标：第十组证据卫生实验，为 I 组手测结果证据补充提交前脱敏边界、本地附件忽略规则和敏感内容扫描，避免真实截图、云端 ID、本机路径或 token 进入仓库
+- 已完成：产品 agent 输出 `harness/evidence-hygiene-product-brief.md`，区分可提交摘要与本地原始证据；安全/QA agent 输出 `harness/evidence-redaction-checklist.md`，列出提交前脱敏和 reviewer 检查项；开发 agent 新增 `scripts/check-evidence-hygiene.mjs`，校验 `.gitignore`、可提交 evidence 文档和 example JSON；主线程更新 `.gitignore`，忽略 `harness/manual-test-results.local*.json` 与 `harness/manual-evidence-artifacts/`
+- 运行过的验证：`node --check scripts/check-evidence-hygiene.mjs`；`node scripts/check-evidence-hygiene.mjs`；`node scripts/check-manual-evidence.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；用 `/tmp/evidence-hygiene-bad-root` 临时坏样例验证具体 `cloud://` 路径和 example 中 `passed` 会失败
+- 已记录证据：`node scripts/check-evidence-hygiene.mjs` 输出 `Evidence hygiene checks passed.`；`node scripts/check-manual-evidence.mjs` 输出 `Manual evidence checks passed.`；readiness 检查输出 `Publish flow checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`DevTools readiness checks passed.`；坏样例检查输出 `Bad evidence hygiene sample rejected as expected.`
+- 更新过的文件或工件：`.gitignore`，`harness/evidence-hygiene-product-brief.md`，`harness/evidence-redaction-checklist.md`，`scripts/check-evidence-hygiene.mjs`
+- 已知风险或未解决问题：J 组不代表真实 DevTools/真机手测或真实脱敏审查已经完成；它只保护 future 手测证据提交边界。真实附件仍应保存在本地或受控系统，提交前还需按清单人工复核
+- 下一步最佳动作：运行完整候选验证并提交 J 组；随后启动用户评测 agent，评估 J 组是否进一步降低“完整证据但含敏感原始材料”的风险
+
+### Session 022K
+
+- 日期：2026-06-14
+- 分支：`codex/iter-manual-runbook`
+- 本轮目标：第十一组手测运行手册实验，为 J 组证据卫生链路补充可执行入口，帮助后续执行者准备 ignored local 结果文件、确认 worktree、运行前置门禁和收尾门禁
+- 已完成：产品 agent 输出 `harness/manual-runbook-product-brief.md`，定义 helper 目标、非目标、本地文件命名和 H/I/J/K 分工；QA agent 输出 `harness/manual-runbook-checklist.md`，覆盖准备、执行、收尾和常见失败修复；开发 agent 新增 `scripts/prepare-manual-test-run.mjs`，从 example 生成 ignored local 结果文件、创建 ignored 附件目录、运行 readiness/manual evidence/evidence hygiene 三层门禁并打印下一步；主线程补充输出路径 guard，只允许 `harness/manual-test-results.local*.json`
+- 运行过的验证：`node --check scripts/prepare-manual-test-run.mjs`；`node scripts/prepare-manual-test-run.mjs --out harness/manual-test-results.local-smoke.json`；`node scripts/prepare-manual-test-run.mjs --out harness/not-local-test-results.json` 验证非 ignored 路径会失败；重复运行 local smoke 验证默认拒绝覆盖；解析生成的 local smoke JSON，确认 `branch=codex/iter-manual-runbook`、`summary.overallStatus=not_covered`、`passed` journey 数量为 0；清理临时 ignored 产物
+- 已记录证据：helper 正向运行输出 readiness、manual evidence、evidence hygiene 三层门禁均通过并输出 `Manual test run prepared.`；非 ignored 输出路径失败并提示必须匹配 `harness/manual-test-results.local*.json`；重复运行失败并提示 `Refusing to overwrite existing output file`；local smoke 解析输出 `local smoke result prepared for codex/iter-manual-runbook@4aff484; passed journeys: 0`
+- 更新过的文件或工件：`harness/manual-runbook-product-brief.md`，`harness/manual-runbook-checklist.md`，`scripts/prepare-manual-test-run.mjs`
+- 已知风险或未解决问题：K 组仍不代表真实 DevTools/真机手测已经完成；helper 只准备本地结果文件和命令入口，不收集真实截图/录屏/日志，也不替执行者判断 passed；后续仍需真实手测、填写 local JSON，并通过 I/J 门禁和人工脱敏复核
+- 下一步最佳动作：运行完整候选验证并提交 K 组；随后启动用户评测 agent，评估 K 组是否进一步降低“准备手测时漏跑门禁或误改 example”的风险
+
+### Session 023L
+
+- 日期：2026-06-14
+- 分支：`codex/iter-sanitized-summary`
+- 本轮目标：第十二组手测脱敏摘要实验，为 K 组 local 手测结果补充 Markdown 摘要草稿生成器，方便评测/评审阅读而不提交原始证据
+- 已完成：产品 agent 输出 `harness/sanitized-summary-product-brief.md`，明确摘要草稿价值、非真实手测边界和不提交原始 evidence 的口径；QA agent 输出 `harness/sanitized-summary-checklist.md`，定义摘要字段白名单、敏感内容黑名单、生成前后检查和失败处理；开发 agent 新增 `scripts/create-manual-summary.mjs`，只允许读取 `harness/manual-test-results.local*.json` 并写入 ignored 的 `harness/manual-test-summary.local*.md`，生成前串联 manual evidence 与 evidence hygiene 门禁，生成后扫描敏感模式且不输出原始 `evidence` 字符串；主线程更新 `.gitignore` 和 `scripts/check-evidence-hygiene.mjs`，把 local summary 草稿和 L 组文档纳入证据卫生边界
+- 运行过的验证：`node --check scripts/create-manual-summary.mjs`；`node --check scripts/check-evidence-hygiene.mjs`；`node scripts/check-evidence-hygiene.mjs`；`node scripts/check-manual-evidence.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/prepare-manual-test-run.mjs --out harness/manual-test-results.local-l-smoke.json --force`；`node scripts/create-manual-summary.mjs --input harness/manual-test-results.local-l-smoke.json --out harness/manual-test-summary.local-l-smoke.md`；`node scripts/create-manual-summary.mjs --input harness/manual-test-results.example.json --out harness/manual-test-summary.local-example.md` 验证 example 输入会失败；`node scripts/create-manual-summary.mjs --input harness/manual-test-results.local-l-smoke.json --out harness/manual-test-summary.md` 验证非 ignored 输出路径会失败；临时 bad local JSON 中写入 `/Users/...` 验证生成内容敏感扫描会失败；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`bash harness/init.sh`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；清理临时 ignored 产物
+- 已记录证据：正向 smoke 输出 readiness、manual evidence、evidence hygiene 三层门禁均通过并输出 `Manual summary draft created.`；example 输入失败并提示 `Input must match`；非 local summary 输出失败并提示 `Output must match`；敏感路径样例失败并提示 `prohibited macOS user path`；`node scripts/check-evidence-hygiene.mjs` 输出 `Evidence hygiene checks passed.`；`node scripts/check-manual-evidence.mjs` 输出 `Manual evidence checks passed.`；readiness 输出 `Publish flow checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`DevTools readiness checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通；`git diff --check` 通过；`wcc`/`wcsc -lc` 全量编译退出码为 0，输出 `WXML/WXSS compile checks passed.`
+- 更新过的文件或工件：`.gitignore`，`harness/sanitized-summary-product-brief.md`，`harness/sanitized-summary-checklist.md`，`scripts/check-evidence-hygiene.mjs`，`scripts/create-manual-summary.mjs`
+- 已知风险或未解决问题：L 组仍不代表真实 DevTools/真机手测已经完成；摘要草稿来自本地 JSON，不能把 example、mock、占位或自动脚本结果包装成真实 evidence；local Markdown 草稿保持 ignored，若要写入可提交报告仍需人工脱敏复核
+- 下一步最佳动作：运行完整候选验证并提交 L 组；随后启动用户评测 agent，评估 L 组是否进一步降低“本地证据可读性不足或摘要误泄漏”的风险
+
+### Session 024M
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-smoke-unblock`
+- 本轮目标：第十三组 DevTools smoke access unblock 实验，把真实 WeChat DevTools smoke 的 CLI/服务端口阻塞变成可重复诊断和明确 blocked 记录，避免继续把 harness 完整度误读成真实用户旅程通过
+- 已完成：产品 agent 输出 `harness/devtools-smoke-product-brief.md`，明确 M 组从扩展 harness 转向真实 smoke access 排查；QA agent 输出 `harness/devtools-smoke-checklist.md`，覆盖端口/进程/CLI/blocked 字段和端口恢复后的最小 smoke 旅程；开发 agent 新增 `scripts/check-devtools-smoke-access.mjs`，默认无副作用检查项目、DevTools CLI、服务端口监听和 `ide-http-port` 进程声明，可选 `--attempt-open` 捕获 CLI open 结果，默认 blocked exit 0，`--strict` 时 blocked exit 1，并对输出中的本机路径和凭证模式做脱敏
+- 运行过的验证：`node --check scripts/check-devtools-smoke-access.mjs`；`node scripts/check-devtools-smoke-access.mjs --project /tmp/street-tasks-iter-worktrees/devtools-smoke --port 9420`；`node scripts/check-devtools-smoke-access.mjs --project /tmp/street-tasks-iter-worktrees/devtools-smoke --port 9420 --strict` 验证 blocked 会 exit 1；`node scripts/check-devtools-smoke-access.mjs --project /tmp/street-tasks-iter-worktrees/devtools-smoke --port 9420 --attempt-open --timeout-ms 12000`；对 attempt-open 输出运行路径泄漏扫描，确认没有 `/Users/`、`/private/tmp` 或 `/tmp/street-tasks`；手动复现 `curl http://127.0.0.1:9420/` connection refused、`cli open --project ... --port 9420` 12s timeout、进程列表中存在 1 个声明 `--ide-http-port 9420` 的 DevTools-like 进程
+- 已记录证据：默认诊断报告输出 `status: blocked`，项目和 CLI 可用，但 `service port 9420: no (127.0.0.1: ECONNREFUSED; ::1: ECONNREFUSED)`，`ide-http-port process: yes (1 matching declaration(s), 1 DevTools-like)`；strict 模式输出同样 blocked 报告且 exit 1；attempt-open 输出 `attempt-open: no (timed out)`、`signal: SIGTERM`、stderr 摘要包含 `IDE may already started at port 9420, trying to connect`；脱敏检查输出 `DevTools smoke report redaction check passed.`
+- 更新过的文件或工件：`harness/devtools-smoke-product-brief.md`，`harness/devtools-smoke-checklist.md`，`scripts/check-devtools-smoke-access.mjs`
+- 已知风险或未解决问题：M 组仍未完成真实 DevTools/真机 smoke；当前环境显示 DevTools 进程声明 9420 但端口未监听，CLI open 只能进入 timeout；下一步需要有 UI 权限的执行者确认 DevTools 安全设置服务端口、正常退出重启 IDE 或换端口/换机，再执行 L/K 的真实 smoke runbook
+- 下一步最佳动作：运行完整候选验证并提交 M 组；随后启动用户评测 agent，评估 M 组是否比 L 更接近真实手测入口恢复，若端口仍 blocked，下轮应优先进行人工 DevTools UI 服务端口恢复而不是继续新增文档
+
+### Session 025N
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-service-recovery`
+- 本轮目标：第十四组 DevTools service port 受控恢复实验，在 M 组诊断基础上尝试显式 quit/reopen 恢复 9420 服务端口，并记录恢复成功或继续 blocked 的证据
+- 已完成：产品 agent 输出 `harness/devtools-service-recovery-product-brief.md`，定义受控恢复边界和避免误判口径；QA agent 输出 `harness/devtools-service-recovery-checklist.md`，覆盖恢复前检查、退出/重启风险、恢复命令、ready/blocked 判定和最小 smoke；开发 agent 新增 `scripts/recover-devtools-service-port.mjs`，默认 dry-run，只在显式 `--quit-reopen` 且非 `--dry-run` 时执行 DevTools CLI `quit`、等待、`open --project <repo> --port 9420 --disable-gpu`，并用 M 组 access 检查做 before/after 对比
+- 运行过的验证：`node --check scripts/recover-devtools-service-port.mjs`；默认 dry-run 报告 before/after 均为 blocked 且跳过 quit/open；`--dry-run --quit-reopen` 确认仍跳过 quit/open；`--strict` blocked 路径 exit 1；执行 `node scripts/recover-devtools-service-port.mjs --project /tmp/street-tasks-iter-worktrees/devtools-recovery --port 9420 --timeout-ms 20000 --quit-reopen` 做受控恢复尝试；恢复后运行 `node scripts/check-devtools-smoke-access.mjs --project /tmp/street-tasks-iter-worktrees/devtools-recovery --port 9420 --strict`；恢复报告路径脱敏扫描确认没有 `/Users/`、`/private/tmp` 或 `/tmp/street-tasks`；检查 9420 仍无监听，进程列表仍有 1 个声明 `--ide-http-port 9420` 的 DevTools-like 进程；补跑 `node scripts/check-json.mjs`、`node harness/check-harness.mjs`、`bash harness/init.sh`、`git diff --check`、`node --no-warnings scripts/check-devtools-readiness.mjs`、`node scripts/check-manual-evidence.mjs`、`node scripts/check-evidence-hygiene.mjs`、`node --check scripts/check-devtools-smoke-access.mjs`、微信开发者工具内置 `wcc` 全量编译 WXML、微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：受控恢复报告显示 before 为 blocked；`DevTools quit` timed out，`signal: SIGTERM`，stderr 摘要包含 `IDE may already started at port 9420, trying to connect`；等待 1200ms 后 `DevTools open` 同样 timed out；after 仍为 blocked，`service port 9420: no (127.0.0.1: ECONNREFUSED; ::1: ECONNREFUSED)`；strict after check exit 1 并输出 `After recovery still blocked as expected.`；恢复报告脱敏检查输出 `Recovery report redaction check passed.`；JSON 检查输出 `Checked 11 JSON files.`；harness 自检输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通；readiness 检查输出 `Publish flow checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`DevTools readiness checks passed.`；manual evidence 和 evidence hygiene 分别输出通过；`git diff --check` 通过；`wcc`/`wcsc -lc` 编译退出码为 0
+- 更新过的文件或工件：`harness/devtools-service-recovery-product-brief.md`，`harness/devtools-service-recovery-checklist.md`，`scripts/recover-devtools-service-port.mjs`
+- 已知风险或未解决问题：N 组未恢复 9420 服务端口，真实 DevTools/真机 smoke 仍未执行；CLI quit/open 均因 IDE 端口连接问题超时，下一步需要人工操作 DevTools UI 安全设置、正常退出重启或换机/换端口验证
+- 下一步最佳动作：提交 N 组并启动用户评测 agent，评估 N 组是否推动了阻塞收敛。若继续推进，应由有 UI 权限的执行者手动恢复 DevTools 服务端口，而不是继续用 CLI 反复 quit/open
+
+### Session 026O
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-port-forensics`
+- 本轮目标：第十五组 DevTools port forensics 只读排查实验，在 M/N 组 9420 blocked 结论之后固化只读观察项、脱敏字段、ready/blocked/unknown 判定、人工 UI 恢复建议和更细的端口状态诊断
+- 已完成：产品 agent 新增 `harness/devtools-port-forensics-product-brief.md`，明确 O 组不是产品功能、真实 smoke 或端口恢复，只解释 DevTools 环境 blocker；QA/设计 agent 新增 `harness/devtools-port-forensics-checklist.md`，覆盖准备/基线、只读进程与端口检查、DevTools app/CLI 版本与路径摘要、多实例识别、声明 `ide-http-port` 但无监听的记录口径、blocked 字段、状态判定、脱敏规则和后续人工 UI 恢复建议；开发 agent 新增 `scripts/inspect-devtools-port-state.mjs`，只读汇总 project config、DevTools CLI、app bundle Info.plist、`lsof`、socket connect 和进程声明，不执行 quit/open/kill/清缓存/写配置
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/inspect-devtools-port-state.mjs`；`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-forensics --port 9420`；`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-forensics --port 9420 --strict`；`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-forensics --port 1 --strict`；对默认报告运行路径和 token 脱敏扫描
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/devtools-forensics`，对应约定 `/tmp/street-tasks-iter-worktrees/devtools-forensics`；当前分支为 `codex/iter-devtools-port-forensics`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；默认 forensics 报告输出 `status: blocked`、`diagnosis: declared_without_listener, connect_refused`，DevTools CLI 和 app bundle 可用，版本为 `2.01.2510290` / `4240.111`，`lsof` 无监听，IPv4/IPv6 均 `ECONNREFUSED`，22 个 DevTools-like 相关进程中 1 个声明 requested port；strict 模式对 9420 blocked exit 1；`--port 1 --strict` 输出 `status: unknown` 并 exit 1；脱敏扫描未发现 `/Users/`、`/private/tmp`、`/tmp/street-tasks`、Bearer、cookie 或 token 片段
+- 更新过的文件或工件：`harness/devtools-port-forensics-product-brief.md`，`harness/devtools-port-forensics-checklist.md`，`scripts/inspect-devtools-port-state.mjs`，`harness/claude-progress.md`
+- 已知风险或未解决问题：O 组没有退出 DevTools、打开/重启项目、杀进程、清缓存、写用户配置或执行真实 DevTools/真机 smoke；本轮也不证明 9420 已恢复。真实端口恢复和产品旅程仍需有 UI 权限的执行者后续操作并记录脱敏证据
+- 下一步最佳动作：由有本机 UI 权限的执行者按清单先做只读端口观察；若端口仍 blocked，走人工 UI 安全设置、正常退出重开、换端口或换机；若端口 access ready，再按已有手测 runbook 执行真实 DevTools UI/真机 smoke
+
+### Session 027P
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-resilience`
+- 本轮目标：第十六组地图列表 UX resilience 静态防回归实验，在 DevTools 端口 blocked 的情况下先守住地图列表卡片结构和关键 WXSS 约束，降低长标题、长正文、带图和底部统计挤压风险
+- 已完成：产品 agent 新增 `harness/map-list-resilience-product-brief.md`，定义地图列表抽屉和任务卡的静态防回归价值、非目标、关键 UX 风险、成功标准和真机/DevTools 未验证边界；设计/QA agent 新增 `harness/map-list-resilience-checklist.md`，区分可脚本检查项和必须人工确认项，覆盖长标题、长正文、长地点、带图/无图、过期/已解决、多标签、底部统计和详情入口；开发 agent 新增 `scripts/check-map-list-resilience.mjs`，检查 `pages/map/map.wxml` 和 `pages/map/map.wxss` 中抽屉、列表、卡片、标题/标签、正文、footer、图片和详情按钮的结构/样式 guard
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-map-list-resilience.mjs`；`node scripts/check-map-list-resilience.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-resilience`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-resilience`；当前分支为 `codex/iter-map-list-resilience`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；map list resilience 脚本输出 `Map list resilience checks passed.`；`git diff --check` 通过；`wcc`/`wcsc -lc` 编译退出码为 0
+- 更新过的文件或工件：`harness/map-list-resilience-product-brief.md`，`harness/map-list-resilience-checklist.md`，`scripts/check-map-list-resilience.mjs`，`harness/claude-progress.md`
+- 已知风险或未解决问题：P 组不代表地图列表视觉已通过；它只证明当前 WXML/WXSS 保留了关键结构和防挤压约束。DevTools service port 9420 仍 blocked，真机/DevTools 中长标题、长正文、图片加载、safe area、地图原生层和详情点击仍未验证
+- 下一步最佳动作：提交 P 组并启动用户评测 agent；端口恢复后按 P 组 checklist 做地图列表真实视觉 smoke，补充窄屏/常见宽度/真机截图或录屏证据
+
+### Session 028Q
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-preflight`
+- 本轮目标：第十七组地图列表 preflight 集成实验，把 P 组新增的地图列表静态韧性检查接入 DevTools readiness 聚合门禁，降低后续候选版漏跑该检查的风险
+- 已完成：产品 agent 新增 `harness/map-list-preflight-product-brief.md`，定义 Q 组用户价值、非目标、preflight blocker 口径和 9420 blocked 下的边界；QA/设计 agent 新增 `harness/map-list-preflight-checklist.md`，覆盖自动命令、失败提示、长标题/标签/缩略图/footer/详情入口风险、人工验证项和降级证据字段；开发 agent 更新 `scripts/check-devtools-readiness.mjs`，把 `scripts/check-map-list-resilience.mjs` 作为必需文件和默认运行项，并在输出中明确静态 WXML/WXSS guard 不代表 DevTools 或真机视觉验收通过；主线程同步更新 `harness/feature_list.json` 的 map-feed evidence 和 notes
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-map-list-resilience.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-preflight`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-preflight`；当前分支为 `codex/iter-map-list-preflight`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；readiness 聚合输出 `Publish flow checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`Running map list static layout regression guard...`、`Map list resilience checks passed.`、`Map list static layout regression guard passed; DevTools and real-device visual acceptance are still required.`、`DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；独立地图列表检查输出 `Map list resilience checks passed.`；`git diff --check` 通过
+- 更新过的文件或工件：`harness/map-list-preflight-product-brief.md`，`harness/map-list-preflight-checklist.md`，`scripts/check-devtools-readiness.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：Q 组没有修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只保证 readiness/preflight 默认串联地图列表静态 guard。地图列表真实渲染、长内容视觉、图片加载、safe area、地图原生层和详情点击仍需 DevTools 或真机证据
+- 下一步最佳动作：提交 Q 组并启动用户评测 agent，评估 Q 相比 P 是否减少“新增检查但未来候选漏跑”的风险；若继续推进，优先做能在端口 blocked 状态下提升真实 UI 证据准备度的下一组实验，或等待人工恢复 DevTools 服务端口后执行地图列表视觉 smoke
+
+### Session 029R
+
+- 日期：2026-06-14
+- 分支：`codex/iter-manual-preflight-alignment`
+- 本轮目标：第十八组手测准备入口 preflight 对齐实验，在 Q 组 readiness 已串联地图列表 static guard 后，让真实手测准备 helper 显式提示它会先运行 readiness preflight，并继续强调这不代表 DevTools 或真机视觉通过
+- 已完成：产品 agent 新增 `harness/manual-preflight-alignment-product-brief.md`，定义 R 组价值、非目标、与 P/Q/K/L 的关系和 9420 blocked 边界；QA/设计 agent 新增 `harness/manual-preflight-alignment-checklist.md`，覆盖 helper exact command、预期输出、ignored local JSON、manual evidence/evidence hygiene/summary 收尾和 blocked 口径；开发 agent 更新 `scripts/prepare-manual-test-run.mjs`，在 readiness gate 前输出 `Running readiness preflight before manual UI testing.`、点名 `scripts/check-devtools-readiness.mjs` 与 map list static guard，并把 Next steps 第一步改为先阅读 readiness preflight 输出；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/prepare-manual-test-run.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/prepare-manual-test-run.mjs --out harness/manual-test-results.local-r-smoke.json --force`；`node scripts/check-manual-evidence.mjs harness/manual-test-results.local-r-smoke.json`；`node scripts/check-evidence-hygiene.mjs`；解析 local JSON 确认 `summary.overallStatus=not_covered` 且 passed journey 数量为 0；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；检查未写入错误日期；清理 local smoke 文件
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/manual-preflight-alignment`，对应约定 `/tmp/street-tasks-iter-worktrees/manual-preflight-alignment`；当前分支为 `codex/iter-manual-preflight-alignment`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；helper smoke 输出 `Running readiness preflight before manual UI testing.`、`This includes scripts/check-devtools-readiness.mjs and the map list static guard.`、`Map list resilience checks passed.`、`Manual evidence checks passed.`、`Evidence hygiene checks passed.`、`Manual test run prepared.`；local JSON 解析输出 `codex/iter-manual-preflight-alignment 4d49eb1 overall=not_covered passed=0`；`git diff --check` 通过
+- 更新过的文件或工件：`harness/manual-preflight-alignment-product-brief.md`，`harness/manual-preflight-alignment-checklist.md`，`scripts/prepare-manual-test-run.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：R 组没有修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让手测准备入口更清楚地运行并展示 Q readiness。地图列表真实渲染、长内容视觉、图片加载、safe area、地图原生层、列表滚动和详情入口点击仍需 DevTools 或真机证据
+- 下一步最佳动作：提交 R 组并启动用户评测 agent，评估 R 相比 Q 是否更贴近真实手测执行入口；若继续推进，优先围绕 9420 blocked 的人工 UI 恢复或真实视觉 smoke 证据闭环，而不是继续把 static gate 当作 UI 通过
+
+### Session 030S
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-visual-evidence`
+- 本轮目标：第十九组地图列表真实视觉证据结构实验，在 P/Q/R 已经补齐 static guard、readiness 集成和手测准备提示后，为地图列表真实视觉 smoke 增加固定记录入口
+- 已完成：产品 agent 新增 `harness/map-list-visual-evidence-product-brief.md`，定义长标题、长正文、带图/无图、安全区、原生地图层、列表滚动和详情链路的证据槽位与通过/阻塞口径；QA agent 新增 `harness/map-list-visual-evidence-checklist.md`，覆盖环境记录、视觉项、交互项、数据变体、失败/blocked 记录、证据卫生和收尾验证；开发 agent 在 `harness/manual-test-results.example.json` 新增 `map-list-visual-smoke` journey，并保持 `status: not_covered` 和空 evidence，避免把未执行的 DevTools/真机观察写成通过；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node scripts/check-json.mjs`；`node scripts/check-manual-evidence.mjs`；`node scripts/prepare-manual-test-run.mjs --out harness/manual-test-results.local-s-smoke.json --force`；`node scripts/check-manual-evidence.mjs harness/manual-test-results.local-s-smoke.json`；`node scripts/check-evidence-hygiene.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node harness/check-harness.mjs`；`git diff --check`；检查未写入错误日期；清理 local smoke 文件
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-visual-evidence`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-visual-evidence`；当前分支为 `codex/iter-map-list-visual-evidence`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；manual evidence 检查输出 `Manual evidence checks passed.`；helper smoke 输出 readiness、map list static guard、manual evidence 和 evidence hygiene 均通过，并生成只含未覆盖/占位结果的 ignored local JSON；`map-list-visual-smoke` journey 在 example 和 local smoke 中保持 `not_covered` 且没有 passed evidence；`git diff --check` 通过
+- 更新过的文件或工件：`harness/map-list-visual-evidence-product-brief.md`，`harness/map-list-visual-evidence-checklist.md`，`harness/manual-test-results.example.json`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：S 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让真实视觉 smoke 有固定证据结构。地图列表长标题、长正文、图片加载、safe area、原生地图层、列表滚动、marker/list/detail 链路仍未在 DevTools 或真机中验证
+- 下一步最佳动作：提交 S 组并启动用户评测 agent，评估 S 相比 R 是否更接近真实视觉证据闭环；若继续推进，优先执行或恢复真实 DevTools UI/真机 smoke，而不是把模板和清单当作视觉通过
+
+### Session 031T
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-evidence-gate`
+- 本轮目标：第二十组地图列表视觉证据必备 journey 门禁实验，在 S 组已新增 `map-list-visual-smoke` 后，防止该证据槽位未来被删除或重复而仍通过手测证据校验
+- 已完成：产品 agent 新增 `harness/map-list-evidence-gate-product-brief.md`，定义 `map-list-visual-smoke` 从文档约定升级为必备 journey gate 的价值和边界；QA agent 新增 `harness/map-list-evidence-gate-checklist.md`，覆盖正向模板、缺 journey、重复 journey、关键字段、错误状态、blocked/passed 边界、local helper 和证据卫生；开发 agent 更新 `scripts/check-manual-evidence.mjs`，要求 manual evidence JSON 中恰好包含一条 `map-list-visual-smoke` journey；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-manual-evidence.mjs`；`node scripts/check-manual-evidence.mjs`；缺失 `map-list-visual-smoke` 的 `/tmp` 坏样例检查应失败；重复 `map-list-visual-smoke` 的 `/tmp` 坏样例检查应失败；`node scripts/prepare-manual-test-run.mjs --out harness/manual-test-results.local-t-smoke.json --force`；`node scripts/check-manual-evidence.mjs harness/manual-test-results.local-t-smoke.json`；解析 local JSON 确认 `map-list-visual-smoke=not_covered`、`passed=0`、`evidence=0`；`node scripts/check-evidence-hygiene.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；检查未写入错误日期；清理 local smoke 和 `/tmp` 坏样例
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-evidence-gate`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-evidence-gate`；当前分支为 `codex/iter-map-list-evidence-gate`；`bash harness/init.sh` 完整跑通，依赖 up to date，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；manual evidence 正向检查输出 `Manual evidence checks passed.`；缺失坏样例输出 `Missing required journey id: map-list-visual-smoke`；重复坏样例输出 `Expected exactly one required journey id: map-list-visual-smoke; found 2.`；helper local JSON 解析保持 `map-list-visual-smoke=not_covered passed=0 evidence=0`；evidence hygiene、readiness 和 `git diff --check` 均通过
+- 更新过的文件或工件：`harness/map-list-evidence-gate-product-brief.md`，`harness/map-list-evidence-gate-checklist.md`，`scripts/check-manual-evidence.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：T 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只守护 S 组新增的手测证据槽位。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed
+- 下一步最佳动作：提交 T 组并启动用户评测 agent，评估 T 相比 S 是否降低“证据结构未来被误删”的风险；若继续推进，优先执行真实 DevTools UI/真机 smoke 或将 blocked 结果按 T/S 结构写入 local evidence
+
+### Session 032U
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-blocked-evidence`
+- 本轮目标：第二十一组地图列表视觉 smoke blocked evidence 演练，在 S/T 已经提供并守护 `map-list-visual-smoke` journey 后，让 DevTools 或真机不可用时也能生成合规的 ignored blocked local JSON 草稿
+- 已完成：产品 agent 新增 `harness/map-list-blocked-evidence-product-brief.md`，定义 blocked evidence 只说明环境阻塞被合规记录，不代表产品失败或 UI passed；QA agent 新增 `harness/map-list-blocked-evidence-checklist.md`，覆盖生成 local JSON、将 `map-list-visual-smoke` 写成 blocked/not_covered、坏样例、证据卫生、ignored 文件和清理；开发 agent 新增 `scripts/prepare-map-list-blocked-evidence.mjs`，从 example 生成 ignored local JSON，设置当前分支/commit/testedAt，将 `map-list-visual-smoke` 改为 blocked，并自动运行 manual evidence 与 evidence hygiene gate；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/prepare-map-list-blocked-evidence.mjs`；`node scripts/prepare-map-list-blocked-evidence.mjs --out harness/manual-test-results.local-u-blocked.json --reason \"DevTools service port 9420 blocked\" --force`；`node scripts/check-manual-evidence.mjs harness/manual-test-results.local-u-blocked.json`；`node scripts/check-evidence-hygiene.mjs`；解析 local JSON 确认 `branch=codex/iter-map-list-blocked-evidence`、`summary.overallStatus=blocked`、`map-list-visual-smoke=blocked`、`passed=0`、`risks/followUp` 非空；非 ignored 输出路径被拒绝；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；检查未写入错误日期；清理 local blocked 文件
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-blocked-evidence`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-blocked-evidence`；当前分支为 `codex/iter-map-list-blocked-evidence`；helper 正向输出 `Map-list blocked evidence draft created.` 和 `Blocked evidence is not UI passed or failed evidence; it only records the blocker.`；manual evidence 与 evidence hygiene gate 均通过；local JSON 解析输出 `overall=blocked mapList=blocked passed=0 evidence=0`；非 ignored 输出路径失败并提示必须匹配 `harness/manual-test-results.local*.json`；`bash harness/init.sh` 完整跑通，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；readiness 与 `git diff --check` 均通过
+- 更新过的文件或工件：`harness/map-list-blocked-evidence-product-brief.md`，`harness/map-list-blocked-evidence-checklist.md`，`scripts/prepare-map-list-blocked-evidence.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：U 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只生成可校验的 blocked local 草稿并清理该本地产物。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed
+- 下一步最佳动作：提交 U 组并启动用户评测 agent，评估 U 相比 T 是否更接近真实证据闭环；若继续推进，优先实际恢复 DevTools UI/真机入口或用 U 组 helper 生成 blocked local JSON 后制作脱敏摘要草稿
+
+### Session 033V
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-blocked-summary`
+- 本轮目标：第二十二组地图列表 blocked summary 演练，在 U 组能生成 blocked local JSON、L 组能生成脱敏 local summary 后，提供一条 reviewer 可读的 blocked 摘要生成入口
+- 已完成：产品 agent 新增 `harness/map-list-blocked-summary-product-brief.md`，定义 blocked summary 只提升评审理解效率，不改变真实 UI 验收状态；设计/QA agent 新增 `harness/map-list-blocked-summary-checklist.md`，覆盖推荐命令链路、状态不变量、脱敏要求、负向样例、清理与报告口径；开发 agent 新增 `scripts/prepare-map-list-blocked-summary.mjs`，校验 results/summary 输出都必须是 ignored local 路径，先调用 `scripts/prepare-map-list-blocked-evidence.mjs`，再调用 `scripts/create-manual-summary.mjs`；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/prepare-map-list-blocked-summary.mjs`；`node scripts/prepare-map-list-blocked-summary.mjs --reason \"DevTools service port 9420 blocked\" --results-out harness/manual-test-results.local-v-blocked.json --summary-out harness/manual-test-summary.local-v-blocked.md --force`；`node scripts/check-manual-evidence.mjs harness/manual-test-results.local-v-blocked.json`；`node scripts/check-evidence-hygiene.mjs`；解析 local JSON 和 summary 确认 `summary.overallStatus=blocked`、`map-list-visual-smoke=blocked`、`passed=0`、`evidence=0`、summary 含 `overallStatus`/`map-list-visual-smoke`/`evidenceCount` 且未把目标 journey 写成 passed；非 ignored results 路径被拒绝；非 ignored summary 路径被拒绝；缺失 `--reason` 被拒绝；带 `/Users/example/secret.png` 的敏感 local JSON 被 summary 生成器拦截且未写出 summary；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；检查未写入错误日期
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-blocked-summary`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-blocked-summary`；当前分支为 `codex/iter-map-list-blocked-summary`；wrapper 正向输出 `Created blocked result and sanitized summary.`、`Summary is not UI passed evidence...`；local JSON 解析输出 `overall=blocked mapList=blocked passed=0 evidence=0`；summary 生成输出 `Manual summary draft created.`；非 ignored results 路径提示必须匹配 `harness/manual-test-results.local*.json`；非 ignored summary 路径提示必须匹配 `harness/manual-test-summary.local*.md`；敏感路径负向输出 `Generated summary contains prohibited macOS user path on line 43.`；readiness、JSON、harness 和 `git diff --check` 均通过
+- 更新过的文件或工件：`harness/map-list-blocked-summary-product-brief.md`，`harness/map-list-blocked-summary-checklist.md`，`scripts/prepare-map-list-blocked-summary.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：V 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让 U 组 blocked local JSON 更容易生成脱敏 local summary。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；生成的 local JSON/MD 仍是 ignored 本地产物，不能提交为真实 UI 证据
+- 下一步最佳动作：提交 V 组并启动用户评测 agent，评估 V 相比 U 是否提升 blocked 证据的评审可读性且不制造 UI passed 误读；若继续推进，优先恢复 DevTools UI/真机入口或增加对 local summary 状态不变量的自动守门
+
+### Session 034W
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-summary-guard`
+- 本轮目标：第二十三组地图列表 blocked summary guard 实验，在 V 组已经生成 blocked local JSON 与脱敏 summary 后，增加自动守门，防止 summary 被改成 passed 或丢失 blocked 语义
+- 已完成：产品 agent 新增 `harness/map-list-summary-guard-product-brief.md`，定义 summary guard 只守 blocked JSON 与 summary 的状态一致性，不代表真实 UI 验收；QA agent 新增 `harness/map-list-summary-guard-checklist.md`，覆盖正向 wrapper 命令、guard 命令、JSON/summary 不变量、坏样例、清理与报告口径；开发 agent 新增 `scripts/check-map-list-blocked-summary.mjs`，限制 results/summary 都必须是 ignored local 路径，先运行 manual evidence 与 evidence hygiene gate，再检查 JSON `overallStatus=blocked`、唯一 `map-list-visual-smoke`、`passed=0`、目标 evidence count 为 0，并检查 summary 中 `overallStatus=blocked`、目标 journey 行 status 为 blocked 且 evidenceCount 为 0；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-map-list-blocked-summary.mjs`；`node scripts/prepare-map-list-blocked-summary.mjs --reason \"DevTools service port 9420 blocked\" --results-out harness/manual-test-results.local-w-blocked.json --summary-out harness/manual-test-summary.local-w-blocked.md --force`；`node scripts/check-map-list-blocked-summary.mjs --results harness/manual-test-results.local-w-blocked.json --summary harness/manual-test-summary.local-w-blocked.md`；summary 目标行改成 `passed` 的坏样例应失败；summary 目标行 `evidenceCount` 改成 `1` 的坏样例应失败；JSON 目标 journey 改成 `passed` 的坏样例应失败；summary 删除 `map-list-visual-smoke` 行的坏样例应失败；非 local results 路径应失败；非 local summary 路径应失败；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；检查未写入错误日期；清理 local JSON/MD 和 `/tmp` 临时输出
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-summary-guard`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-summary-guard`；当前分支为 `codex/iter-map-list-summary-guard`；正向 guard 输出 `Map-list blocked summary checks passed.`；summary 改 passed 坏样例输出 `map-list-visual-smoke summary row must not be passed`；summary evidenceCount 改 1 坏样例输出 `summary row evidenceCount must be 0`；JSON 改 passed 坏样例先被 manual evidence gate 拦截，输出 `journey map-list-visual-smoke is passed but evidence is empty`；summary 删除目标行坏样例输出 `Summary Markdown must contain exactly one map-list-visual-smoke row; found 0.`；非 local results/summary 路径均被拒绝；readiness、JSON、harness 和 `git diff --check` 均通过
+- 更新过的文件或工件：`harness/map-list-summary-guard-product-brief.md`，`harness/map-list-summary-guard-checklist.md`，`scripts/check-map-list-blocked-summary.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：W 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只验证 ignored local JSON 与 ignored local summary 的 blocked 状态一致性。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；guard 通过也不能替代真实 UI 证据
+- 下一步最佳动作：提交 W 组并启动用户评测 agent，评估 W 相比 V 是否降低 summary 被误改成 passed 的风险；若继续推进，优先恢复 DevTools UI/真机入口，或将 W guard 串入 V wrapper 输出后的推荐流程
+
+### Session 035X
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-summary-integrity`
+- 本轮目标：第二十四组地图列表 blocked summary 同源完整性实验，在 W 组已守住 blocked 状态不变量后，进一步确认 summary 的 branch、commit、actual、followUp 和 blocker/risk 内容仍来自同一份 ignored blocked JSON
+- 已完成：产品 agent 新增 `harness/map-list-summary-integrity-product-brief.md`，定义同源完整性只证明 summary 是 blocked JSON 的可信转述，不代表真实 UI 验收；QA agent 新增 `harness/map-list-summary-integrity-checklist.md`，覆盖正向 wrapper/guard 命令、W 组不变量、新增 branch/commit/actual/followUp/blocker 不变量、坏样例、清理与报告口径；开发 agent 增强 `scripts/check-map-list-blocked-summary.mjs`，在原有 status/evidenceCount 检查上增加 Run branch/commit 与 JSON 比对、目标 journey actual/followUp 关键片段比对、目标 blocker 非空且包含 JSON risks 关键片段，并处理 `<br>`、空白压缩与 escaped pipe；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-map-list-blocked-summary.mjs`；`node scripts/prepare-map-list-blocked-summary.mjs --reason \"DevTools service port 9420 blocked\" --results-out harness/manual-test-results.local-x-blocked.json --summary-out harness/manual-test-summary.local-x-blocked.md --force`；`node scripts/check-map-list-blocked-summary.mjs --results harness/manual-test-results.local-x-blocked.json --summary harness/manual-test-summary.local-x-blocked.md`；summary branch 改错坏样例应失败；summary commit 改错坏样例应失败；summary actual 替换为 unrelated text 坏样例应失败；summary followUp 替换为 unrelated text 坏样例应失败；summary blocker 替换为 unrelated text 坏样例应失败；非 local results 路径应失败；非 local summary 路径应失败；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；检查未写入错误日期；清理 local JSON/MD 和 `/tmp` 临时输出
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-summary-integrity`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-summary-integrity`；当前分支为 `codex/iter-map-list-summary-integrity`；正向 guard 输出 `Map-list blocked summary checks passed.`；branch 坏样例输出 `Run branch must match blocked results JSON branch`；commit 坏样例输出 `Run commit must match blocked results JSON commit`；actual 坏样例输出 `summary row actual must include the matching JSON actual fragment`；followUp 坏样例输出 `summary row followUp must include the matching JSON followUp fragment`；blocker 坏样例输出 `summary row blocker must include at least one JSON risk phrase`；非 local results/summary 路径均被拒绝；readiness、JSON、harness 和 `git diff --check` 均通过
+- 更新过的文件或工件：`harness/map-list-summary-integrity-product-brief.md`，`harness/map-list-summary-integrity-checklist.md`，`scripts/check-map-list-blocked-summary.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：X 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只验证 ignored local JSON 与 ignored local summary 的同源摘要完整性。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；同源 guard 通过也不能替代真实 UI 证据
+- 下一步最佳动作：提交 X 组并启动用户评测 agent，评估 X 相比 W 是否降低 summary 跨 run/跨 blocker 拼接的风险；若继续推进，优先恢复 DevTools UI/真机入口，或将增强后的 summary guard 串入 blocked summary wrapper 的推荐输出
+
+### Session 036Y
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-summary-wrapper-guarded`
+- 本轮目标：第二十五组地图列表 blocked summary wrapper guard 实验，在 X 组已增强 summary 同源 guard 后，把该 guard 接入 blocked summary wrapper，避免生成 JSON/summary 后漏跑守门检查
+- 已完成：产品 agent 新增 `harness/map-list-summary-wrapper-guarded-product-brief.md`，定义 wrapper 默认串 guard 的价值和边界；QA agent 新增 `harness/map-list-summary-wrapper-guarded-checklist.md`，覆盖正向 wrapper+guard 输出、ignored local 路径、非 local summary 路径失败、损坏 summary 回归、清理与报告口径；开发 agent 更新 `scripts/prepare-map-list-blocked-summary.mjs`，在 `scripts/create-manual-summary.mjs` 成功后立即调用 `scripts/check-map-list-blocked-summary.mjs --results <resultsOutPath> --summary <summaryOutPath>`，并输出 `Blocked summary guard passed.`；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/prepare-map-list-blocked-summary.mjs`；`node --check scripts/check-map-list-blocked-summary.mjs`；`node scripts/prepare-map-list-blocked-summary.mjs --reason \"DevTools service port 9420 blocked\" --results-out harness/manual-test-results.local-y-blocked.json --summary-out harness/manual-test-summary.local-y-blocked.md --force`；`node scripts/check-map-list-blocked-summary.mjs --results harness/manual-test-results.local-y-blocked.json --summary harness/manual-test-summary.local-y-blocked.md`；非 local summary 输出路径应失败且不生成 results；summary commit 改错坏样例应失败；summary 目标行改成 passed 坏样例应失败；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check`；检查未写入错误日期；清理 local JSON/MD 和 `/tmp` 临时输出
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-summary-wrapper-guarded`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-summary-wrapper-guarded`；当前分支为 `codex/iter-map-list-summary-wrapper-guarded`；wrapper 正向输出 `Map-list blocked evidence draft created.`、`Manual summary draft created.`、`Map-list blocked summary checks passed.`、`Blocked summary guard passed.` 和 `Summary is not UI passed evidence...`；单独 guard 正向输出 `Map-list blocked summary checks passed.`；非 local summary 路径提示必须匹配 `harness/manual-test-summary.local*.md` 且未生成 bad results；commit 坏样例输出 `Run commit must match blocked results JSON commit`；passed 坏样例输出 `map-list-visual-smoke summary row must not be passed`；readiness、JSON、harness 和 `git diff --check` 均通过
+- 更新过的文件或工件：`harness/map-list-summary-wrapper-guarded-product-brief.md`，`harness/map-list-summary-wrapper-guarded-checklist.md`，`scripts/prepare-map-list-blocked-summary.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：Y 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只确保 wrapper 生成 blocked local JSON 和 summary 后默认跑同源 guard。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；wrapper+guard 成功也不能替代真实 UI 证据
+- 下一步最佳动作：提交 Y 组并启动用户评测 agent，评估 Y 相比 X 是否降低执行者漏跑 guard 的风险；若继续推进，优先恢复 DevTools UI/真机入口，或给 wrapper 输出增加更明确的下一步真实 UI smoke 指引
+
+### Session 037Z
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-summary-postedit-guard`
+- 本轮目标：第二十六组地图列表 blocked summary 后编辑 guard 提示实验，在 Y 组 wrapper 已默认运行同源 guard 后，进一步降低生成后手工编辑 JSON/Markdown 却沿用旧 guard 结果的误用风险
+- 已完成：产品 agent 新增 `harness/map-list-summary-postedit-guard-product-brief.md`，定义 wrapper 自动 guard 的可信边界和生成后编辑必须复跑 guard 的产品口径；设计/QA agent 新增 `harness/map-list-summary-postedit-guard-checklist.md`，覆盖正向生成、后编辑篡改失败、修复路径、不能证明 UI 通过和未验证项；开发 agent 更新 `scripts/prepare-map-list-blocked-summary.mjs`，在成功输出中打印 `Post-edit rerun guard` 以及当前 JSON/MD 对应的 `node scripts/check-map-list-blocked-summary.mjs --results ... --summary ...` 命令；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/prepare-map-list-blocked-summary.mjs`；`node --check scripts/check-map-list-blocked-summary.mjs`；`node scripts/prepare-map-list-blocked-summary.mjs --reason "DevTools service port 9420 blocked" --results-out harness/manual-test-results.local-z-postedit.json --summary-out harness/manual-test-summary.local-z-postedit.md --force`；`node scripts/check-map-list-blocked-summary.mjs --results harness/manual-test-results.local-z-postedit.json --summary harness/manual-test-summary.local-z-postedit.md`；summary 目标行改成 `passed` 的坏样例应失败；summary commit 改错坏样例应失败；`git diff --check`；清理 local JSON/MD
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-summary-postedit-guard`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-summary-postedit-guard`；当前分支为 `codex/iter-map-list-summary-postedit-guard`；wrapper 正向输出 `Map-list blocked evidence draft created.`、`Manual summary draft created.`、`Map-list blocked summary checks passed.`、`Blocked summary guard passed.`、`Post-edit rerun guard`、`node scripts/check-map-list-blocked-summary.mjs --results harness/manual-test-results.local-z-postedit.json --summary harness/manual-test-summary.local-z-postedit.md` 和 `Summary is not UI passed evidence...`；单独 guard 正向输出 `Map-list blocked summary checks passed.`；passed 坏样例输出 `map-list-visual-smoke summary row must not be passed`；commit 坏样例输出 `Summary Markdown Run commit must match blocked results JSON commit`；`git diff --check` 通过
+- 更新过的文件或工件：`harness/map-list-summary-postedit-guard-product-brief.md`，`harness/map-list-summary-postedit-guard-checklist.md`，`scripts/prepare-map-list-blocked-summary.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：Z 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让 wrapper 成功输出更明确地要求生成后编辑必须复跑 guard。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；post-edit guard 通过也不能替代真实 UI 证据
+- 下一步最佳动作：提交 Z 组并启动用户评测 agent，评估 Z 相比 Y 是否降低“生成后手工编辑但不复跑 guard”的误用风险；若继续推进，优先恢复 DevTools UI/真机入口，或把当前 blocked evidence 链路整理成更高层的人工验收准入说明
+
+### Session 038AA
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-summary-preflight`
+- 本轮目标：第二十七组地图列表 blocked summary 评审前 preflight 实验，在 Z 组已打印单对 post-edit guard 命令后，提供一键扫描 ignored local blocked summary/result 对并逐对复跑 guard 的入口
+- 已完成：产品 agent 新增 `harness/map-list-summary-preflight-product-brief.md`，定义一键 preflight 的评审价值、验收标准和非 UI passed 边界；设计/QA agent 新增 `harness/map-list-summary-preflight-checklist.md`，覆盖无 local summary、正向扫描一对、缺 results JSON、summary 被改 passed、清理和报告口径；开发 agent 新增 `scripts/check-map-list-blocked-summary-preflight.mjs`，扫描 `harness/manual-test-summary.local*.md`，派生对应 `harness/manual-test-results.local*.json`，并对每对调用 `scripts/check-map-list-blocked-summary.mjs`；开发 agent同时更新 `scripts/prepare-map-list-blocked-summary.mjs`，在成功输出中提示评审前可运行 `node scripts/check-map-list-blocked-summary-preflight.mjs`；主线程补充 preflight 输出，明确它不是 UI passed evidence；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-map-list-blocked-summary-preflight.mjs`；`node --check scripts/prepare-map-list-blocked-summary.mjs`；无 local summary 时运行 `node scripts/check-map-list-blocked-summary-preflight.mjs` 应通过；`node scripts/prepare-map-list-blocked-summary.mjs --reason "DevTools service port blocked; map-list visual smoke was not executed." --results-out harness/manual-test-results.local-aa-preflight.json --summary-out harness/manual-test-summary.local-aa-preflight.md --force`；正向运行 `node scripts/check-map-list-blocked-summary-preflight.mjs` 应通过；删除对应 results JSON 后 preflight 应失败；重新生成 pair 后把 summary 目标行改成 `passed`，preflight 应失败；清理 local JSON/MD 和 `/tmp` 临时文件
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-summary-preflight`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-summary-preflight`；当前分支为 `codex/iter-map-list-summary-preflight`；无 local summary 输出 `No local blocked summary files found; nothing checked.` 和 `Preflight is not UI passed evidence...`；wrapper 输出 `Review preflight: before citing local blocked summaries, run:` 以及 `node scripts/check-map-list-blocked-summary-preflight.mjs`；正向 preflight 输出 `Checking harness/manual-test-summary.local-aa-preflight.md with harness/manual-test-results.local-aa-preflight.json.`、`Map-list blocked summary checks passed.`、`Map-list blocked summary preflight passed. Checked 1 pair(s).` 和 `Preflight is not UI passed evidence...`；缺 results 负向输出 `Missing results JSON for harness/manual-test-summary.local-aa-preflight.md; expected harness/manual-test-results.local-aa-preflight.json.`；passed 篡改负向输出 `map-list-visual-smoke summary row must not be passed` 和 `Map-list blocked summary preflight failed for 1 item(s).`
+- 更新过的文件或工件：`harness/map-list-summary-preflight-product-brief.md`，`harness/map-list-summary-preflight-checklist.md`，`scripts/check-map-list-blocked-summary-preflight.mjs`，`scripts/prepare-map-list-blocked-summary.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AA 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让评审前更容易统一复跑 ignored local blocked summary guard。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；preflight 通过也不能替代真实 UI 证据
+- 下一步最佳动作：提交 AA 组并启动用户评测 agent，评估 AA 相比 Z 是否降低 reviewer 漏跑单对 guard 的风险；若继续推进，优先恢复 DevTools UI/真机入口，或把 blocked evidence/preflight 流程接入更靠近提交前的 harness/readiness 检查但仍保持不提交 ignored local 证据
+
+### Session 039AB
+
+- 日期：2026-06-14
+- 分支：`codex/iter-map-list-summary-readiness-preflight`
+- 本轮目标：第二十八组地图列表 blocked summary 默认入口 preflight 实验，在 AA 组已有一键 preflight 后，把它接入常规启动和 DevTools readiness 检查，降低评审前忘记运行 preflight 的风险
+- 已完成：产品 agent 新增 `harness/map-list-summary-readiness-preflight-product-brief.md`，定义默认入口运行 blocked summary preflight 的价值、验收和非 UI passed 边界；设计/QA agent 新增 `harness/map-list-summary-readiness-preflight-checklist.md`，覆盖无 local summary、正向 pair、缺 results JSON、summary 改 passed、清理和报告口径；开发 agent 更新 `harness/init.sh`，在 JSON/harness 检查后运行 `node scripts/check-map-list-blocked-summary-preflight.mjs`；开发 agent 更新 `scripts/check-devtools-readiness.mjs`，把 blocked summary preflight 接入 readiness，并输出它不证明 DevTools 或真机 UI passed；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-map-list-blocked-summary-preflight.mjs`；`node --check scripts/check-devtools-readiness.mjs`；无 local summary 时运行 `bash harness/init.sh` 应通过；无 local summary 时运行 `node --no-warnings scripts/check-devtools-readiness.mjs` 应通过；生成 `harness/manual-test-results.local-ab-readiness.json` 和 `harness/manual-test-summary.local-ab-readiness.md` 后，`bash harness/init.sh` 和 readiness 均应通过；删除对应 results JSON 后 `bash harness/init.sh` 应失败；重新生成 pair 并把 summary 目标行改成 `passed` 后 readiness 应失败；清理 local JSON/MD
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/map-list-summary-readiness-preflight`，对应约定 `/tmp/street-tasks-iter-worktrees/map-list-summary-readiness-preflight`；当前分支为 `codex/iter-map-list-summary-readiness-preflight`；无 local summary 的 init 输出 `+ node scripts/check-map-list-blocked-summary-preflight.mjs`、`No local blocked summary files found; nothing checked.` 和 `Preflight is not UI passed evidence...`；无 local summary 的 readiness 输出 `Running blocked summary preflight. This preflight does not prove DevTools or real-device UI passed.`；正向 pair 的 init/readiness 输出 `Checking harness/manual-test-summary.local-ab-readiness.md with harness/manual-test-results.local-ab-readiness.json.`、`Map-list blocked summary checks passed.` 和 `Map-list blocked summary preflight passed. Checked 1 pair(s).`；缺 results 负向输出 `Missing results JSON for harness/manual-test-summary.local-ab-readiness.md; expected harness/manual-test-results.local-ab-readiness.json.`；passed 篡改负向输出 `map-list-visual-smoke summary row must not be passed` 且 readiness gate failed
+- 更新过的文件或工件：`harness/map-list-summary-readiness-preflight-product-brief.md`，`harness/map-list-summary-readiness-preflight-checklist.md`，`harness/init.sh`，`scripts/check-devtools-readiness.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AB 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让常规启动和 readiness 默认复跑 ignored local blocked summary guard。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；默认入口 preflight 通过也不能替代真实 UI 证据
+- 下一步最佳动作：提交 AB 组并启动用户评测 agent，评估 AB 相比 AA 是否降低人工忘记运行 preflight 的风险；若继续推进，优先恢复 DevTools UI/真机入口，或改善 failed readiness 输出可读性但不改变 blocked evidence 语义
+
+### Session 040AC
+
+- 日期：2026-06-14
+- 分支：`codex/iter-package-readiness-gate`
+- 本轮目标：第二十九组 npm 级 readiness gate 实验，在 AB 组已将 blocked summary preflight 接入默认入口后，把 JSON、harness、readiness/default preflight 暴露为更常见的 npm 检查命令，方便人工和自动化统一调用
+- 已完成：产品 agent 新增 `harness/package-readiness-gate-product-brief.md`，定义 npm 级检查入口的价值、验收和非 UI passed 边界；设计/QA agent 新增 `harness/package-readiness-gate-checklist.md`，覆盖各 npm script、正向 local pair、缺 results JSON、summary 改 passed、清理和报告口径；开发 agent 更新 `package.json`，新增 `check`、`check:harness`、`check:blocked-summary`、`check:readiness`，并保留 `check:json`；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check:json`；`npm run check:harness`；`npm run check:blocked-summary`；`npm run check:readiness`；`npm run check`；生成 `harness/manual-test-results.local-ac-package.json` 和 `harness/manual-test-summary.local-ac-package.md` 后 `npm run check` 应通过；删除对应 results JSON 后 `npm run check` 应失败；重新生成 pair 并把 summary 目标行改成 `passed` 后 `npm run check:readiness` 应失败；清理 local JSON/MD
+- 已记录证据：`npm run check:json` 输出 `Checked 11 JSON files.`；`npm run check:harness` 输出 `Harness OK: 6 features checked.`；无 local summary 的 `npm run check:blocked-summary` 输出 `No local blocked summary files found; nothing checked.` 和 `Preflight is not UI passed evidence...`；无 local summary 的 `npm run check:readiness` 输出 blocked summary preflight 口径且通过；`npm run check` 串联 `check:json`、`check:harness`、`check:readiness` 并通过；正向 local pair 的 `npm run check` 输出 `Checking harness/manual-test-summary.local-ac-package.md with harness/manual-test-results.local-ac-package.json.`、`Map-list blocked summary checks passed.` 和 `Map-list blocked summary preflight passed. Checked 1 pair(s).`；缺 results 负向输出 `Missing results JSON for harness/manual-test-summary.local-ac-package.md; expected harness/manual-test-results.local-ac-package.json.`；passed 篡改负向输出 `map-list-visual-smoke summary row must not be passed`
+- 更新过的文件或工件：`harness/package-readiness-gate-product-brief.md`，`harness/package-readiness-gate-checklist.md`，`package.json`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AC 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让本地和未来自动化更容易调用现有静态/readiness/preflight 门禁。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；`npm run check` 通过也不能替代真实 UI 证据
+- 下一步最佳动作：提交 AC 组并启动用户评测 agent，评估 AC 相比 AB 是否降低“默认入口存在但调用不统一”的风险；若继续推进，优先恢复 DevTools UI/真机入口，或设计不强制安装的可选 git hook/CI 文档，但避免把本地 blocked evidence 当发布准入
+
+### Session 041AD
+
+- 日期：2026-06-14
+- 分支：`codex/iter-ci-readiness-gate`
+- 本轮目标：第三十组 CI readiness gate 实验，在 AC 组已有 `npm run check` 后，新增最小 GitHub Actions workflow，让 push 和 pull_request 自动运行 JSON、harness、readiness 和 blocked summary preflight 门禁
+- 已完成：产品 agent 新增 `harness/ci-readiness-gate-product-brief.md`，定义 CI 门禁价值、验收和非 UI passed 边界；设计/QA agent 新增 `harness/ci-readiness-gate-checklist.md`，覆盖 workflow 结构、npm check 正向、缺 results/summary passed 负向、清理和报告口径；开发 agent 新增 `.github/workflows/readiness.yml`，在 push/pull_request 上用 Ubuntu、Node 20、`npm ci --ignore-scripts` 和 `npm run check` 执行门禁，并设置 `contents: read` 权限；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`ruby -e 'require "yaml"; YAML.load_file(".github/workflows/readiness.yml"); puts "workflow yaml ok"'`；workflow 结构检查；workflow 单独扫描确认不含 secrets、artifact、local evidence 或 UI passed 口径；`npm run check`；生成 `harness/manual-test-results.local-ad-ci.json` 和 `harness/manual-test-summary.local-ad-ci.md` 后 `npm run check` 应通过；删除对应 results JSON 后 `npm run check` 应失败；重新生成 pair 并把 summary 目标行改成 `passed` 后 `npm run check` 应失败；清理 local JSON/MD
+- 已记录证据：workflow YAML 解析输出 `workflow yaml ok`，结构检查输出 `workflow structure ok`；workflow 中包含 `on: push`、`pull_request`、`permissions: contents: read`、`actions/checkout@v4`、`actions/setup-node@v4`、`npm ci --ignore-scripts` 和 `npm run check`；workflow 单独敏感词扫描无命中；无 local summary 的 `npm run check` 通过并输出 `Preflight is not UI passed evidence...`；正向 local pair 的 `npm run check` 输出 `Checking harness/manual-test-summary.local-ad-ci.md with harness/manual-test-results.local-ad-ci.json.`、`Map-list blocked summary checks passed.` 和 `Map-list blocked summary preflight passed. Checked 1 pair(s).`；缺 results 负向输出 `Missing results JSON for harness/manual-test-summary.local-ad-ci.md; expected harness/manual-test-results.local-ad-ci.json.`；passed 篡改负向输出 `map-list-visual-smoke summary row must not be passed`
+- 更新过的文件或工件：`.github/workflows/readiness.yml`，`harness/ci-readiness-gate-product-brief.md`，`harness/ci-readiness-gate-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AD 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只让 `npm run check` 具备未来 push/PR 自动化入口。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；本地未验证 GitHub Actions 在远端仓库真实触发、分支保护或 PR required check 配置
+- 下一步最佳动作：提交 AD 组并启动用户评测 agent，评估 AD 相比 AC 是否降低“本地命令存在但没有自动化门禁”的风险；若继续推进，优先恢复 DevTools UI/真机入口，或改善 readiness 失败输出可读性并避免断言真实 UI 通过
+
+### Session 042AE
+
+- 日期：2026-06-14
+- 分支：`codex/iter-ci-required-check-runbook`
+- 本轮目标：第三十一组 CI required-check runbook 实验，在 AD 组已有 GitHub Actions workflow 后，补充远端 workflow 触发验证、required check 名称确认和 branch protection 配置步骤，同时避免声称远端已通过或分支保护已配置
+- 已完成：产品 agent 新增 `harness/ci-required-check-runbook-product-brief.md`，定义 runbook 的目标、用户价值、验收和非 UI passed 边界；设计/QA agent 新增 `harness/ci-required-check-runbook-checklist.md`，覆盖本地 `npm run check`、workflow YAML、远端 Actions 验证、required check 名称、branch protection 配置和未验证口径；开发 agent 更新 `.github/workflows/readiness.yml`，为 `readiness` job 添加稳定显示名 `readiness / npm run check`；开发 agent 新增 `harness/ci-required-check-runbook.md`，说明如何验证远端 workflow、读取实际 check 名称、配置 required status check、记录证据和报告未验证状态；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`npm run check`；`ruby -e 'require "yaml"; y=YAML.load_file(".github/workflows/readiness.yml"); puts "workflow=#{y["name"]}; job=#{y.dig("jobs", "readiness", "name")}"'`；`git diff --check`；`rg` 检查 runbook 包含 remote Actions、required status checks、branch protection、unverified、workflow run URL 等关键口径；workflow/runbook 扫描确认没有 secrets、artifact、local evidence 引用或虚假 UI passed 声称
+- 已记录证据：`npm run check` 通过并继续输出 static/readiness/preflight 非 UI passed 口径；workflow YAML 解析输出 `workflow=Readiness checks; job=readiness / npm run check`；runbook 明确 `Do not record the workflow as verified until a remote run exists and its final status has been checked in GitHub.`；runbook 明确 `Do not mark branch protection as configured until the repository settings show the readiness check as required and a pull request displays it as a required check.`；runbook 证据模板包含 `Workflow run URL`、`Observed check name` 和 `Required check configured`
+- 更新过的文件或工件：`.github/workflows/readiness.yml`，`harness/ci-required-check-runbook.md`，`harness/ci-required-check-runbook-product-brief.md`，`harness/ci-required-check-runbook-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AE 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只把远端 Actions 和 branch protection 验证步骤文档化并稳定 job display name。地图列表真实视觉 smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed；本地仍未实际验证远端 GitHub Actions 触发、分支保护 required check 生效或 PR 合并阻断
+- 下一步最佳动作：提交 AE 组并启动用户评测 agent，评估 AE 相比 AD 是否降低“有 workflow 但远端触发和 required check 配置不可验证”的风险；若继续推进，优先恢复 DevTools UI/真机入口，或在有远端权限时实际执行 runbook 并记录真实 workflow run URL 与 branch protection 结果
+
+### Session 043AF
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-smoke-command`
+- 本轮目标：第三十二组 DevTools smoke 手动命令入口实验，在 AE 已补充远端 CI runbook 但本机 DevTools 9420 端口仍 blocked 后，把真实 UI smoke 的端口诊断和 strict smoke 入口暴露为明确 npm 命令，同时不把本机 GUI 依赖加入默认 `npm run check` 或 CI
+- 已完成：产品 agent 新增 `harness/devtools-smoke-command-product-brief.md`，定义 AF 的价值、非目标、当前 blocked 预期和“不声称 UI smoke 通过”的边界；设计 agent 新增 `harness/devtools-smoke-command-design-note.md`，统一 `blocked`、`unverified`、`passing` 口径和 `inspect:*` / `check:*` 命名体验；QA agent 新增 `harness/devtools-smoke-command-checklist.md`，覆盖 package scripts、当前 blocked 记录、恢复 Service Port 后复测和证据字段；开发 agent 更新 `package.json`，新增 `inspect:devtools-port` 与 `check:devtools-smoke`，并保持默认 `check` 不运行 strict DevTools smoke；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node scripts/check-json.mjs`；`npm run inspect:devtools-port`；`npm run check:devtools-smoke`；`npm run check`；`git diff --check`；检查未写入错误日期
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/devtools-smoke-command`，对应约定 `/tmp/street-tasks-iter-worktrees/devtools-smoke-command`；当前分支为 `codex/iter-devtools-smoke-command`；`bash harness/init.sh` 完整跑通，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`npm run inspect:devtools-port` 退出 0 并输出 `status: blocked`、`diagnosis: declared_without_listener, connect_refused`、`lsof listener: no (no listener rows)`、`socket connect: no (127.0.0.1: ECONNREFUSED; ::1: ECONNREFUSED)`、`process scan: yes (21 related process(es), 1 declaring requested port)`；`npm run check:devtools-smoke` 按预期以 strict 模式非零退出并输出 `status: blocked`、`service port 9420: no`、`ide-http-port process: yes (1 matching declaration(s), 1 DevTools-like)`、`requested DevTools service port is not listening`；`npm run check` 仍只串联 JSON、harness 和 readiness/default preflight 并通过；`git diff --check` 通过
+- 更新过的文件或工件：`package.json`，`harness/devtools-smoke-command-product-brief.md`，`harness/devtools-smoke-command-design-note.md`，`harness/devtools-smoke-command-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AF 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只把端口诊断和 strict smoke 入口变成显式手动命令。`check:devtools-smoke` 当前 blocked 是环境阻塞证据，不是地图、列表、发布或详情 UI 失败；真实 DevTools UI smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed
+- 下一步最佳动作：提交 AF 组并启动用户评测 agent，评估 AF 相比 AE 是否更直接暴露当前真实 DevTools blocker；若继续推进，优先在有用户操作配合时启用 WeChat DevTools Service Port 并复跑 strict smoke，或围绕 blocked/ready 转换补充更高层恢复准入说明
+
+### Session 044AG
+
+- 日期：2026-06-14
+- 分支：`codex/iter-devtools-recovery-command`
+- 本轮目标：第三十三组 DevTools recovery dry-run 手动入口实验，在 AF 已能明确诊断和 strict smoke blocked 后，把已有 recovery helper 的无副作用干跑模式暴露为 npm 命令，帮助执行者看到 before/actions/after/next steps，但不默认退出或重新打开 DevTools
+- 已完成：产品 agent 新增 `harness/devtools-recovery-command-product-brief.md`，定义 recovery dry-run 的用户价值、非目标、使用场景和当前 blocked 预期；设计 agent 新增 `harness/devtools-recovery-command-design-note.md`，定义 before status、actions attempted/skipped、after status、next steps 四段报告结构和 side-effect 文案边界；QA agent 新增 `harness/devtools-recovery-command-checklist.md`，覆盖 package script、dry-run 输出、显式 side-effect 恢复复测和证据格式；开发 agent 更新 `package.json`，新增 `inspect:devtools-recovery` 并保持默认 `check` 不运行 recovery dry-run 或 `--quit-reopen`；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node scripts/check-json.mjs`；`npm run inspect:devtools-recovery`；`npm run check`；`git diff --check`；检查未写入错误日期
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/devtools-recovery-command`，对应约定 `/tmp/street-tasks-iter-worktrees/devtools-recovery-command`；当前分支为 `codex/iter-devtools-recovery-command`；`bash harness/init.sh` 完整跑通，`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`，`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`npm run inspect:devtools-recovery` 退出 0 并输出 `WeChat DevTools service port recovery report`、`mode: dry-run diagnostics`、`Before status: status: blocked`、`Actions attempted/skipped` 中 DevTools quit、reopen wait、DevTools open 均为 `skipped because --dry-run was requested`、`After status: status: blocked`、`Next steps` 提示如需恢复须显式 `--quit-reopen` 且实际 UI journey 需另行手测；`npm run check` 仍只串联 JSON、harness 和 readiness/default preflight 并通过；`git diff --check` 通过
+- 更新过的文件或工件：`package.json`，`harness/devtools-recovery-command-product-brief.md`，`harness/devtools-recovery-command-design-note.md`，`harness/devtools-recovery-command-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AG 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只提供无副作用 recovery dry-run 报告入口。dry-run before/after blocked 是环境仍阻塞且恢复未执行的证据，不是恢复失败的产品 bug，也不是地图、列表、发布或详情 UI 失败。真实 DevTools UI smoke 仍未执行，不能写 UI passed、DevTools passed 或真机 passed
+- 下一步最佳动作：提交 AG 组并启动用户评测 agent，评估 AG 相比 AF 是否降低“诊断 blocked 后不知道恢复动作边界”的风险；若继续推进，优先由用户在 WeChat DevTools UI 中启用 Service Port 后复跑 AF/AG 命令，或在明确接受 side effect 时直接运行带 `--quit-reopen` 的 node 命令并记录 side effects
+
+### Session 045AH
+
+- 日期：2026-06-15
+- 分支：`codex/iter-devtools-recovery-report`
+- 本轮目标：第三十四组 DevTools recovery dry-run local report 实验，在 AG 已有无副作用 recovery dry-run 命令后，把该输出保存为 ignored local Markdown 草稿，并用 guard 防止交接报告被误写成恢复成功或 UI smoke passed
+- 已完成：产品 agent 新增 `harness/devtools-recovery-report-product-brief.md`，定义 ignored local report 的交接价值、非目标、报告字段和 guard 要求；设计 agent 新增 `harness/devtools-recovery-report-design-note.md`，定义 run metadata、guard status、raw dry-run report、next action 的信息层级和避免写法；QA agent 新增 `harness/devtools-recovery-report-checklist.md`，覆盖 ignored 路径、package scripts、正向生成、负向篡改和清理；开发 agent 新增 `scripts/prepare-devtools-recovery-report.mjs` 与 `scripts/check-devtools-recovery-report.mjs`，更新 `.gitignore` 和 `package.json`，并保持默认 `npm run check` 不运行 local report 工具；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/prepare-devtools-recovery-report.mjs`；`node --check scripts/check-devtools-recovery-report.mjs`；`node scripts/check-json.mjs`；`npm run prepare:devtools-recovery-report -- --out harness/devtools-recovery-report.local-ah.md --force`；`npm run check:devtools-recovery-report -- --report harness/devtools-recovery-report.local-ah.md`；非 ignored output 路径负向；已有报告无 `--force` 负向；`UI smoke passed`、`DevTools recovered`、`恢复成功` 三类篡改负向；`npm run check`；`git diff --check`；清理 local report 文件
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/devtools-recovery-report`，对应约定 `/tmp/street-tasks-iter-worktrees/devtools-recovery-report`；当前分支为 `codex/iter-devtools-recovery-report`；正向 prepare 输出 `DevTools recovery report checks passed.`、`Report: harness/devtools-recovery-report.local-ah.md`、`DevTools recovery report guard passed.`、`This report is not UI passed evidence.`；生成的 local report 包含 branch `codex/iter-devtools-recovery-report`、commit `e6a5cf2`、command `node scripts/recover-devtools-service-port.mjs --dry-run`、exitCode `0`、`mode: dry-run diagnostics`、before/after `status: blocked`、DevTools quit/reopen wait/DevTools open 均 `skipped because --dry-run was requested`；单独 guard 输出 `DevTools recovery report checks passed.`；非 ignored output 路径被拒绝；已有报告无 `--force` 被拒绝；三类篡改分别输出 `Report must not claim unverified success: UI smoke passed`、`DevTools recovered`、`恢复成功`；`npm run check` 仍通过且不调用 local report 工具；local report 文件已清理
+- 更新过的文件或工件：`.gitignore`，`package.json`，`scripts/prepare-devtools-recovery-report.mjs`，`scripts/check-devtools-recovery-report.mjs`，`harness/devtools-recovery-report-product-brief.md`，`harness/devtools-recovery-report-design-note.md`，`harness/devtools-recovery-report-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AH 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；它只生成并校验 ignored local recovery dry-run 草稿。报告 guard 通过只证明草稿仍是 dry-run/actions skipped/非通过声明，不能写 UI passed、DevTools recovered、真机 passed 或地图列表视觉通过。真实 DevTools UI smoke 仍未执行
+- 下一步最佳动作：提交 AH 组并启动用户评测 agent，评估 AH 相比 AG 是否降低“控制台输出难交接或 local 草稿被误写成恢复成功”的风险；若继续推进，优先在用户可操作 DevTools 时启用 Service Port 后复跑 AF/AG/AH 命令，或把 recovery report guard 接入更高层的手测交接 preflight 但继续避免默认 CI/`npm run check` 依赖本机 GUI
+
+### Session 046AI
+
+- 日期：2026-06-15
+- 分支：`codex/iter-devtools-recovery-report-preflight`
+- 本轮目标：第三十五组 AI DevTools recovery report preflight 实验，在 AH 已能生成并 guard 单份 ignored local recovery dry-run report 后，新增交接前手动 preflight 扫描当前 worktree 的所有 local reports 并逐份复跑 guard
+- 已完成：产品 agent 新增 `harness/devtools-recovery-report-preflight-product-brief.md`，定义批量 preflight 的用户价值、非目标、使用场景和验收口径；设计 agent 新增 `harness/devtools-recovery-report-preflight-design-note.md`，定义 scan scope、per-report result、aggregate status 和非 UI evidence 警告；QA agent 新增 `harness/devtools-recovery-report-preflight-checklist.md`，覆盖默认 check 不接入、无 report、单份/多份 report、负向篡改和清理；开发 agent 新增 `scripts/check-devtools-recovery-report-preflight.mjs` 并在 `package.json` 暴露 `check:devtools-recovery-report-preflight`，保持默认 `npm run check` 不运行本地 recovery report preflight；主线程同步更新 `harness/feature_list.json`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/check-devtools-recovery-report-preflight.mjs`；无 local report 的 `npm run check:devtools-recovery-report-preflight`；生成两份有效 local report 后的 `npm run check:devtools-recovery-report-preflight`；追加 `DevTools recovered` 的负向 preflight；追加 `UI smoke passed` 的负向 preflight；清理 `harness/devtools-recovery-report.local*.md`；`npm run check`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；检查新文件未写入旧日期
+- 已记录证据：无 local report 时 preflight 输出 `No local DevTools recovery reports found; nothing checked.` 和非 UI passed 警告；两份有效 local report 时 preflight 逐份输出 `Checking harness/devtools-recovery-report.local-ai-*.md.`、单份 guard 通过，并输出 `DevTools recovery report preflight passed. Checked 2 report(s).`；追加 `DevTools recovered` 或 `UI smoke passed` 后 preflight 均非零退出，单份 guard 输出对应 `Report must not claim unverified success` 原因；`npm run check` 仍只串联 JSON、harness 和 readiness/default preflight，不调用 recovery report preflight；所有 ignored local recovery reports 已清理
+- 更新过的文件或工件：`package.json`，`scripts/check-devtools-recovery-report-preflight.mjs`，`harness/devtools-recovery-report-preflight-product-brief.md`，`harness/devtools-recovery-report-preflight-design-note.md`，`harness/devtools-recovery-report-preflight-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AI 组不修改页面 UI，也没有恢复 DevTools 9420 服务端口；preflight 通过只证明当前 ignored local recovery dry-run 草稿逐份通过 guard，不代表 UI passed、DevTools recovered、真机 passed、地图列表视觉通过或 service port 已恢复。真实 DevTools UI smoke 仍未执行
+- 下一步最佳动作：按用户要求本轮运行完后生成结论并终止；若未来恢复工作，应优先由有 UI 权限的执行者恢复 WeChat DevTools service port，再复跑 AF/AG/AH/AI 手动命令并单独执行真实 UI smoke
+
+### Session 047Integration
+
+- 日期：2026-06-15
+- 分支：`codex/integrate-all-capabilities`
+- 本轮目标：按用户要求把已探索完成的产品能力和验证能力集合到主分支候选中
+- 已完成：从 `main` 新建独立集成 worktree，合并 `codex/iter-devtools-recovery-report-preflight`、`codex/iter-map-ux`、`codex/iter-detail-trust`、`codex/iter-admin-risk` 和 `codex/iter-profile-activity`；保留发布准备度、详情 TrustInsight、地图 NearbyPreview、地图列表静态 guard、管理风险处理、个人中心状态面板、manual evidence/readiness/DevTools 诊断/recovery report 等能力；解决 DESIGN_SYSTEM 和 harness 记录冲突
+- 运行过的验证：合并前后运行 `bash harness/init.sh`；地图合并后运行 `node --check pages/map/map.js`、`node --check utils/post-presenter.js`、`node --check utils/geo.js`、`node harness/check-map-feed.mjs`；详情合并后运行 `node --check pages/detail/detail.js`、`node --check utils/format.js`、`node harness/check-trust-insight.mjs`；管理合并后运行 `node --check pages/admin/admin.js`、`node --check pages/admin/admin-review.js`、`node scripts/check-admin-review.mjs`；个人中心合并后运行 `node --check pages/me/me.js`、`node --check pages/me/me-state.js`、`node scripts/check-me-state.mjs`；后续还需跑完整候选验证
+- 已记录证据：各功能 helper 均已通过；`node scripts/check-json.mjs` 和 `node harness/check-harness.mjs` 在冲突解决后通过；项目既有 `MODULE_TYPELESS_PACKAGE_JSON` ESM warning 仍只影响 Node 检查输出，不影响退出码
+- 已知风险或未解决问题：本集成仍未完成真实 WeChat DevTools UI smoke 或真机验证；9420 service port blocker 仍需用户在 DevTools UI 中处理。集成进入 main 后仍不能把 map-feed 或其他用户可见旅程标记为 passing
+- 下一步最佳动作：运行完整候选验证，通过后把 `codex/integrate-all-capabilities` 合入 `main`，同时保护 `/Users/bytedance/git/x` 当前未提交的本地文件
+
+### Session 048Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：按用户真实体验反馈，修复地图“附近优先”看不见，以及管理员校验失败时展示 raw cloud.callFunction 堆栈的问题
+- 已完成：地图 `NearbyPreview` 从“未打开列表且未选中任务才显示”改为“未打开列表且有预览任务就显示”；选中任务卡在预览条可见时上移，避免与预览条重叠；管理员校验新增 `formatAdminRoleError`，把 `wx-server-sdk` 缺依赖、getMyRole 未部署/环境不匹配和未知云函数失败映射成短状态与处理步骤；“我的”页管理员入口展示 `处理:` 下一步；readiness 新增 admin auth error formatting guard
+- 运行过的验证：`node --check utils/auth.js`；`node --check pages/me/me.js`；`node --check pages/map/map.js`；`node scripts/check-admin-auth-errors.mjs`；`node harness/check-map-feed.mjs`；`npm run check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`scripts/check-admin-auth-errors.mjs` 输出 `Admin auth error checks passed.`；`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出
+- 已知风险或未解决问题：尚未由用户在 WeChat DevTools 里重新编译后肉眼确认地图首屏；管理员真正通过仍取决于云端 `getMyRole` 函数重新上传并选择“云端安装依赖”，以及 `admins` 集合里有当前 openid 的 enabled admin 记录
+- 下一步最佳动作：请用户在 WeChat DevTools 重新编译项目，先回到地图 tab 确认“附近优先”出现；再到“我的”页点管理员校验，若仍提示依赖未安装，则按提示重新上传部署 `cloudfunctions/getMyRole`
+
+### Session 049Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：继续修复用户反馈的“底部任务列表入口/抽屉依旧没看到”
+- 已完成：确认原实现把 `button/view/scroll-view` 绝对定位在全屏 `map` 原生组件上方，真实 DevTools 中可能被原生 map 层遮挡；将折叠态地图任务入口改为 `cover-view` 底部 dock，文案为“附近优先 / 列表”；地图工具按钮也改为 `cover-view`/`cover-image`；打开列表时为根节点增加 `list-open`，把 native map 高度缩到 `38vh`，并让普通任务卡抽屉从 `top: 38vh` 开始渲染，避免抽屉继续压在原生地图上
+- 运行过的验证：`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`npm run check`
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出
+- 已知风险或未解决问题：仍需用户在 WeChat DevTools 中重新编译后确认底部 cover-view dock 可见，点击后抽屉在下半屏显示并能滚动/点击任务卡；自动检查不能替代真实原生 map 层视觉验收
+- 下一步最佳动作：用户重新编译并打开地图 tab，观察底部“附近优先 / 列表”dock，点击“列表”确认抽屉露出；若仍不显示，优先截图地图页全屏和控制台首条错误
+
+### Session 050Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：修复用户截图反馈的“附近优先 dock 和回到当前位置按钮重叠，找一找按钮不见”
+- 已完成：将 `map-tool-row` 从和 `list-dock` 相同的底部位置上移到 `268rpx + safe-area`，确保定位/找一找两个 cover-view 按钮位于 dock 上方；把 cover-view 工具栏从 grid/gap 改为更稳的 flex + margin；把找一找按钮从 gradient 改成 cover-view 更稳定的实色橙色背景；图标改用绝对居中，确保两个按钮都可见
+- 运行过的验证：`bash harness/init.sh`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出
+- 已知风险或未解决问题：仍需用户在 WeChat DevTools 重新编译后确认定位和找一找两个按钮在 dock 上方并排可见，点击找一找仍能切换到附近任务
+- 下一步最佳动作：用户重新编译地图页，检查 dock 上方右侧是否有两个按钮：左边回到当前位置，右边橙色找一找
+
+### Session 051Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：修复用户反馈的“附近优先含义不清、任务卡片和地图 icon 仍重叠”
+- 已完成：底部 dock 标题从“附近优先”改为“附近任务”，副文案改成“全部/分类 · N 条任务”，去掉“点开看任务卡”的教学式文案；将定位/找一找工具栏从底部区域移动到地图右上角，彻底避开选中任务卡、详情按钮和底部 dock
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出
+- 已知风险或未解决问题：仍需用户在 WeChat DevTools 重新编译后确认地图右上角两个工具按钮不再和选中任务卡重叠，底部 dock 文案更易理解
+- 下一步最佳动作：用户重新编译地图页，点击 marker 后确认任务卡内详情按钮无遮挡；观察底部 dock 是否显示“附近任务”
+
+### Session 052Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：按用户明确偏好，把地图 UI 收敛为“列表入口右上角，回到当前位置和找一找按钮右下角”
+- 已完成：取消底部大 dock，改为右上角 `cover-view` 紧凑“列表 + 数量”入口；定位和找一找两个 `cover-view` 工具按钮放回右下角并保持并排；选中任务卡底部上移到工具行上方，避免遮挡按钮；移除选中卡片上旧的 `with-nearby-preview` 条件类；同步更新 `DESIGN_SYSTEM.md`、`harness/check-map-feed.mjs` 和 `scripts/check-map-list-resilience.mjs`，防止后续回退到底部 dock 或顶部工具行
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node scripts/check-json.mjs && node harness/check-harness.mjs && git diff --check`；`npm run check`
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 已知风险或未解决问题：自动检查不能替代真实原生地图层视觉验收；仍需用户在 WeChat DevTools 中重新编译后确认右上角“列表 N”入口可见、右下角两个按钮不与选中任务卡重叠、点击“列表”后抽屉仍正常打开
+- 下一步最佳动作：用户在 WeChat DevTools 重新编译地图页，先看右上角“列表 N”，再点击 marker 看任务卡和右下角定位/找一找按钮是否分离
+
+### Session 053Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：修复用户截图反馈的“右上角列表按钮样式有问题”
+- 已完成：确认截图中白底“列表 6”更像地图标签而不是操作按钮；将右上角列表入口改为绿色实色 `cover-view` 按钮，只显示“列表”，任务数量改为右上角橙色小角标；同步更新 `DESIGN_SYSTEM.md`、`harness/check-map-feed.mjs` 和 `scripts/check-map-list-resilience.mjs`，要求后续保持绿色按钮和数量角标
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node scripts/check-json.mjs && node harness/check-harness.mjs && git diff --check`；`npm run check`
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 已知风险或未解决问题：自动检查仍不能替代真实原生地图层视觉验收；需要用户在 WeChat DevTools 中重新编译后确认绿色列表按钮和角标不再像地图标签，并且点击仍打开列表抽屉
+- 下一步最佳动作：用户在 WeChat DevTools 重新编译地图页，观察右上角是否变成绿色“列表”按钮并带小角标
+
+### Session 054Bugfix
+
+- 日期：2026-06-15
+- 分支：`main`
+- 本轮目标：按用户澄清修正右上角列表按钮的对齐问题，而不是颜色问题
+- 已完成：撤销上一轮绿色按钮/角标方向，恢复白色右上角 `cover-view` 按钮；把原来分开的“列表”和数量节点改为单个 `list-fab-line`，内容为“列表 {{visiblePosts.length}}”；通过固定 `height: 70rpx`、同等 `line-height: 70rpx` 和 `text-align: center` 保证文本与数字在同一条视觉中线上；同步更新 `DESIGN_SYSTEM.md`、`harness/check-map-feed.mjs` 和 `scripts/check-map-list-resilience.mjs`，防止再次拆成两个基线不一致的节点
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node --check scripts/check-map-list-resilience.mjs`；`node --check harness/check-map-feed.mjs`；`node harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`node scripts/check-json.mjs && node harness/check-harness.mjs && git diff --check`；`npm run check`
+- 已记录证据：`harness/check-map-feed.mjs` 输出 `Map feed checks passed.`；`scripts/check-map-list-resilience.mjs` 输出 `Map list resilience checks passed.`；`wcc` 与 `wcsc -lc` 均退出 0 且无错误输出；`npm run check` 输出 JSON、harness、publish flow、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 已知风险或未解决问题：自动检查不能替代真实原生地图层视觉验收；需要用户在 WeChat DevTools 中重新编译后确认“列表 6”同一行居中对齐，并且点击仍打开列表抽屉
+- 下一步最佳动作：用户在 WeChat DevTools 重新编译地图页，观察右上角白色“列表 N”按钮内文字和数字是否齐平
+
+### Session 055C
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-publish`
+- 本轮目标：C 组产品/设计/开发围绕“发布成功后的扩散闭环”做最小可验证迭代，让发布者在刚发布任务后知道转给谁、想获得什么信号、稍后如何回访
+- 产品假设：发布者刚创建任务时动机最强，如果在 `from=publish` 详情上下文给出清晰扩散对象、确认/线索目标和回访动作，会更愿意转发到附近群或让朋友确认
+- 已完成：新增 `harness/viral-publish-product-brief.md` 和 `harness/viral-publish-design-checklist.md`；新增 `utils/publish-spread.js` 生成分类/意图/图片/评论/状态相关的谨慎扩散计划；详情页仅在 `from=publish` 时把原发布成功卡升级为三步扩散计划；`resolved`、`expired`、`hidden` 不鼓励扩散；分享 path 保留非发布来源参数但移除 `from=publish`；新增 `scripts/check-publish-spread.mjs` 并接入 `scripts/check-devtools-readiness.mjs`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/publish-spread.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-publish-spread.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；微信开发者工具内置 `wcc` 全量编译 WXML；微信开发者工具内置 `wcsc -lc` 全量编译 WXSS；`npm run check`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/viral-publish`，对应约定 `/tmp/street-tasks-iter-worktrees/viral-publish`；当前分支为 `codex/iter-viral-publish`；新增检查先因缺少 `utils/publish-spread.js` 按预期失败，补实现后输出 `Publish spread checks passed.`；四条 `node --check` 均通过；readiness 输出 `Publish flow checks passed.`、`Publish spread checks passed.`、`Trust insight checks passed.`、`Candidate flow checks passed.`、`Admin auth error checks passed.`、`Map list resilience checks passed.` 和 `DevTools readiness checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`bash harness/init.sh` 完整跑通；`wcc` 和 `wcsc -lc` 全量编译退出码为 0 且无输出；`npm run check` 通过
+- 更新过的文件或工件：`utils/publish-spread.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-publish-spread.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-publish-product-brief.md`，`harness/viral-publish-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中完成真实发布、发布后详情跳转、open-type share 系统面板、分享接收路径、窄屏扩散计划布局、图片任务渲染和 resolved/expired 非扩散视觉验证；自动检查不能证明转发率提升或真实分享面板可用
+- 下一步最佳动作：在 WeChat DevTools 中用一条带图和一条无图任务走完整发布成功链路，确认扩散计划出现、普通详情入口不出现、转发路径不带 `from=publish`，再用真机观察分享卡片和窄屏布局
+
+### Session 055Share
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-share`
+- 本轮目标：围绕详情页任务转发做一版能提升用户自发裂变的最小可验证迭代
+- 已完成：新增 `utils/share-message.js`，把详情页分享标题、路径和说明文案统一收敛到单一 helper；新增 `scripts/check-share-message.mjs` 覆盖 active、stale、report、resolved、expired、hidden 和无任务边界；详情页改为展示轻量分享提示层，明确告诉用户转给谁、为什么转、转出去能帮什么，并让 `onShareAppMessage` 直接复用同一 helper 输出动态 title/path
+- 运行过的验证：`node --check utils/share-message.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-share-message.mjs`；`node scripts/check-share-message.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`bash harness/init.sh`
+- 已记录证据：`node --check` 三项均通过；`node scripts/check-share-message.mjs` 首次命中 expired 断言后已按更谨慎的文案调整通过；`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`bash harness/init.sh` 完整跑通并再次通过 JSON 和 harness 自检
+- 更新过的文件或工件：`utils/share-message.js`，`scripts/check-share-message.mjs`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`harness/viral-share-product-brief.md`，`harness/viral-share-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：分享模块的实际视觉表现、按钮触发和系统分享菜单仍需在 WeChat DevTools 中手动确认；当前只验证了静态结构和 Node 逻辑
+- 下一步最佳动作：在 WeChat DevTools 中打开一条 active、resolved、expired 和高举报详情，逐个点开分享菜单确认 title/path 与页面提示一致
+
+### Session 056ViralCandidate
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-candidate`
+- 本轮目标：组合 C 组发布后扩散计划和 A 组普通详情分享提示，形成更接近合入候选的大版本
+- 已完成：从 `codex/iter-viral-publish` 创建候选分支并合入 `codex/iter-viral-share`；详情页现在在 `from=publish` 场景展示发布者专属三步扩散计划，在普通详情入口展示“转给谁 / 为什么转 / 能帮什么”的通用分享提示；`onShareAppMessage` 使用 A 组谨慎标题，发布成功场景继续用 C 组接收侧普通详情 path，避免把发布者专属卡转给接收者
+- 运行过的验证：`node --check pages/detail/detail.js`；`node --check utils/share-message.js`；`node --check utils/publish-spread.js`；`node --check scripts/check-share-message.mjs`；`node --check scripts/check-publish-spread.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`bash harness/init.sh`；`npm run check`
+- 已记录证据：`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node --no-warnings scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`bash harness/init.sh` 完整跑通；`npm run check` 输出 JSON、harness、publish flow、publish spread、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 更新过的文件或工件：`utils/share-message.js`，`utils/publish-spread.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-message.mjs`，`scripts/check-publish-spread.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机中验证组合后的发布成功页、普通详情页、分享面板、接收路径、窄屏布局和带图任务渲染
+- 下一步最佳动作：提交组合候选，再把该大版本发送给用户评测 agent 追加评分
+
+### Session 057Receiver
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-receiver`
+- 本轮目标：围绕“分享接收侧转化”做一版最小可验证迭代，让 `from=share` 打开的详情页明确告诉用户为什么收到这条任务、先做什么、以及不在现场怎么帮
+- 产品假设：如果接收侧页面把“为什么转给你”“先做哪一步”“不在现场怎么帮”说清楚，用户更容易继续确认、评论或二次转发，而不是只看一眼就离开
+- 已完成：新增 `harness/viral-receiver-product-brief.md` 和 `harness/viral-receiver-design-checklist.md`；新增 `utils/share-receiver.js` 生成 `from=share` 的接收侧提示；详情页在 `entryQuery.from === 'share'` 且有任务时展示轻量提示条，并继续保留现有信任判断、评论和普通分享提示；新增 `scripts/check-share-receiver.mjs`，并把它接入 `scripts/check-devtools-readiness.mjs` 与 `scripts/check-viral-candidate.mjs`
+- 运行过的验证：`node --check pages/detail/detail.js`；`node --check utils/share-receiver.js`；`node --check scripts/check-share-receiver.mjs`；`node scripts/check-share-receiver.mjs`；`node scripts/check-share-message.mjs`；`node scripts/check-publish-spread.mjs`；`node scripts/check-viral-candidate.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`bash harness/init.sh`；`npm run check`
+- 已记录证据：四条 `node --check` 均通过；`node scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`bash harness/init.sh` 完整跑通；`npm run check` 输出 JSON、harness、publish flow、publish spread、share receiver、TrustInsight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过
+- 更新过的文件或工件：`utils/share-receiver.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-receiver.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-receiver-product-brief.md`，`harness/viral-receiver-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：真实 WeChat DevTools/真机仍需手动确认 `from=share` 提示模块的文案、换行、按钮层级以及二次转发行为；当前自动验证只能证明静态结构和 Node 逻辑正确，不能证明实际分享转化提升
+- 下一步最佳动作：在 WeChat DevTools 中打开一条从分享进入的 active、stale、resolved 和 expired 任务，确认接收侧提示、普通分享提示和信任/评论区域没有互相挤压
+
+### Session 058F
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-comment-relay`
+- 本轮目标：F 组产品/设计/开发围绕“评论成功后的二次接力”做最小可验证迭代，让用户刚补充线索后知道可以把最新线索转给更可能路过的人
+- 产品假设：用户刚在任务详情补充评论/线索时参与意愿最高；如果评论成功后给出轻量接力提示，并在高风险或关闭状态下不鼓励公开扩散，可能把一次评论转化为一次更谨慎的二次传播
+- 已完成：新增 `harness/viral-comment-relay-product-brief.md` 和 `harness/viral-comment-relay-design-checklist.md`；新增 `utils/comment-relay.js` 生成评论成功后的接力提示；详情页新增 `commentRelayPrompt`，页面加载/重新进入默认隐藏，只在评论提交成功后显示轻量 panel；active 低风险任务显示 `open-type="share"` 接力按钮，`stale`、高举报、`resolved`、`expired`、`hidden` 只显示谨慎提醒；新增 `scripts/check-comment-relay.mjs` 并接入 `scripts/check-devtools-readiness.mjs` 与 `scripts/check-viral-candidate.mjs`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --no-warnings scripts/check-comment-relay.mjs` 红灯确认缺少 `utils/comment-relay.js`；`node --check utils/comment-relay.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-comment-relay.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/viral-comment-relay`，对应约定 `/tmp/street-tasks-iter-worktrees/viral-comment-relay`；当前分支为 `codex/iter-viral-comment-relay`；新增检查先因缺少 `utils/comment-relay.js` 按预期失败，补实现和详情接入后输出 `Comment relay checks passed.`；五条 `node --check` 均通过；既有 `Share message checks passed.`、`Publish spread checks passed.`、`Share receiver checks passed.`、`Viral candidate checks passed.` 均通过；readiness 输出包含 `Comment relay checks passed.`，随后 publish flow、publish spread、share receiver、Trust insight、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight 全部通过；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 通过且默认 readiness 包含评论接力检查；最后一次 `bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/comment-relay.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-comment-relay.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-comment-relay-product-brief.md`，`harness/viral-comment-relay-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证真实评论成功后的 panel 插入位置、分享按钮触发、系统分享卡片、风险态无公开转发 CTA、窄屏换行、键盘/安全区和云端评论路径；自动检查不能证明真实分享转化提升
+- 下一步最佳动作：在 WeChat DevTools 中登录后对 active、stale、高举报、resolved/expired 任务分别提交或模拟评论成功状态，确认评论接力 panel 只在成功后出现，active 能打开分享面板，风险态只提示不盲转
+
+### Session 059LoopCandidate
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-loop-candidate`
+- 本轮目标：把发布后扩散、分享接收侧引导、评论后接力三段高分能力收敛为一个更克制的传播闭环候选，避免同一屏出现多个主要传播 CTA
+- 产品假设：发布者、分享接收者、刚评论的用户处在不同意图时刻；如果普通分享面板、接收侧引导和评论接力提示同时堆叠，会稀释下一步行动，因此同一时刻只保留一个主要传播行动更适合作为合入候选
+- 已完成：新增 `harness/viral-loop-candidate-product-brief.md` 和 `harness/viral-loop-candidate-design-checklist.md`；详情页普通分享面板改为仅在非发布、非分享接收、非评论接力状态下显示；`scripts/check-viral-candidate.mjs` 和 `scripts/check-comment-relay.mjs` 增加互斥展示 guard
+- 运行过的验证：`node --check pages/detail/detail.js`；`node --check scripts/check-viral-candidate.mjs`；`node --check scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node --no-warnings scripts/check-comment-relay.mjs` 输出 `Comment relay checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node --no-warnings scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 通过且 readiness 包含 publish spread、comment relay、share receiver、candidate flow、map list 等检查；`bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`pages/detail/detail.wxml`，`scripts/check-viral-candidate.mjs`，`scripts/check-comment-relay.mjs`，`harness/viral-loop-candidate-product-brief.md`，`harness/viral-loop-candidate-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证发布成功页、分享接收页、普通详情页和评论成功页四种入口的实际视觉层级、分享按钮触发、窄屏换行和真实用户转化
+- 下一步最佳动作：运行完整验证后提交候选，并发送给用户评测 agent 与 F=98 的结果比较
+
+### Session 060CommentSource
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-comment-source`
+- 本轮目标：在评论接力分享链路上补一个最小来源标识，让接收侧能明确区分“有人刚补了线索”的二跳入口，同时不回退普通分享面板互斥规则
+- 产品假设：如果评论接力路径携带 `source=comment`，接收侧就能把“先看最新评论/评论区已有新线索”说得更明确，二跳用户更容易继续确认或补充，而不是只看到泛化的 `from=share` 提示
+- 已完成：新增 `harness/viral-comment-source-product-brief.md` 和 `harness/viral-comment-source-design-checklist.md`；`utils/comment-relay.js` 的分享路径新增 `source=comment`；`utils/share-receiver.js` 在 `entryFrom === 'share' && source === 'comment'` 时强化“有人刚补了线索/先看最新评论”的接收文案，同时对 `stale`、高举报、已关闭、已过期、已隐藏继续保持谨慎；`pages/detail/detail.js` 继续传递 `entryQuery.source` 给接收侧 helper；`scripts/check-comment-relay.mjs`、`scripts/check-share-receiver.mjs` 和 `scripts/check-viral-candidate.mjs` 更新了来源与互斥检查
+- 运行过的验证：`bash harness/init.sh`；`node --check utils/comment-relay.js`；`node --check utils/share-receiver.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-comment-relay.mjs`；`node --check scripts/check-share-receiver.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`
+- 已记录证据：`node --no-warnings scripts/check-comment-relay.mjs` 输出 `Comment relay checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node --no-warnings scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 通过且 readiness 里继续包含 publish flow、publish spread、comment relay、share receiver、candidate flow、Admin auth error、map list resilience 和 blocked summary preflight；`bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/comment-relay.js`，`utils/share-receiver.js`，`pages/detail/detail.js`，`scripts/check-comment-relay.mjs`，`scripts/check-share-receiver.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-comment-source-product-brief.md`，`harness/viral-comment-source-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 `source=comment` 的实际分享接收文案、窄屏换行、系统分享面板和真实二跳行为；自动检查只能证明路径和字符串没有回退
+- 下一步最佳动作：在 WeChat DevTools 中打开一条从评论接力进入的详情页，确认接收侧真的展示“有人刚补了线索/先看最新评论”，再观察高举报和过时状态是否仍保持谨慎
+
+### Session 061ConfirmRelay
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-confirm-relay`
+- 本轮目标：围绕“确认成功后的可信接力”做最小可验证迭代，让用户刚确认一条低风险任务后可以把确认信号转给更可能路过的人，同时不鼓励过时/举报动作公开扩散
+- 产品假设：确认动作代表用户刚刚投入了判断成本；如果确认成功后提示“可以转给更可能路过的人继续补线索”，会比普通分享更可信，但文案必须只说确认信号，不能暗示完全属实
+- 已完成：新增 `harness/viral-confirm-relay-product-brief.md` 和 `harness/viral-confirm-relay-design-checklist.md`；新增 `utils/action-relay.js` 生成 confirm/stale/report 后提示；详情页新增 `actionRelayPrompt`，页面加载/重新进入默认隐藏，trust action 成功后显示；低风险 confirm 可用 `open-type="share"` 且 path 带 `source=confirm`，stale/report/高举报/过时/关闭态只显示谨慎提示；`utils/share-receiver.js` 支持 `source=confirm` 接收侧文案；`scripts/check-action-relay.mjs` 加入默认 readiness 和候选检查
+- 运行过的验证：`node --check utils/action-relay.js`；`node --check utils/share-receiver.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-action-relay.mjs`；`node --check scripts/check-comment-relay.mjs`；`node --check scripts/check-share-receiver.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-action-relay.mjs`；`node --no-warnings scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：`node --no-warnings scripts/check-action-relay.mjs` 输出 `Action relay checks passed.`；`node --no-warnings scripts/check-comment-relay.mjs` 输出 `Comment relay checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node --no-warnings scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 通过且 readiness 包含 `Action relay checks passed.`；`bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/action-relay.js`，`utils/share-receiver.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`scripts/check-action-relay.mjs`，`scripts/check-comment-relay.mjs`，`scripts/check-share-receiver.mjs`，`scripts/check-viral-candidate.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-confirm-relay-product-brief.md`，`harness/viral-confirm-relay-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 confirm/stale/report 后真实提示、`source=confirm` 接收页、open-type share、风险态无公开分享 CTA、窄屏换行和真实二跳行为
+- 下一步最佳动作：运行完整验证后提交，并发送给用户评测 agent 与 F/I=98 的最高分结果比较
+
+### Session 062ReceiverConversion
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-receiver-conversion`
+- 本轮目标：围绕“分享接收者完成行动后的再传播”做最小可验证迭代，让 `from=share` 进入并完成确认或评论的用户可以继续接力给下一位更可能路过的人
+- 产品假设：如果接收者已经愿意确认或评论，说明这条内容完成了一次真实转化；此时提示“继续接力给下一位”比默认详情分享更贴近裂变链路，但普通详情入口和风险态不应触发
+- 已完成：新增 `harness/viral-receiver-conversion-product-brief.md` 和 `harness/viral-receiver-conversion-design-checklist.md`；新增 `utils/receiver-conversion.js` 生成 `from=share` 接收者确认/评论后的提示；详情页新增 `receiverConversionPrompt`，页面加载/重新进入默认隐藏，分享入口完成评论或信任动作后才设置，并优先于 comment/action relay；`source=receiver` 接收侧文案强调先看确认和评论；`scripts/check-receiver-conversion.mjs` 加入默认 readiness 和候选检查
+- 运行过的验证：`node --check utils/receiver-conversion.js`；`node --check utils/share-receiver.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-receiver-conversion.mjs`；`node --check scripts/check-action-relay.mjs`；`node --check scripts/check-comment-relay.mjs`；`node --check scripts/check-share-receiver.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-action-relay.mjs`；`node --no-warnings scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-share-message.mjs`；`node --no-warnings scripts/check-publish-spread.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：`node --check` 覆盖 `utils/receiver-conversion.js`、`utils/share-receiver.js`、`pages/detail/detail.js` 和 5 个相关检查脚本，均通过；`node --no-warnings scripts/check-receiver-conversion.mjs` 输出 `Receiver conversion checks passed.`；`node --no-warnings scripts/check-action-relay.mjs` 输出 `Action relay checks passed.`；`node --no-warnings scripts/check-comment-relay.mjs` 输出 `Comment relay checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `Receiver conversion checks passed.` 和 `DevTools readiness checks passed.`；`node --no-warnings scripts/check-share-message.mjs` 输出 `Share message checks passed.`；`node --no-warnings scripts/check-publish-spread.mjs` 输出 `Publish spread checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 通过且 readiness 包含 `Receiver conversion checks passed.`；`bash harness/init.sh` 完整跑通；当前自动检查只证明 helper、路径和模板互斥结构，不代表 DevTools/真机视觉或真实分享转化通过
+- 更新过的文件或工件：`utils/receiver-conversion.js`，`utils/share-receiver.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-receiver-conversion.mjs`，`scripts/check-action-relay.mjs`，`scripts/check-comment-relay.mjs`，`scripts/check-share-receiver.mjs`，`scripts/check-viral-candidate.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-receiver-conversion-product-brief.md`，`harness/viral-receiver-conversion-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 from=share 接收者完成确认/评论后的真实提示、`source=receiver` 接收页、open-type share、风险态无公开分享 CTA、窄屏换行和真实二跳行为
+- 下一步最佳动作：运行完整验证后提交，并发送给用户评测 agent 与 J=99 的最高分结果比较
+
+### Session 063ReceiverAction
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-receiver-action`
+- 本轮目标：围绕“收到分享后的第一步行动入口”做最小可验证迭代，降低 `from=share` 接收者完成确认/评论的摩擦，并接上既有 receiverConversionPrompt 二跳
+- 产品假设：分享接收者第一步通常不是继续扩散，而是确认自己是否在附近、是否能补线索；在接收侧提示里放一个轻量 action strip，能让低风险 active 任务更快获得 confirm/comment，同时风险态继续保持谨慎
+- 已完成：新增 `harness/viral-receiver-action-product-brief.md` 和 `harness/viral-receiver-action-design-checklist.md`；新增 `utils/share-receiver-actions.js` 生成低风险接收者 action strip；详情页在 `shareReceiverGuide` 内展示“我在附近，确认一下”和“补一条线索”，分别复用现有 `react` confirm 与 `openCommentDialog`；`hidden` / `resolved` / `expired` / `stale` / 任意过时或举报信号不显示鼓励性 action strip；新增 `scripts/check-share-receiver-action.mjs` 并接入 `scripts/check-devtools-readiness.mjs` 和 `scripts/check-viral-candidate.mjs`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --no-warnings scripts/check-share-receiver-action.mjs` 红灯确认缺少 `utils/share-receiver-actions.js`，以及集成断言红灯确认 readiness 未接入；`node --check utils/share-receiver-actions.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-share-receiver-action.mjs`；`node --check scripts/check-share-receiver.mjs`；`node --check scripts/check-receiver-conversion.mjs`；`node --check scripts/check-action-relay.mjs`；`node --check scripts/check-comment-relay.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-share-receiver-action.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-action-relay.mjs`；`node --no-warnings scripts/check-comment-relay.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/viral-receiver-action`，对应约定 `/tmp/street-tasks-iter-worktrees/viral-receiver-action`；当前分支为 `codex/iter-viral-receiver-action`；新增检查先因缺少 `utils/share-receiver-actions.js` 按预期失败，补 helper 和详情接入后输出 `Share receiver action checks passed.`；集成断言先因 readiness 未运行新检查按预期失败，接入后通过；`node --check` 覆盖 helper、详情页和相关检查脚本均通过；`node --no-warnings` 检查输出 `Share receiver action checks passed.`、`Share receiver checks passed.`、`Receiver conversion checks passed.`、`Action relay checks passed.`、`Comment relay checks passed.`、`Viral candidate checks passed.`、`DevTools readiness checks passed.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 通过且 readiness 包含 `Share receiver action checks passed.`；`bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/share-receiver-actions.js`，`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-receiver-action.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-receiver-action-product-brief.md`，`harness/viral-receiver-action-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 from=share action strip 的真实布局、confirm 点击后的 receiverConversionPrompt、评论弹窗、游客登录引导、系统分享面板、风险态无按钮、窄屏换行和真实云端评论路径；自动检查只证明 helper、模板绑定、互斥结构和 readiness 接入
+- 下一步最佳动作：主 agent 复核后，在 WeChat DevTools 中分别打开 active 低风险、stale、高举报、resolved/expired/hidden 的 `from=share` 详情页，实测 action strip、confirm/comment 后提示和窄屏展示
+
+### Session 064ViralJourneyEvidence
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-journey-evidence`
+- 本轮目标：N 组产品/设计/开发围绕“真实链路可验证性”补一个可复跑证据框架，验证从分享接收、完成行动、二跳接力到下一位接收者语境的核心链路，同时不声称替代 DevTools/真机
+- 产品假设：J/L/M 并列高分候选的主要短板是缺少连贯链路证据；把 helper 输出和详情页互斥条件组合成一个自动场景模型，可以降低后续迭代破坏真实传播链路的风险
+- 已完成：新增 `scripts/check-viral-journey-evidence.mjs`，直接导入 `buildShareReceiverGuide`、`buildShareReceiverActionStrip`、`buildReceiverConversionPrompt`、`buildActionRelayPrompt`、`buildCommentRelayPrompt` 和 `buildDetailShareMessage`，并静态读取 `pages/detail/detail.js/wxml`；新增 `harness/viral-journey-evidence-product-brief.md`、`harness/viral-journey-evidence-design-checklist.md` 和 `harness/viral-journey-manual-results.example.json`；readiness 和 viral candidate 都运行新证据脚本；证据脚本同时校验手测模板保持 `not_run` 且没有伪造 evidence
+- 自动场景覆盖：`/pages/detail/detail?id=<id>&from=share` 进入 active 且无 stale/report 的任务时，接收侧 guide 与 action strip 出现、普通 share panel 不出现；接收者 confirm/comment 后生成 `receiverConversionPrompt` 并优先于 action/comment relay；二跳分享路径带 `from=share&source=receiver`；`source=receiver` 接收说明是接力语境；普通入口和风险态不出现接收侧鼓励 action strip 或接收者公开接力 CTA
+- 手测模板说明：`harness/viral-journey-manual-results.example.json` 只作为样例，`summary.overallStatus` 为 `not_run`，不包含真实执行结论；它不能被引用为 DevTools/真机通过证据
+- 运行过的验证：`node --no-warnings scripts/check-viral-journey-evidence.mjs` 先因脚本缺失按预期失败；补实现后运行 `node --check scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-share-receiver-action.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：新增证据脚本输出 `Viral journey evidence checks passed.`，并校验手测样例只能作为 `not_run` 模板；share receiver action 输出 `Share receiver action checks passed.`；receiver conversion 输出 `Receiver conversion checks passed.`；viral candidate 输出包含 `Viral journey evidence checks passed.` 和 `Viral candidate checks passed.`；readiness 输出包含 `Viral journey evidence checks passed.` 和 `DevTools readiness checks passed.`；JSON、harness、diff、npm check 和 init 结果以本 session 最终验证输出为准
+- 更新过的文件或工件：`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-journey-evidence-product-brief.md`，`harness/viral-journey-evidence-design-checklist.md`，`harness/viral-journey-manual-results.example.json`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：未执行 WeChat DevTools/真机；自动脚本只证明 helper、路径、互斥结构和手测模板存在，不证明系统分享面板、真实点击、真实二跳、窄屏视觉、云端评论路径或分享转化提升
+- 下一步最佳动作：主 agent 复核后，在 WeChat DevTools 中用 active 低风险任务打开 `/pages/detail/detail?id=<id>&from=share`，分别走确认和评论后分享，再用 `source=receiver` 打开二跳；同时用 stale/report/resolved/expired/hidden 夹具确认风险态不出现鼓励性接收动作
+
+### Session 065ViralManualEvidenceGate
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-manual-evidence-gate`
+- 本轮目标：O 组产品+设计+开发 worker 在 N 组 `not_run` 模板基础上，新增传播链路真实本地手测结果文件的校验入口，同时不改变小程序产品交互
+- 产品假设：N 组自动模型能证明 helper 和页面互斥结构，但仍不能证明 DevTools/真机里的真实点击、系统分享面板、payload、二跳入口、窄屏布局和云端评论路径；因此需要一个只在 ignored/local 真实结果文件存在时生效的 gate，防止 example、占位文本或无 evidence 的 `passed` 被误当成验收通过
+- 已完成：新增 `harness/viral-journey-manual-evidence-product-brief.md` 和 `harness/viral-journey-manual-evidence-checklist.md`；新增 `scripts/check-viral-journey-manual-evidence.mjs`，默认扫描 ignored local viral journey 结果文件，无文件时通过但明确输出不代表 UI passed；真实文件存在时校验 schema、当前 branch/commit、environment、required journey 唯一性、`passed` evidence/actual/share payload、`failed` actual/followUp、`blocked` blocker/followUp，以及 `overallStatus` 聚合；显式拒绝未被 git ignore 的显式路径和 `harness/viral-journey-manual-results.example.json`；新增 `scripts/prepare-viral-journey-manual-evidence.mjs`，支持 `--dry-run` 和 ignored blocked draft 生成，draft 不含 passed journey；`scripts/check-devtools-readiness.mjs` 接入新 gate，`scripts/check-viral-journey-evidence.mjs` 要求新 gate/docs 存在
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs` 红灯确认脚本缺失；`node --check scripts/check-viral-journey-manual-evidence.mjs`；`node --check scripts/prepare-viral-journey-manual-evidence.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --check scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`node --no-warnings scripts/prepare-viral-journey-manual-evidence.mjs --dry-run`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；显式传入 example 文件验证被拒绝；临时 ignored blocked draft 验证通过后清理；临时 bad passed-without-evidence 样例验证失败；临时 good passed-with-evidence/share-payload 样例验证通过后清理；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：初始 `node --no-warnings scripts/check-viral-journey-manual-evidence.mjs` 因 `MODULE_NOT_FOUND` 按预期失败；补实现后默认输出 `No viral journey manual evidence files found; nothing checked.` 和 `This is not UI passed evidence and does not mean DevTools or real-device UI passed.`；`prepare --dry-run` 输出将创建 `harness/manual-test-results.local-viral-journey.json`、当前 `codex/iter-viral-manual-evidence-gate@bf62161`，并说明没有写文件、不声称 UI passed；显式 example 输入被拒绝并提示 example 不能作为真实 manual evidence；显式未 ignored local 输入被拒绝；临时 bad passed 样例输出 `Bad passed sample rejected as expected.`；临时 good passed 样例输出 `Good passed sample accepted as expected.`；`node --no-warnings scripts/check-viral-journey-evidence.mjs` 输出 `Viral journey evidence checks passed.`；readiness 输出包含新 gate 的无文件/非 UI passed 文案并最终输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 完整跑通且 readiness 包含新 viral manual evidence gate；`bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`scripts/check-viral-journey-manual-evidence.mjs`，`scripts/prepare-viral-journey-manual-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-journey-evidence.mjs`，`harness/viral-journey-manual-evidence-product-brief.md`，`harness/viral-journey-manual-evidence-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：没有执行 WeChat DevTools 或真机真实链路手测；当前无真实 local viral journey result 文件，因此新 gate 只验证了无文件语义、schema gate 和临时样例，不产生 UI passed；没有提交截图、录屏、payload 或日志；`harness/local-viral-journey-results*.json` 只有在本地 git ignore/exclude 后才会被 readiness 扫描，默认 prepare 使用现有 ignored 的 `harness/manual-test-results.local-viral-journey*.json`
+- 下一步最佳动作：主 agent 复核后，用 `node --no-warnings scripts/prepare-viral-journey-manual-evidence.mjs --dry-run` 预览，真实手测时生成 ignored local draft，打开 DevTools/真机执行五条 required journey，填入 evidence 和 share payload/无法检查说明，再运行 `node --no-warnings scripts/check-viral-journey-manual-evidence.mjs <local-json>` 与 `node --no-warnings scripts/check-devtools-readiness.mjs`
+
+### Session 066ViralDevToolsJourneyLaunch
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-devtools-journey-launch`
+- 本轮目标：P 组产品/设计/开发围绕“传播链真实手测启动前置诊断”补一个单命令运行包，把 DevTools port/smoke blocker、viral journey evidence draft、existing local evidence scan 和五条必跑 journey 下一步收拢在一起
+- 产品假设：N/O 已能建模和校验传播链 evidence，但真实手测仍容易卡在 DevTools service port、草稿路径、payload 记录和 journey 顺序上；把启动前诊断做成无副作用单入口，可以让后续执行者更快判断当前是环境 blocked、证据 blocked、产品 failed，还是可进入真实 UI 手测
+- 已完成：产品 agent 新增 `harness/viral-devtools-journey-run-product-brief.md`；设计/QA agent 新增 `harness/viral-devtools-journey-run-checklist.md`；开发 agent 新增 `scripts/prepare-viral-journey-devtools-run.mjs`；主线程补齐 no-side-effect smoke access probe、recovery dry-run hint、`--strict` 环境 blocker 失败语义、`npm run prepare:viral-journey-run` 入口，并把新启动包接入 `scripts/check-devtools-readiness.mjs`
+- 运行包行为：默认不写文件、不 quit/open DevTools、不 preview、不清缓存、不杀进程；依次运行 `scripts/inspect-devtools-port-state.mjs`、无副作用 `scripts/check-devtools-smoke-access.mjs`、`scripts/prepare-viral-journey-manual-evidence.mjs --dry-run`、`scripts/check-viral-journey-manual-evidence.mjs`，再从 `harness/viral-journey-manual-results.example.json` 输出五条 required journeys 和 share payload 注意事项
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/prepare-viral-journey-devtools-run.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`npm run prepare:viral-journey-run`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/prepare-viral-journey-devtools-run.mjs --strict` 负向；`npm run check`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`
+- 已记录证据：`npm run prepare:viral-journey-run` 输出 port status `unknown`、diagnosis `connect_refused`，smoke access `blocked`，service port 9420 无 listener 且无 matching ide-http-port declaration；同一输出确认没有 quit/open/preview/cache/process 副作用，没有写 local draft，并列出五条 journeys 与 `from=share&source=receiver` payload 要求；readiness 输出包含新启动包且最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；strict 负向按预期 exit 1 并提示 port status `unknown`、smoke access `blocked`；`npm run check`、`bash harness/init.sh`、JSON、harness 和 `git diff --check` 均通过
+- 更新过的文件或工件：`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/viral-devtools-journey-run-product-brief.md`，`harness/viral-devtools-journey-run-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：P 组仍未执行 WeChat DevTools 或真机真实链路手测；当前 9420 service port blocker 只是环境阻塞，不是 UI failed；没有真实 local viral journey result 文件，也没有截图、录屏、payload 或日志 evidence；readiness/diagnostic/dry-run/checker-passed 均不能写成 UI passed
+- 下一步最佳动作：若要进入真实手测，先在 WeChat DevTools UI 启用 Settings -> Security Settings -> Service Port 并确认端口匹配 9420，重新运行 `npm run prepare:viral-journey-run` 直到 port/smoke ready；随后生成 ignored local draft，执行五条 viral journey，填入 evidence 和 share payload/无法检查说明，再运行 manual evidence checker 与 readiness
+
+### Session 067ViralBlockedEvidenceCapture
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-blocked-evidence-capture`
+- 本轮目标：Q 组产品/设计/开发把 P 组诊断到的 DevTools port/smoke blocker 显式落成 O 组 checker 可校验的 ignored local blocked result，避免继续停留在 no files/nothing checked
+- 产品假设：P 能告诉执行者当前为什么不能手测，但没有留下 O checker 会扫描的结果文件；当环境 blocker 真实存在且用户显式运行 capture 时，把 blocker 写成全 blocked local JSON，可以让交接者清楚知道五条 journey 未执行的原因，并把“无 UI evidence”从口头说明变成可校验 artifact
+- 已完成：产品 agent 新增 `harness/viral-blocked-evidence-capture-product-brief.md`；设计/QA agent 新增 `harness/viral-blocked-evidence-capture-checklist.md`；开发 agent 新增 `scripts/capture-viral-journey-blocked-evidence.mjs`；主线程修正文档命令名，新增 `npm run capture:viral-blocked-evidence`，并把 capture 脚本和文档接入 `scripts/check-devtools-readiness.mjs` 的文件/语义要求但不在 readiness 默认执行写文件 capture
+- 脚本行为：显式运行时执行只读 `scripts/inspect-devtools-port-state.mjs` 与无副作用 `scripts/check-devtools-smoke-access.mjs`，写入 ignored local `harness/manual-test-results.local-viral-journey-blocked.json`，记录当前 branch/commit/testedAt/environment/summary，五条 required journeys 全部为 `blocked`，写入具体 port/smoke blocker、actual、followUp，并自动运行 `node --no-warnings scripts/check-viral-journey-manual-evidence.mjs <out>`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/capture-viral-journey-blocked-evidence.mjs`；`node scripts/capture-viral-journey-blocked-evidence.mjs --force`；`node scripts/capture-viral-journey-blocked-evidence.mjs --out harness/viral-journey-blocked.json` 负向；已存在文件未 `--force` 负向；篡改 `summary.overallStatus=passed` 后运行 manual evidence checker 负向；清理 ignored local JSON；`npm run check`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`bash harness/init.sh`
+- 已记录证据：正向 capture 输出 `Checked viral journey manual evidence: harness/manual-test-results.local-viral-journey-blocked.json (overallStatus=blocked)`，生成 JSON 解析为 `schemaVersion=viral-journey-manual-results.v1`、五条 journey 均 `blocked`、DevTools 版本 `2.01.2510290; build 4240.111`、blocker 包含 `status=unknown`、`diagnosis=connect_refused`、9420 无 listener 和 smoke blocked；未 ignored 输出路径被拒绝；已有文件无 `--force` 被拒绝；篡改 `overallStatus=passed` 被 checker 拒绝并提示应为 `blocked`；清理后 `git status --ignored` 无 local result 残留
+- 更新过的文件或工件：`scripts/capture-viral-journey-blocked-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/viral-blocked-evidence-capture-product-brief.md`，`harness/viral-blocked-evidence-capture-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：Q 组仍未执行 WeChat DevTools 或真机真实链路手测；capture 只证明当前环境 blocker 被结构化记录并通过 O checker，不证明 UI passed 或产品 failed；默认 readiness 不执行 capture，因此真实交接需要用户显式运行 `npm run capture:viral-blocked-evidence`
+- 下一步最佳动作：若继续推进真实证据，先恢复 WeChat DevTools Service Port 9420 并确认 `npm run prepare:viral-journey-run` port/smoke ready；若仍 blocked，显式运行 `npm run capture:viral-blocked-evidence -- --force` 记录当前 blocker；恢复后执行五条 viral journey 并用真实 evidence 替换 blocked local JSON
+
+### Session 068ViralTargetedRelay
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-targeted-relay`
+- 本轮目标：R 组产品/设计/开发把 `from=share` 接收者完成 confirm/comment 后的二跳提示从泛化“继续接力”升级为目标化接力，降低用户自己思考“转给谁、为什么可信、对方先看什么”的成本
+- 产品假设：接收者刚确认或补线索后，已经有一次真实判断或贡献；如果二跳提示明确推荐目标人群、解释刚发生动作带来的可信信号，并告诉下一位先核对什么，更可能把一次接收转化为有边界的二次传播，而不是无差别扩散
+- 已完成：产品 agent 新增 `harness/viral-targeted-relay-product-brief.md`；设计/QA agent 新增 `harness/viral-targeted-relay-design-checklist.md`；开发 agent 扩展 `utils/receiver-conversion.js`，给低风险 receiverConversionPrompt 增加 `targetRows` 三行结构：`推荐转给`、`为什么可信`、`下一位先看`；目标化文案对齐当前 `lost_found`、`help_needed`、`street_update`、`check_in` 分类枚举；风险态、弱 stale/report、resolved/expired/hidden 继续保持 `targetRows` 为空且不展示公开接力 CTA
+- 页面变化：`pages/detail/detail.wxml` 在 receiver conversion panel 内渲染目标化三行，且使用 `receiverConversionPrompt.targetRows && receiverConversionPrompt.targetRows.length` 防空；`pages/detail/detail.wxss` 增加两列 label/value 样式，保证短 label 固定、value 可换行
+- 检查变化：`scripts/check-receiver-conversion.mjs` 覆盖三行 label、紧凑文案、lost/found 差异、真实项目分类目标化、fallback、风险态空 targetRows 和公开 share CTA 只在 shouldRelay 时出现；`scripts/check-viral-journey-evidence.mjs` 覆盖接收者 confirm/comment 后 targetRows 存在；`scripts/check-devtools-readiness.mjs` 把 R 组产品/设计文档纳入 readiness 文件和语义文档扫描
+- 运行过的验证：`pwd`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/receiver-conversion.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-receiver-conversion.mjs`；`node --check scripts/check-viral-journey-evidence.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；`bash harness/init.sh`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/viral-targeted-relay`，对应约定 `/tmp/street-tasks-iter-worktrees/viral-targeted-relay`；当前分支为 `codex/iter-viral-targeted-relay`；receiver conversion 输出 `Receiver conversion checks passed.`；viral journey evidence 输出 `Viral journey evidence checks passed.`；readiness 输出包含 receiver conversion、viral journey evidence、manual evidence gate、DevTools manual-run preparation、share receiver、share receiver action、trust insight、candidate、admin auth、map list resilience 和 blocked summary preflight，并最终输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；readiness 仍报告 9420 service port `connect_refused` 和 smoke access `blocked`，这只记录环境 blocker，不代表 UI passed；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 完整跑通；最终 `bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/receiver-conversion.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-receiver-conversion.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-targeted-relay-product-brief.md`，`harness/viral-targeted-relay-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：R 组仍未执行 WeChat DevTools 或真机真实链路手测；未验证系统分享面板、真实 `from=share&source=receiver` payload、二跳接收者真实打开、窄屏换行、云端评论路径和转发率提升；本轮尝试查找本地 wcc/wcsc 编译器未找到可直接调用路径，因此没有记录 WXML/WXSS 编译器通过证据
+- 下一步最佳动作：提交 R 组并启动用户评测 agent；评测时重点比较 R 相比 Q 是否明显提升用户侧二跳接力意愿，同时保持风险态和关闭态不鼓励公开扩散
+
+### Session 069ReceiverActionSource
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-receiver-action-source`
+- 本轮目标：S 组实现“接收者二跳 action 来源语义”的最小代码迭代，让 `source=receiver` 的下一位接收者能区分上一位刚确认还是刚补线索
+- 产品/设计上下文：检测到产品/设计 agent 并行新增 `harness/viral-receiver-action-source-product-brief.md` 与 `harness/viral-receiver-action-source-design-checklist.md`，本轮读取后按其边界执行，未回退这些未跟踪文件
+- TDD 红灯：先更新 `scripts/check-receiver-conversion.mjs` 与 `scripts/check-viral-journey-evidence.mjs`，`node --no-warnings scripts/check-receiver-conversion.mjs` 和 `node --no-warnings scripts/check-viral-journey-evidence.mjs` 均先因二跳 path 缺少 `receiverAction=confirm` 按预期失败；随后补充风险态 path 不应携带 `receiverAction` 的断言，两条检查再次先因弱风险/风险 confirm path 仍携带 action 按预期失败
+- 已完成：`utils/receiver-conversion.js` 只在 `shouldRelay` 为真且 action 为 `confirm/comment` 时把 `receiverAction=confirm/comment` 写入二跳 sharePath，继续保留 `from=share&source=receiver`；风险/关闭或任意 stale/report 信号下不携带 receiverAction，也不展示公开接力 CTA
+- 已完成：`utils/share-receiver.js` 新增 `receiverAction` 归一化，只在 `source=receiver` 下识别小写 `confirm/comment`；confirm 文案强调“上一位刚确认/确认和现场信号”，comment 文案强调“上一位刚补线索/先看最新评论”，缺失或未知 action 保持 R 组泛化接力文案；`source=confirm`、`source=comment` 和普通 `from=share` 会忽略 receiverAction
+- 已完成：`pages/detail/detail.js` 在 `entryQuery` 中显式保留 `receiverAction`，并传给 `buildShareReceiverGuide`，不改变已有 `source=comment`、`source=confirm`、`source=receiver` 基础行为
+- 检查变化：`scripts/check-receiver-conversion.mjs` 覆盖 confirm/comment 二跳 path、下一位 confirm/comment 文案、未知 action 回退、非 receiver source 忽略 action、风险态无 receiverAction；`scripts/check-share-receiver.mjs` 覆盖接收侧 helper 的 action 来源文案、未知 action 回退和风险态优先；`scripts/check-viral-journey-evidence.mjs` 覆盖同一链路在端到端模型里的 path、接收文案和风险态回退
+- readiness 说明：`scripts/check-devtools-readiness.mjs` 已经在 runCheck 中覆盖 `scripts/check-receiver-conversion.mjs` 与 `scripts/check-viral-journey-evidence.mjs`，所以本轮无需新增运行项；主线程只把 S 组产品/设计文档加入 required files/readinessDocs，并已运行 readiness 证明它会执行更新后的检查
+- 手测证据口径更新：`harness/viral-journey-manual-results.example.json`、`scripts/check-viral-journey-manual-evidence.mjs`、`scripts/prepare-viral-journey-devtools-run.mjs`、`harness/viral-devtools-journey-run-product-brief.md` 和 `harness/viral-devtools-journey-run-checklist.md` 已同步要求 confirm/comment 二跳 payload 分别包含 `receiverAction=confirm/comment`；readiness 也要求 S 组产品/设计文档存在
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md`、`harness/feature_list.json`、产品/设计新增 harness 文档；`git log --oneline -5`；`bash harness/init.sh`；红灯运行 `node --no-warnings scripts/check-receiver-conversion.mjs` 与 `node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --check utils/receiver-conversion.js`；`node --check utils/share-receiver.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-receiver-conversion.mjs`；`node --check scripts/check-share-receiver.mjs`；`node --check scripts/check-viral-journey-evidence.mjs`；`node --check scripts/check-viral-journey-manual-evidence.mjs`；`node --check scripts/prepare-viral-journey-devtools-run.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；临时 ignored local manual evidence 正向/缺失 receiverAction 负向样例；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`git diff --check -- utils/receiver-conversion.js utils/share-receiver.js pages/detail/detail.js scripts/check-receiver-conversion.mjs scripts/check-share-receiver.mjs scripts/check-viral-journey-evidence.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；全量 `git diff --check`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：最终语法检查五条均通过且无输出；`node --no-warnings scripts/check-receiver-conversion.mjs` 输出 `Receiver conversion checks passed.`；`node --no-warnings scripts/check-viral-journey-evidence.mjs` 输出 `Viral journey evidence checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral journey evidence checks passed.` 和 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `Receiver conversion checks passed.`、`Viral journey evidence checks passed.` 与最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，同时仍报告 DevTools 9420 `connect_refused`/smoke `blocked`，这不是 UI passed；指定范围和全量 `git diff --check` 均通过无输出；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`npm run check` 完整跑通；最终 `bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/receiver-conversion.js`，`utils/share-receiver.js`，`pages/detail/detail.js`，`scripts/check-receiver-conversion.mjs`，`scripts/check-share-receiver.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-viral-journey-manual-evidence.mjs`，`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-devtools-journey-run-product-brief.md`，`harness/viral-devtools-journey-run-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`，`harness/viral-receiver-action-source-product-brief.md`；产品/设计 agent 并行新增的 `harness/viral-receiver-action-source-design-checklist.md` 保持原样
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证真实系统分享面板是否保留 `receiverAction` query、二跳路径真实打开后的 UI、confirm/comment 差异文案窄屏表现、云端评论成功后 path 生成、状态瞬间变风险时的真实 UI，以及 action 来源语义是否提升转化；当前 DevTools service port 9420 仍是环境 blocker
+- 下一步最佳动作：恢复 DevTools service port 后，用 active 低风险任务分别从 `/pages/detail/detail?id=<id>&from=share` 完成 confirm 和 comment，触发系统分享并记录实际 path；再分别打开 `source=receiver&receiverAction=confirm/comment`、未知 action、普通入口和风险态，确认接收文案与互斥规则符合预期
+
+### Session 070ViralShareReason
+
+- 日期：2026-06-16
+- 分支：`codex/iter-viral-share-reason`
+- 本轮目标：T 组产品/设计/开发在 R/S 的目标化二跳基础上增加“可转述理由”，让 `from=share` 接收者完成低风险 confirm/comment 后能直接看到一句可说给下一位的话，降低二次分享表达成本
+- 产品假设：继续增加 query 参数主要帮助下一位页面解析，但无法解决发送者在微信聊天里“我为什么转给你”的表达问题；一条短、克制、可转述的理由更贴近真实用户侧裂变，不依赖系统分享面板预填聊天文本
+- 已完成：产品 agent 新增 `harness/viral-share-reason-product-brief.md`；设计/QA agent 新增 `harness/viral-share-reason-design-checklist.md`；开发 agent 在 `utils/receiver-conversion.js` 中为低风险 `receiverConversionPrompt.shouldRelay` 返回 `shareReason`，confirm 文案为“我刚确认过，帮忙再核对一下”，comment 文案为“我刚补了线索，你先看最新评论”；风险/关闭/弱 stale/report 下 `shareReason` 为 `null`
+- 页面变化：`pages/detail/detail.wxml` 在 receiver conversion 的三行 `targetRows` 后、actions 前渲染 `shareReason`，不作为第四行 target row；`pages/detail/detail.wxss` 增加低密度 label/value 样式，保证短理由可换行且不挤压主分享按钮
+- 检查变化：`scripts/check-receiver-conversion.mjs` 覆盖低风险 confirm/comment shareReason 存在、长度、禁用词、文案差异、风险态为空、WXML 顺序和非第四行 target row；`scripts/check-viral-journey-evidence.mjs` 覆盖端到端模型中的 shareReason、禁用词、风险态互斥和手测模板必须提示观察 shareReason；`harness/viral-journey-manual-results.example.json` 的 confirm/comment journey 已加入页面内 share reason 观察点；`scripts/check-devtools-readiness.mjs` 把 T 组产品/设计文档纳入 required files 和 readiness docs
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/receiver-conversion.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-receiver-conversion.mjs`；`node --check scripts/check-viral-journey-evidence.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：`node --check` 语法检查均通过且无输出；`node --no-warnings scripts/check-receiver-conversion.mjs` 输出 `Receiver conversion checks passed.`；`node --no-warnings scripts/check-viral-journey-evidence.mjs` 输出 `Viral journey evidence checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral journey evidence checks passed.` 和 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，同时仍报告 DevTools 9420 `connect_refused`/smoke `blocked`，这不是 UI passed；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；manual evidence gate 输出没有本地结果文件且不是 UI passed evidence；`npm run check` 完整跑通并在 manual run package 中列出 confirm/comment share reason 观察点；最终 `bash harness/init.sh` 完整跑通；产品/设计/开发 agent 均完成且未提交 commit
+- 更新过的文件或工件：`utils/receiver-conversion.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-receiver-conversion.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-share-reason-product-brief.md`，`harness/viral-share-reason-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 shareReason 的真实布局、系统分享面板关系、真实 `from=share&source=receiver&receiverAction=confirm/comment` payload、云端评论成功后提示、窄屏换行，以及用户是否会在聊天里手动转述该理由；当前 DevTools service port 9420 仍是环境 blocker
+- 下一步最佳动作：提交 T 组，并发送给用户评测 agent 与 R/S=99 的结果比较，重点看“可转述理由”是否比 S 的参数语义更接近真实自发裂变
+
+### Session 071ViralRelayChannelPicker
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-relay-channel-picker`
+- 本轮目标：U 组产品/设计/开发在 T 的可转述理由基础上增加“适合转给”的场景建议，让 `from=share` 接收者完成低风险 confirm/comment 后不只知道怎么说，也知道更适合发给哪类场景
+- 产品假设：T 已解决“怎么说”的表达成本，下一层瓶颈是“发给谁/哪里”的选择成本；给 2-3 个泛化场景建议，如楼栋群、门卫/前台、路过朋友、同路线邻居，比继续润色 shareReason 更可能推动用户侧二跳
+- 已完成：产品 agent 新增 `harness/viral-relay-channel-picker-product-brief.md`；设计/QA agent 新增 `harness/viral-relay-channel-picker-design-checklist.md`；开发 agent 在 `utils/receiver-conversion.js` 中为低风险 `receiverConversionPrompt.shouldRelay` 返回 `relayChannels`，按 `category`、`intent` 和 confirm/comment 生成 2-3 个 label/hint 场景建议；风险/关闭/弱 stale/report 或 stale/report action 下 `relayChannels` 为空
+- 页面变化：`pages/detail/detail.wxml` 在 receiver conversion 的三行 `targetRows` 后、`shareReason` 前渲染 `relayChannels`，chip 只是场景提示，不带 `open-type="share"` 或联系人/群选择绑定；`pages/detail/detail.wxss` 增加可换行 chip 样式，保持主分享按钮唯一
+- 检查变化：`scripts/check-receiver-conversion.mjs` 覆盖 relayChannels 数量、短文案、禁用联系人/群关系暗示词、confirm/comment 差异、lost/found 差异、真实分类选项、风险态为空、path 不新增联系人/群 query、WXML 顺序和 chip 非 share CTA；`scripts/check-viral-journey-evidence.mjs` 覆盖同一链路和手测模板必须观察 relay channel suggestions；`harness/viral-journey-manual-results.example.json` 的 confirm/comment journey 已加入 2-3 个场景建议观察点；`scripts/check-devtools-readiness.mjs` 把 U 组产品/设计文档纳入 required files 和 readiness docs
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/receiver-conversion.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-receiver-conversion.mjs`；`node --check scripts/check-viral-journey-evidence.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-receiver-conversion.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：`node --check` 语法检查均通过且无输出；`node --no-warnings scripts/check-receiver-conversion.mjs` 输出 `Receiver conversion checks passed.`；`node --no-warnings scripts/check-viral-journey-evidence.mjs` 输出 `Viral journey evidence checks passed.`；`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral journey evidence checks passed.` 和 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，同时仍报告 DevTools 9420 `connect_refused`/smoke `blocked`，这不是 UI passed；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；manual evidence gate 输出没有本地结果文件且不是 UI passed evidence；`npm run check` 完整跑通并在 manual run package 中列出 relay channel suggestions 观察点；最终 `bash harness/init.sh` 完整跑通；产品/设计/开发 agent 均完成且未提交 commit
+- 更新过的文件或工件：`utils/receiver-conversion.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-receiver-conversion.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-relay-channel-picker-product-brief.md`，`harness/viral-relay-channel-picker-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证 relay channel chips 的真实布局、系统分享面板关系、真实 payload、云端评论成功后提示、窄屏换行，以及用户是否会按“楼栋群/门卫/同路线”等场景建议手动转发；当前 DevTools service port 9420 仍是环境 blocker
+- 下一步最佳动作：提交 U 组，并发送给用户评测 agent 与 R/S/T=99 的结果比较，重点看“发给谁/哪里”的场景建议是否比 T 的“怎么说”更接近真实自发裂变
+
+### Session 072ViralTimelineShare
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-timeline-share`
+- 本轮目标：V 组产品/设计/开发在 U 的接收者二跳建议之外，补一个真正的微信系统传播渠道：详情页分享到朋友圈，同时遵守官方单页模式、`onShareTimeline` query 限制和不诱导分享边界
+- 产品假设：U 已经把“转给谁/怎么说”做到较高水平，但仍没有新增真实外部传播面；朋友圈分享降低具体选人的摩擦，可能让附近失物、地点动态和求助被弱关系看到，再回到 `from=share` 接收链路完成确认、评论或二跳
+- 已完成：产品 agent 新增 `harness/viral-timeline-share-product-brief.md`，明确朋友圈是系统渠道补齐而非替代 receiver relay；设计/QA agent 新增 `harness/viral-timeline-share-design-checklist.md`，列出官方 API、单页模式、风险互斥、文案和手测证据要求；开发 agent 新增 `utils/timeline-share.js` 和 `scripts/check-timeline-share.mjs`
+- 页面变化：`pages/detail/detail.js` 新增 `onShareTimeline()` 并复用 timeline helper；`configureShareMenu(post)` 默认只展示 `shareAppMessage`，只有已加载任务为 `active` 且 `staleCount/reportCount` 都为 0 时才把 `shareTimeline` 和 `shareAppMessage` 一起放进 `wx.showShareMenu`
+- 分享 payload：低风险 active 任务的 timeline query 为 `id=<postId>&from=share&source=timeline&shareChannel=timeline`，继续走现有 `from=share` 接收者说明；`onShareTimeline` 不返回自定义 `path`；风险、关闭、隐藏或未知任务即使 helper 被直接调用也只返回谨慎标题，且不带任务图片
+- 检查变化：`scripts/check-timeline-share.mjs` 覆盖 no-path payload、timeline query、低风险菜单门禁、onLoad 不提前启用 timeline、弱 stale/report 排除、风险态无 imageUrl、禁用诱导词；`scripts/check-devtools-readiness.mjs` 和 `scripts/check-viral-candidate.mjs` 已接入新检查和 V 组产品/设计文档
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/timeline-share.js`；`node --check pages/detail/detail.js`；`node --check scripts/check-timeline-share.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-timeline-share.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`git diff --check`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：`node --no-warnings scripts/check-timeline-share.mjs` 输出 `Timeline share checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral journey evidence checks passed.`、`Timeline share checks passed.` 和 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `Timeline share checks passed.` 与最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，同时仍报告 DevTools port 9420 `connect_refused`、smoke `blocked`，这不是 UI passed；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；manual evidence gate 输出没有本地结果文件且不是 UI passed evidence；`git diff --check` 通过无输出；`npm run check` 完整跑通；最终 `bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`utils/timeline-share.js`，`pages/detail/detail.js`，`scripts/check-timeline-share.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-candidate.mjs`，`harness/viral-timeline-share-product-brief.md`，`harness/viral-timeline-share-design-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证右上角系统菜单是否真实出现“分享到朋友圈”、朋友圈卡片标题/图片、从朋友圈打开的单页模式首屏、tabBar 缺失下的信息可读性、基础库/微信版本差异、iOS/Android 差异、云端未登录读取路径和真实用户是否会从朋友圈继续确认/评论
+- 下一步最佳动作：提交 V 组，并发送给用户评测 agent 与 U=99 的结果比较，重点看“真实新增系统渠道”是否比 U 的“转给谁/哪里”建议更接近自发裂变；若继续迭代，优先把朋友圈手测 evidence schema 加入现有五条 viral journey manual-run 包
+
+### Session 073ViralTimelineEvidence
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-timeline-evidence`
+- 本轮目标：W 组产品/设计/开发把 V 组朋友圈渠道纳入现有 ignored/local viral journey manual evidence schema，让真实手测必须覆盖 timeline 菜单、payload、单页模式、风险态无 timeline 和 U 轮 receiver 链路不回退
+- 产品假设：V 已补上微信朋友圈系统渠道，继续润色分享文案边际收益低；要突破 V=99 的扣分点，必须把真实菜单、朋友圈卡片、单页模式、query/payload 和风险态反证写进可复跑 evidence schema，而不是继续依赖 readiness 或口头描述
+- 已完成：产品 agent 新增 `harness/viral-timeline-evidence-product-brief.md`；设计/QA agent 新增 `harness/viral-timeline-evidence-checklist.md`；开发 agent 将 `harness/viral-journey-manual-results.example.json` 从五条 required journeys 扩为七条，新增 `timeline-share-channel` 与 `timeline-risk-gating`；提交前 review 收紧 `timeline-risk-gating`，使无法 inspect 系统菜单只能作为 blocked，不能替代 passed 的菜单缺失观察
+- 检查变化：`scripts/check-viral-journey-manual-evidence.mjs` 现在要求七条 required journeys；`timeline-share-channel` passed 必须记录真实系统菜单同时有好友分享和朋友圈、timeline payload/query 或无法检查原因、图片或图片说明、单页/首屏可读；inspectable query 必须包含 `id`、`from=share`、`source=timeline`、`shareChannel=timeline`
+- 风险态变化：`timeline-risk-gating` passed 必须记录 shareTimeline 缺失或具体无法触发原因、谨慎 no-timeline 语义，且不得包含鼓励性朋友圈 CTA；风险态若能 inspect payload，标题也必须谨慎
+- 工具链变化：`scripts/prepare-viral-journey-devtools-run.mjs` 输出七条 run package，并区分 receiverAction share payload 与 timeline payload；`scripts/capture-viral-journey-blocked-evidence.mjs` 生成七条 blocked journeys；`scripts/check-viral-journey-evidence.mjs` 要求 example 中七条 journey 顺序和 timeline 观察点；`scripts/check-devtools-readiness.mjs` 要求 W 组产品/QA 文档存在；旧 P 组 run-package 文档和 Q 组 blocked-capture 文档已更新为“前五条 receiver 基线 + 两条 timeline，总计七条”
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check` 覆盖五个改动脚本；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/prepare-viral-journey-devtools-run.mjs`；临时 ignored good sample 七条 journeys；临时 bad sample 缺 `shareChannel=timeline`；临时 bad risk sample 只有 inability-to-inspect 而无 observed no-shareTimeline；临时 positive risk sample 记录 observed no-shareTimeline；临时 blocked capture 七条 blocked journeys；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：manual evidence 默认输出 `No viral journey manual evidence files found; nothing checked.` 且声明不是 UI passed；good sample 输出 `Checked viral journey manual evidence ... (overallStatus=passed)`；bad sample 被拒绝并报 `journey timeline-share-channel.timelinePayload.query must include shareChannel=timeline`；risk bad sample 被拒绝并报 `journey timeline-risk-gating must record observed shareTimeline/timeline menu absence; inability to inspect belongs in a blocked journey, not passed.`；risk positive sample 通过；blocked capture 输出 `overallStatus: blocked` 且 JSON 包含 7 条 journey；prepare/readiness 输出七条 run package 并仍报告 DevTools 9420 `connect_refused` / smoke `blocked`，这不是 UI passed；JSON、harness、diff、npm check 和最终 init 均通过
+- 更新过的文件或工件：`harness/viral-journey-manual-results.example.json`，`harness/viral-timeline-evidence-product-brief.md`，`harness/viral-timeline-evidence-checklist.md`，`harness/viral-devtools-journey-run-product-brief.md`，`harness/viral-devtools-journey-run-checklist.md`，`harness/viral-blocked-evidence-capture-product-brief.md`，`harness/viral-blocked-evidence-capture-checklist.md`，`scripts/check-viral-journey-manual-evidence.mjs`，`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/capture-viral-journey-blocked-evidence.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未恢复 WeChat DevTools service port，未产生真实系统菜单截图、朋友圈卡片、单页模式首屏、真实 timeline query/payload、风险态菜单缺失截图或真机 iOS/Android 证据；W 只是让这些证据不可跳过，不能证明朋友圈渠道已经跑通或提升真实转化
+- 下一步最佳动作：提交 W 组并发送给用户评测 agent 与 V=99 比较；若继续迭代，优先恢复 DevTools service port 或生成符合七条 schema 的真实 blocked/passed local evidence，而不是继续扩展文案
+
+### Session 074ViralTimelineLanding
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-timeline-landing`
+- 本轮目标：X 组产品/设计/开发在 V 的朋友圈系统渠道和 W 的七条 evidence schema 之上，补齐 `source=timeline` 打开详情后的接收语境，让朋友圈来的弱关系用户知道这是附近任务、先看状态和评论、能确认就确认、知道线索就补评论
+- 产品假设：朋友圈是弱关系和低上下文入口，普通 `来自转发` 不足以解释“为什么我看到这条”；把落地页语境从普通转发改为“朋友圈看到的附近任务，先核对再行动”，比继续叠加分享文案更贴近从曝光到 confirm/comment 的转化
+- 已完成：产品 agent 新增 `harness/viral-timeline-landing-product-brief.md`；设计/QA agent 新增 `harness/viral-timeline-landing-checklist.md`；开发 agent 在 `utils/share-receiver.js` 中识别 `source=timeline`
+- 页面语义变化：低风险 active 且无 stale/report 信号的 `from=share&source=timeline` 接收引导使用 `kicker: 朋友圈看到`、`title: 附近任务，先核对一下`，summary/rows/note 要求先看状态、确认信号和最新评论，能现场核对就确认，知道更多就评论补线索；不新增 UI 节点、按钮、联系人读取、奖励或诱导分享
+- 风险态变化：`hidden/resolved/expired/reportCount>=2/stale/status=stale` 仍优先原风险/关闭语义；weak stale/report 的 timeline 入口使用 `先核对现场变化` 和 warn tone，不出现鼓励性朋友圈扩散；`source=receiver`、`receiverAction=confirm/comment`、`source=comment`、`source=confirm` 和普通 `from=share` 不被 timeline 分支覆盖
+- 检查变化：`scripts/check-share-receiver.mjs`、`scripts/check-viral-journey-evidence.mjs`、`scripts/check-viral-candidate.mjs` 增加 `source=timeline` 低风险文案、禁用词、弱风险/高风险/closed 优先级和回归断言；`harness/viral-journey-manual-results.example.json` 与 `scripts/prepare-viral-journey-devtools-run.mjs` 把 source=timeline 落地页 receiver context 纳入 `timeline-share-channel` 观察点；`scripts/check-devtools-readiness.mjs` 要求 X 产品/QA 文档存在
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md`、`harness/feature_list.json`、`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/share-receiver.js`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-share-receiver.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-timeline-share.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`node --no-warnings scripts/check-devtools-readiness.mjs`
+- 已记录证据：`node --no-warnings scripts/check-share-receiver.mjs` 输出 `Share receiver checks passed.`；`node --no-warnings scripts/check-viral-journey-evidence.mjs` 输出 `Viral journey evidence checks passed.`；`node --no-warnings scripts/check-viral-candidate.mjs` 输出 `Viral journey evidence checks passed.`、`Timeline share checks passed.` 和 `Viral candidate checks passed.`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出七条 run package，其中 `timeline-share-channel` 要求观察 `source=timeline` receiver context，并仍报告 DevTools 9420 `connect_refused` / smoke `blocked`，这不是 UI passed；JSON、harness 和 diff 检查均通过
+- 更新过的文件或工件：`utils/share-receiver.js`，`scripts/check-share-receiver.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/check-viral-candidate.mjs`，`scripts/prepare-viral-journey-devtools-run.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-timeline-landing-product-brief.md`，`harness/viral-timeline-landing-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证真实朋友圈菜单、卡片、payload、单页模式首屏、`source=timeline` 文案窄屏布局、action strip 点击、confirm/comment 后 U/R/S/T 链路和真实转化；当前 DevTools service port 9420 仍是环境 blocker
+- 下一步最佳动作：提交 X 组并发送给用户评测 agent 与 W=99 比较，重点看“朋友圈曝光后的落地理解”是否比纯证据基础设施更接近用户侧自发裂变；若继续迭代，优先拿真实 timeline evidence 或做真实转化/埋点准备
+
+### Session 075ViralAttributionEvents
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-attribution-events`
+- 本轮目标：Y 组产品/设计/开发在 X 的朋友圈落地语境之后补充最小传播归因事件，让后续真实 DevTools/真机跑通时可以观察朋友圈和二跳是否带来 confirm/comment/relay，而不是继续只凭文案假设评估裂变
+- 产品假设：V/W/X 已把朋友圈渠道、证据 schema 和落地语境补齐，但没有可观测的转化事件；记录 `from=share` 打开详情后的 loaded/blocked、confirm/comment 成功和低风险二跳 relay，可帮助后续比较 timeline、receiver、comment、confirm 来源的实际链路，不声称当前转化已经提升
+- 已完成：产品 agent 新增 `harness/viral-attribution-events-product-brief.md`，定义 `share_detail_landing`、`share_detail_loaded`、`share_detail_blocked`、`share_confirm_success`、`share_comment_success`、`share_relay_intent`、`share_relay_success` 及字段白名单；设计/QA agent 新增 `harness/viral-attribution-events-checklist.md`，覆盖隐私红线、CloudBase 不可用不阻断、风险/关闭态边界和真实 payload 手测要求
+- 已完成：开发 agent 新增 `utils/viral-attribution.js`，实现本地 `viral_attribution_events` 存储、CloudBase best-effort 上报、source/channel/action/depth 归一化、字段白名单、粗粒度 distance bucket、低风险 relay guard 和二跳归因参数追加；主线程 review 后补上实际好友分享 path 与朋友圈 query 的 `share_id`、`parent_share_id`、`share_depth`，让下一位打开时能串起 relay 链路
+- 页面变化：`pages/detail/detail.js` 在 `onLoad` 的 `from=share` query 上生成归因 session 并记录 landing；详情加载成功/失败分别记录 loaded/blocked；分享来源用户评论成功或确认成功后记录 `share_comment_success`/`share_confirm_success`，不传评论正文；二跳好友分享返回 path 前同步追加归因 query，朋友圈 re-share 返回 query 前同步追加归因参数；receiverConversion relay 事件会按 `receiverAction` 记录 `conversion_action=confirm/comment`；事件失败不显示 toast、不阻断打开详情、评论、确认或分享
+- 云端变化：`cloudfunctions/posts/index.js` 新增 `recordViralAttribution` action 和 `viral_attribution_events` 集合写入，服务端只接收枚举和短字符串字段，并用 `user_id_hash` 存储不可逆 openid hash；README、PROJECT_SUMMARY 和 AGENTS.md 同步新增集合与隐私边界说明
+- 检查变化：新增 `scripts/check-viral-attribution.mjs` 覆盖字段白名单、敏感字段禁止、source/channel/action/depth 归一化、relay path/query 参数、低风险 relay guard、receiverConversion 事件 action、timeline re-share 记录、页面接入和云函数清洗；`scripts/check-viral-candidate.mjs` 与 `scripts/check-devtools-readiness.mjs` 已接入归因检查和 Y 组文档；`scripts/check-viral-journey-manual-evidence.mjs`、`scripts/check-viral-journey-evidence.mjs`、`scripts/prepare-viral-journey-devtools-run.mjs` 和 `harness/viral-journey-manual-results.example.json` 要求 confirm/comment 二跳 payload 可检查时包含 `share_id/parent_share_id/share_depth`
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md`、`harness/feature_list.json`、`git log --oneline -5`；`bash harness/init.sh`；`node --check utils/viral-attribution.js`；`node --check pages/detail/detail.js`；`node --check cloudfunctions/posts/index.js`；`node --check scripts/check-viral-attribution.mjs`；`node --check scripts/check-viral-journey-manual-evidence.mjs`；`node --check scripts/check-viral-journey-evidence.mjs`；`node --check scripts/prepare-viral-journey-devtools-run.mjs`；`node --check scripts/check-viral-candidate.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node --no-warnings scripts/check-viral-attribution.mjs`；`node --no-warnings scripts/check-viral-journey-evidence.mjs`；`node --no-warnings scripts/check-viral-journey-manual-evidence.mjs`；`node --no-warnings scripts/prepare-viral-journey-devtools-run.mjs`；`node --no-warnings scripts/check-viral-candidate.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：归因检查输出 `Viral attribution checks passed.`；viral journey evidence 输出 `Viral journey evidence checks passed.`；manual evidence gate 输出无本地结果文件且明确不是 UI passed；prepare 输出七条 run package，并在 receiver-confirm/comment journey 中提示可检查 payload 必须含 `share_id`、`parent_share_id`、`share_depth=2/2_plus`；candidate 输出 `Viral journey evidence checks passed.`、`Timeline share checks passed.`、`Viral attribution checks passed.` 和 `Viral candidate checks passed.`；readiness 输出 `Viral attribution checks passed.` 与最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，同时仍报告 DevTools 9420 `connect_refused`/smoke `blocked`，这不是 UI passed；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 通过无输出；`npm run check` 完整跑通；最终 `bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`AGENTS.md`，`README.md`，`PROJECT_SUMMARY.md`，`utils/viral-attribution.js`，`pages/detail/detail.js`，`cloudfunctions/posts/index.js`，`scripts/check-viral-attribution.mjs`，`scripts/check-viral-candidate.mjs`，`scripts/check-devtools-readiness.mjs`，`scripts/check-viral-journey-manual-evidence.mjs`，`scripts/check-viral-journey-evidence.mjs`，`scripts/prepare-viral-journey-devtools-run.mjs`，`harness/viral-journey-manual-results.example.json`，`harness/viral-attribution-events-product-brief.md`，`harness/viral-attribution-events-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools 或真机中验证真实系统分享面板是否保留归因参数、朋友圈/好友分享真实 payload、二跳接收页串联、CloudBase `viral_attribution_events` 集合部署、离线上报本地 fallback、窄屏布局、以及事件与真实用户转化的对应关系；`share_relay_success` 仍是客户端准备好分享 payload 并交给微信分享能力，不代表下一位实际打开
+- 下一步最佳动作：提交 Y 组并发送给用户评测 agent 与 X=99 比较；若继续迭代，优先恢复 DevTools service port 或用真机跑七条 journey，把 timeline 菜单、receiver 二跳 path、归因事件 payload 和风险态 no-shareTimeline 记录成真实 ignored/local evidence
+
+### Session 076ViralRealEvidenceRecovery
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-real-evidence-recovery`
+- 本轮目标：Z 组最小开发增量，把主 agent 已确认的 DevTools CLI quit 自锁与 macOS app-level quit fallback 经验沉淀到恢复工具里，同时避免默认检查产生 GUI 副作用
+- 产品/验证假设：评测只差真实 WeChat DevTools/真机 evidence；继续扩展传播文案收益低，当前更需要一个显式 opt-in 的 app-level quit/reopen 恢复入口，以及一个静态 guard 防止未来把默认 readiness 变成会 quit/open DevTools 的副作用检查
+- 已完成：`scripts/recover-devtools-service-port.mjs` 新增 `--app-quit-reopen`；`--quit-reopen` 与 `--app-quit-reopen` 互斥；默认和 `--dry-run` 仍只做 before/after 诊断并跳过恢复动作；app 模式从 DevTools bundle `Info.plist` 读取 `CFBundleIdentifier`，读不到时回退 `com.tencent.webplusdevtools` 并在 action detail 中报告来源；app 模式只用 macOS `osascript` 退出应用，再用已有 DevTools CLI `open --project ... --port ... --disable-gpu` 重开，不同时执行 CLI quit
+- 已完成：新增 `scripts/check-devtools-recovery.mjs`，用 Node assert 静态检查新参数、互斥校验、默认无副作用、osascript app quit、bundle id fallback、mode 文案、next steps 文案和输出 redaction/summarization；`package.json` 新增 `check:devtools-recovery` 与显式 side-effect 命令 `recover:devtools-app-quit`，没有把 app quit 接入 `npm run check`
+- 已完成：`scripts/check-devtools-readiness.mjs` 把新静态 guard 纳入 readiness gate，并要求 `harness/viral-real-evidence-recovery-product-brief.md` 与 `harness/viral-real-evidence-recovery-checklist.md` 存在；readiness 输出明确该 guard 不会 quit/reopen DevTools
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 和 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/recover-devtools-service-port.mjs`；`node --check scripts/check-devtools-recovery.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node scripts/check-devtools-recovery.mjs`；`node scripts/recover-devtools-service-port.mjs --dry-run --app-quit-reopen --project /tmp/street-tasks-iter-worktrees/viral-real-evidence-recovery --port 9420 --timeout-ms 5000`；互斥参数检查；`npm run recover:devtools-app-quit -- --timeout-ms 30000 --port 9420`；`node --no-warnings scripts/check-devtools-readiness.mjs`
+- 已记录证据：`pwd` 确认为 `/private/tmp/street-tasks-iter-worktrees/viral-real-evidence-recovery`，对应约定 `/tmp/street-tasks-iter-worktrees/viral-real-evidence-recovery`；最近提交为 `ef8f0a5 feat: add viral attribution events`；`bash harness/init.sh` 完整跑通；三条 `node --check` 均通过；`node scripts/check-devtools-recovery.mjs` 输出 `DevTools recovery static checks passed.`；dry-run app 模式只输出 `DevTools app quit` skipped，未执行副作用；同时传 `--quit-reopen` 和 `--app-quit-reopen` 会报 `Choose only one recovery mode`；实际 app-level recovery 输出 `DevTools app quit: completed` 且 bundle id 来自 `Info.plist CFBundleIdentifier`，但 `DevTools open` timed out，after 状态仍是 `blocked`，service port 9420 仍 `ECONNREFUSED`；`node --no-warnings scripts/check-devtools-readiness.mjs` 输出 `DevTools recovery static checks passed.` 与 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`，并仍报告 DevTools 9420 `connect_refused` / smoke `blocked`，这不是 UI passed
+- 更新过的文件或工件：`scripts/recover-devtools-service-port.mjs`，`scripts/check-devtools-recovery.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：主 agent 已实际运行 `recover:devtools-app-quit`，证明 app-level quit 可以完成，但 CLI open 仍因 DevTools service HTTP listener 未就绪而超时；因此仍没有恢复真实 DevTools service port，也没有产生朋友圈菜单、系统分享面板、真实 payload、单页模式首屏、窄屏或真机 passed evidence
+- 下一步最佳动作：在 WeChat DevTools UI 中确认 Settings -> Security Settings -> Service Port 已开启且端口为 9420，或改用另一台真机/DevTools 环境；随后重新跑 `npm run inspect:devtools-port`、`npm run check:devtools-smoke`、`npm run prepare:viral-journey-run`，再用 ignored local evidence 文件记录七条真实 journey
+
+### Session 077DevToolsPortDeepForensics
+
+- 日期：2026-06-17
+- 分支：`codex/iter-devtools-port-deep-forensics`
+- 本轮目标：AA 组不再继续执行恢复动作，而是把 DevTools 9420 blocker 从“open timeout / connect refused”推进到可复核的只读深层取证分叉，尤其判断当前是否缺失真正启动 service listener 所需的 `--enable-service-port` flag
+- 产品/QA 假设：Z 组已经证明 app-level quit 可以完成但不能让 service port ready；AA 轮应补齐 user-data、最近日志、历史成功、bundled CLI gate 和隐私红线，让下一轮知道是 Service Port UI/config/global.enableCLI 方向，还是端口占用、权限、profile/session 或工具版本方向
+- 已完成：产品 agent 新增 `harness/devtools-port-deep-forensics-product-brief.md`，定义只读证据层、诊断分叉和不做恢复/不写 UI passed 的产品边界；QA agent 新增 `harness/devtools-port-deep-forensics-checklist.md`，定义 allowed/forbidden evidence、blocked codes、人工 UI 确认模板和真机替代方案边界
+- 已完成：`scripts/inspect-devtools-port-state.mjs` 新增 DevTools user-data root 摘要、WeappLog 尾部只读扫描、最近 `--ide-http-port` 启动行是否带 `--enable-service-port` 的计数、最近/历史 `cli server started at 127.0.0.1:<port>` 信号、bundled CLI source 中 `global.enableCLI` 控制 `--enable-service-port` 的 gate 摘要，以及 `service_port_flag_missing`、`service_port_flag_mixed_recent_evidence`、`service_port_flag_gate_detected`、`historical_service_port_success` 等保守诊断码
+- 隐私边界：inspect 只输出计数、布尔值、版本摘要、通用日志日期标签和错误类别计数；不输出原始日志行、完整 user-data 路径、进程命令行、token/cookie/openid/昵称/项目历史、随机日志文件名或完整 HTTP 内容；脚本仍不 quit/open DevTools、不 kill 进程、不改缓存/配置/文件
+- 已完成：开发 agent 新增 `scripts/check-devtools-port-forensics.mjs`，静态约束 inspect 必须包含 log/user-data 只读入口、`--enable-service-port` 与 `--ide-http-port` 关系检查、`cli server started` 信号、`global.enableCLI` gate、诊断码和 raw log suppression；`package.json` 新增 `check:devtools-port-forensics`
+- readiness 变化：`scripts/check-devtools-readiness.mjs` 要求 AA 产品/QA 文档存在，并运行 `scripts/check-devtools-port-forensics.mjs`；输出明确这是 read-only/static no-side-effect guard，不会 quit/open DevTools
+- 当前只读诊断结果：`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-port-deep-forensics --port 9420` 输出 `status: blocked`，诊断为 `declared_without_listener`、`connect_refused`、`service_port_flag_mixed_recent_evidence`、`historical_service_port_success`、`service_port_flag_gate_detected`
+- 当前只读证据摘要：DevTools CLI/app bundle 可找到；user-data root 1 个、log dir 1 个；27 个 sanitized log tail 被扫描；最近 12 个日志窗口中有 5 个目标 port 日志文件、1 行带 `--enable-service-port` 的 target launch、4 行不带该 flag 的 target launch、0 条近期 cli server target start/ready；历史上有 1 条 cli server target start 和 1 条 `127.0.0.1:9420` ready 信号；lsof 无 listener，IPv4/IPv6 均 `ECONNREFUSED`，进程扫描仍有 1 个 requested-port declaration
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 与 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/inspect-devtools-port-state.mjs`；`node --check scripts/check-devtools-port-forensics.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node scripts/check-devtools-port-forensics.mjs`；`npm run check:devtools-port-forensics`；`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-port-deep-forensics --port 9420`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`
+- 已记录证据：`node scripts/check-devtools-port-forensics.mjs` 和 `npm run check:devtools-port-forensics` 均输出 `DevTools port forensics static guard checks passed.`；readiness 输出新的 port forensics report、`DevTools port forensics static guard checks passed.` 和最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；JSON 输出 `Checked 11 JSON files.`；harness 输出 `Harness OK: 6 features checked.`；`git diff --check` 无输出
+- 更新过的文件或工件：`scripts/inspect-devtools-port-state.mjs`，`scripts/check-devtools-port-forensics.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/devtools-port-deep-forensics-product-brief.md`，`harness/devtools-port-deep-forensics-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：DevTools service port 9420 仍无 listener，smoke 仍 blocked，系统分享/朋友圈菜单/真实 payload/单页模式/CloudBase attribution/真机 journey 都没有 passed evidence；当前最强假设是 Service Port UI/config 或 `global.enableCLI` 状态没有让 app 带 `--enable-service-port` 启动 listener，而不是端口冲突或项目代码问题
+- 下一步最佳动作：请用户在 WeChat DevTools UI 中人工确认 Settings -> Security Settings -> Service Port 是否开启、显示端口是否为 9420、当前项目是否是本 worktree、是否有登录/升级/安全弹窗；若 UI 已开启但仍无 listener，下一轮应优先换端口/换 profile/换机器或走真机 evidence，不要再把静态 readiness 当作 UI passed
+
+### Session 078DevToolsServicePortConfigForensics
+
+- 日期：2026-06-17
+- 分支：`codex/iter-devtools-service-port-config-forensics`
+- 本轮目标：AB 组在 AA 的 log/user-data/CLI gate 深层取证之上，继续补一层 DevTools Service Port 配置只读取证，判断 UI/config 是否显示 Service Port disabled、enabled、port mismatch、conflict 或 unconfirmed
+- 产品/QA 假设：AA 已把 blocker 从普通 `connect_refused` 推进到 mixed recent flag evidence；AB 应避免继续盲目重启，先回答配置层是否明确指向 Service Port 关闭或端口不匹配，并且该结论不能替代 listener/smoke/UI/real-device evidence
+- 已完成：产品 agent 新增 `harness/devtools-service-port-config-forensics-product-brief.md`，定义配置层取证目标、输出语义、诊断码、裂变目标关系和评测口径；QA agent 新增 `harness/devtools-service-port-config-forensics-checklist.md`，定义 allowed/forbidden evidence、只读命令边界、blocked/diagnosis mapping 和 static guard 期望
+- 已完成：`scripts/inspect-devtools-port-state.mjs` 新增 Service Port 配置只读扫描，仅读取 DevTools profile 下 `WeappVendor/cfg.json` 与 `WeappLocalData` 的 JSON 候选文件，输出类别计数、mtime bucket、service-port-like key 摘要、enabled states、port values、诊断码、confidence 和 next human confirmation；不输出完整路径、文件名、raw JSON、localStorage 值、cookie/session、账号、项目历史或 token
+- 诊断变化：当前只读配置摘要显示 `service_port_config_disabled`，confidence 为 `medium`；配置状态为 `disabled`，端口状态为 `matches_9420`，`conflict count` 为 0，key 摘要只显示 `security.enable-service-port` 的 bool 为 `false`、`security.port` 的端口值为 `9420`；端口层仍是 `declared_without_listener` 和 `connect_refused`，所以结论仍是 blocked，不是 service port ready
+- 已完成：`scripts/check-devtools-port-forensics.mjs` 扩展为 log/user-data + config 双层 static guard，要求配置取证入口、配置候选类别、enabled/mismatch/disabled/unconfirmed/conflict 诊断码、enabledStates/portValues 摘要、raw config content/file name suppression，以及原有 side-effect negative checks；`scripts/check-devtools-readiness.mjs` 要求 AB 产品/QA 文档存在，并继续运行该 no-side-effect static guard
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md` 与 `harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/inspect-devtools-port-state.mjs`；`node --check scripts/check-devtools-port-forensics.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node scripts/check-devtools-port-forensics.mjs`；`node scripts/inspect-devtools-port-state.mjs --project /tmp/street-tasks-iter-worktrees/devtools-service-port-config-forensics --port 9420`；`node --no-warnings scripts/check-devtools-readiness.mjs`
+- 已记录证据：`node scripts/check-devtools-port-forensics.mjs` 输出 `DevTools port forensics static guard checks passed.`；inspect 输出 `status: blocked`，diagnosis 为 `declared_without_listener`、`connect_refused`、`service_port_flag_mixed_recent_evidence`、`historical_service_port_success`、`service_port_config_disabled`、`service_port_flag_gate_detected`，并显示 config state `disabled`、port state `matches_9420`、conflict count `0`、not claimed `DevTools smoke passed`/`DevTools UI journey passed`/`real-device journey passed`，且 raw config content 和 config file names 未打印；readiness 输出新的配置层报告，仍明确 `Static gates passed; DevTools and real-device visual acceptance are still required.`
+- 代码审查修复：AB code review 指出端口多源冲突会先落到 `service_port_config_enabled_port_match`、local-data key 缺少敏感 denylist/port allowlist、side-effect guard 漏掉部分写入 API/危险命令；已修复为端口冲突优先返回 `service_port_config_conflict`，敏感 key 在匹配和记录前跳过，端口值只从明确 service/ide/http/cli/security port key 提取，并加严 static guard 覆盖敏感 key、冲突分支顺序、未登记诊断码和更多副作用 API/命令
+- 更新过的文件或工件：`scripts/inspect-devtools-port-state.mjs`，`scripts/check-devtools-port-forensics.mjs`，`scripts/check-devtools-readiness.mjs`，`harness/devtools-service-port-config-forensics-product-brief.md`，`harness/devtools-service-port-config-forensics-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：配置取证只说明当前本机配置摘要指向 Service Port disabled；它不自动开启开关、不证明 listener ready、不证明 DevTools UI、系统分享、朋友圈、payload、CloudBase readback 或真机 journey 通过；如果用户在 UI 中开启后配置和日志会改变，需要重新跑 `npm run inspect:devtools-port` 与 `npm run check:devtools-smoke`
+- 下一步最佳动作：请用户在 WeChat DevTools UI 中打开 Settings -> Security Settings -> Service Port，并确认端口显示为 9420；开启后重新跑只读 inspect/smoke/prepare，若仍无 listener，再转向换端口、换 profile、换机器或真机 evidence 路线
+
+### Session 079DevToolsServicePortUiConfirmation
+
+- 日期：2026-06-17
+- 分支：`codex/iter-devtools-service-port-ui-confirmation`
+- 本轮目标：AC 组在 AB 的只读配置取证之后，新增“用户手动开启 Service Port 后复测准备”入口；该入口只能接收用户 UI 确认摘要并复跑只读 inspect/smoke/viral journey preparation，输出严格 blocked/ready 语义，不声称传播 journey passed
+- 产品/QA 假设：Service Port 是否开启必须由用户在 WeChat DevTools UI 中人工确认；agent 只能在用户返回 `enabled/disabled/not_found/unavailable/not_confirmed` 与端口状态后只读复核。端口或 smoke ready 只表示可以开始真实手测，不等于 DevTools UI、真机或 viral journey passed
+- 已完成：新增 `scripts/prepare-devtools-ui-confirmation-run.mjs`，支持 `--project`、`--port`、`--ui-service-port-state enabled|disabled|not_found|unavailable|not_confirmed`、`--ui-port-state matches_9420|mismatch|unconfirmed` 和 `--strict`；脚本默认不写文件、不自动化 UI、不 quit/open/preview/upload/kill/cache/settings 修改，只运行现有只读 inspect、smoke 和 viral journey preparation，并只输出命令标签、退出码、status、诊断、config/port/conflict、listener/smoke/prepare 摘要、nextStep 和 notClaimed
+- 已完成：新增 `scripts/check-devtools-ui-confirmation.mjs` static guard，覆盖 AC 参数、允许状态词汇、disabled/unconfirmed/mismatch/listener/smoke/ready 映射、blocked nextStep、notClaimed、敏感输出抑制、子命令 stdout/stderr 不直出、side-effect API/命令禁用、strict 非 ready 非零退出，以及 “port/smoke ready is not viral journey passed” 文案
+- readiness 变化：`scripts/check-devtools-readiness.mjs` 要求 AC 产品/QA 文档存在，并只运行 `scripts/check-devtools-ui-confirmation.mjs` static guard；readiness 不运行需要用户 UI 状态参数的 AC prepare 脚本
+- npm 入口：`package.json` 新增 `prepare:devtools-ui-confirmation` 和 `check:devtools-ui-confirmation`
+- 当前只读复核结果：未确认 UI 输出 `pre_manual_confirmation`；UI 仍关闭输出 `blocked_config_disabled`；传入 `enabled + matches_9420` 时，当前环境仍输出 `blocked_no_listener`，诊断包含 `service_port_not_listening_after_manual_confirmation`、`connect_refused`、`service_port_config_disabled` 和 `smoke_access_blocked`；strict 模式在 blocked 状态下返回非零；所有 AC 输出都包含 `notClaimed` 和 `port/smoke ready is not viral journey passed`
+- 代码审查修复：review 指出 readiness 继承旧准备脚本 stdout 会暴露当前 worktree 路径、checklist 的 `notClaimed` 示例容易被复制成 passed 语义、`ready_for_manual_journey` 文档漏写 UI 端口匹配和 strict 子命令成功条件；已改为 readiness 捕获并脱敏该准备命令输出、checklist 使用 exact `notClaimed: no DevTools UI journey passed; no real-device journey passed; no viral journey passed`，并要求 `uiPortState=matches_9420` 与 `strictSubcommandNonzero=no`
+- 运行过的验证：`pwd`；读取 AC product brief/checklist、`harness/claude-progress.md`、`harness/feature_list.json`、`git log --oneline -5`；`bash harness/init.sh`；`node --check scripts/prepare-devtools-ui-confirmation-run.mjs`；`node --check scripts/check-devtools-ui-confirmation.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node scripts/check-devtools-ui-confirmation.mjs`；`node scripts/prepare-devtools-ui-confirmation-run.mjs --project <repo-worktree> --port 9420 --ui-service-port-state not_confirmed --ui-port-state unconfirmed`；`node scripts/prepare-devtools-ui-confirmation-run.mjs --project <repo-worktree> --port 9420 --ui-service-port-state disabled --ui-port-state matches_9420`；`node scripts/prepare-devtools-ui-confirmation-run.mjs --project <repo-worktree> --port 9420 --ui-service-port-state enabled --ui-port-state matches_9420`；strict enabled+matches blocked check；`node --no-warnings scripts/check-devtools-readiness.mjs`；readiness 输出路径扫描；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`npm run check`；`bash harness/init.sh`；`git diff --check`
+- 已记录证据：static guard 输出 `DevTools UI confirmation static guard checks passed.`；not_confirmed 输出 `status: pre_manual_confirmation`；disabled 输出 `status: blocked_config_disabled`；enabled+matches_9420 输出 `status: blocked_no_listener`、`listenerState: no_listener`、`smokeState: blocked`、`viralJourneyPreparation: blocked`、`notClaimed: no DevTools UI journey passed; no real-device journey passed; no viral journey passed`；strict enabled+matches_9420 blocked check 退出码为 1 且输出 `strictSubcommandNonzero: yes`；readiness 输出 `Running DevTools UI confirmation static guard... does not run the UI-state-dependent prepare script` 与最终 `DevTools readiness checks passed...`; JSON 输出 `Checked 11 JSON files.`；harness 输出 `Harness OK: 6 features checked.`；`git diff --check` 无输出
+- 更新过的文件或工件：`scripts/prepare-devtools-ui-confirmation-run.mjs`，`scripts/check-devtools-ui-confirmation.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AC 入口只证明人工 UI 确认后的端口/smoke/手测准备状态；当前机器仍无 9420 listener，smoke blocked，配置摘要仍显示 disabled；真实朋友圈菜单、系统分享面板、payload、单页模式、CloudBase attribution、窄屏和真机 journey 仍未产生 passed evidence
+- 下一步最佳动作：用户在 WeChat DevTools UI 中人工确认 Service Port 已开启且端口为 9420 后，运行 `npm run prepare:devtools-ui-confirmation -- --project <repo-worktree> --port 9420 --ui-service-port-state enabled --ui-port-state matches_9420`；若仍 blocked_no_listener 或 blocked_smoke_access，继续检查 IDE 实例、端口/profile 或换环境/真机 evidence
+
+### Session 080ViralManualJourneyEvidencePacket
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-manual-journey-evidence-packet`
+- 本轮目标：AD 组开发只读 “viral journey evidence packet” 入口，承接 AC 的 `ready_for_manual_journey` 状态；在未 ready 时明确 blocked/not_ready，在 ready 时只给出七条真实手测 journey 的执行包，不声明任何 DevTools UI、真机或 viral journey passed
+- 产品/验证假设：AC 已把 Service Port UI 确认复核和端口/smoke blocker 收敛成可机器读取的状态；AD 入口只应消费 AC 状态并整理后续真实手测 evidence 采集清单，不能绕过 AC、不能写本地 evidence、不能自动化 UI，也不能把 readiness/static guard/packet ready 写成 passed evidence
+- 已完成：新增 `scripts/prepare-viral-journey-evidence-packet.mjs`，支持 `--project`、`--port`、`--ui-service-port-state enabled|disabled|not_found|unavailable|not_confirmed`、`--ui-port-state matches_9420|mismatch|unconfirmed` 和 `--strict`；脚本只运行 `scripts/prepare-devtools-ui-confirmation-run.mjs` 子命令并解析 AC `status`、`nextStep` 和 `notClaimed`，不打印 raw stdout/stderr、本机路径、raw config/log 或 token/cookie/session/openid
+- 已完成：当 AC 不是 `ready_for_manual_journey` 时，packet 输出 `status: not_ready_for_manual_journey`、`packetStatus: not_ready`、AC status、AC nextStep、下一步 blocker 文案和 exact `notClaimed: no DevTools UI journey passed; no real-device journey passed; no viral journey passed`；strict blocked 返回 1；blocked 输出不展开七条 journey evidence
+- 已完成：当 AC ready 时，packet 输出 `status: ready_to_execute_manual_journey`、`packetStatus: ready_to_execute`，从 `harness/viral-journey-manual-results.example.json` 结构化读取七条 journey，并打印每条的 id/title/route/key evidence fields/payload checks；ready 输出仍包含 exact notClaimed，并提示回填 ignored local JSON 后运行 `node --no-warnings scripts/check-viral-journey-manual-evidence.mjs <local-json>`
+- 已完成：新增 `scripts/check-viral-journey-evidence-packet.mjs` static guard，覆盖参数/状态词汇、AC ready gating、七条 journey coverage、notClaimed、防 passed 误导、no side effects、raw output 抑制、readiness 只跑 static guard、package scripts；`package.json` 新增 `prepare:viral-journey-evidence-packet` 和 `check:viral-journey-evidence-packet`
+- readiness 变化：`scripts/check-devtools-readiness.mjs` 要求 AD packet prepare/static guard 和并行 agent 创建的 `harness/viral-manual-journey-evidence-packet-product-brief.md`、`harness/viral-manual-journey-evidence-packet-checklist.md` 存在，并只运行 `scripts/check-viral-journey-evidence-packet.mjs`；readiness 明确不运行需要 UI 状态参数的 packet prepare 命令
+- 并行协作边界：本轮确认两份 AD brief/checklist 已由其他 agents 创建，开发 agent 未修改它们；`git status` 中它们仍为未跟踪并行产物，后续由对应 agents/主流程处理
+- 运行过的验证：`pwd`；`git status --short --branch`；`git log --oneline -5`；读取 `harness/claude-progress.md`、`harness/feature_list.json`、`AGENTS.md`、AC prepare、readiness、package、manual journey example 和相关检查脚本；`bash harness/init.sh`；`node --check scripts/prepare-viral-journey-evidence-packet.mjs`；`node --check scripts/check-viral-journey-evidence-packet.mjs`；`node --check scripts/check-devtools-readiness.mjs`；`node scripts/check-viral-journey-evidence-packet.mjs`；blocked packet 输出检查；strict blocked exit 1 检查；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；最终 `bash harness/init.sh`
+- 已记录证据：三条 `node --check` 均通过；`node scripts/check-viral-journey-evidence-packet.mjs` 输出 `Viral manual journey evidence packet static guard checks passed.`；disabled UI blocked packet 输出 `status: not_ready_for_manual_journey`、`packetStatus: not_ready`、`acStatus: blocked_config_disabled`、exact `notClaimed: no DevTools UI journey passed; no real-device journey passed; no viral journey passed`，并声明 raw child stdout/stderr、本机路径、raw config/logs 和敏感值被抑制；strict disabled blocked 检查输出 `exit=1`；readiness 输出 `Running viral manual journey evidence packet static guard. This does not run scripts/prepare-viral-journey-evidence-packet.mjs because that prepare script needs UI-state parameters.` 和最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；JSON 输出 `Checked 11 JSON files.`；harness 输出 `Harness OK: 6 features checked.`；`git diff --check` 无输出；最终 `bash harness/init.sh` 完整跑通
+- 更新过的文件或工件：`scripts/prepare-viral-journey-evidence-packet.mjs`，`scripts/check-viral-journey-evidence-packet.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：当前本机 AC 状态仍可因 Service Port disabled/no listener/smoke blocked 而无法进入 packet ready；本轮没有自动开启 DevTools、没有写 ignored local evidence、没有执行真实系统分享菜单、朋友圈、payload、单页模式、CloudBase attribution、窄屏或真机 journey，因此仍没有 DevTools UI、real-device 或 viral journey passed evidence
+- 下一步最佳动作：用户先在 WeChat DevTools UI 中确认 Service Port enabled 且端口匹配 9420；随后运行 `npm run prepare:viral-journey-evidence-packet -- --project <repo-worktree> --port 9420 --ui-service-port-state enabled --ui-port-state matches_9420 --strict`。只有 packet ready 后，才进入真实 DevTools/真机七条 journey，并把观察写入 ignored local JSON 再跑 `node --no-warnings scripts/check-viral-journey-manual-evidence.mjs <local-json>`
+
+### Session 081ViralManualSummaryIntegrity
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-manual-summary-integrity`
+- 本轮目标：AE 组开发只读 viral manual journey JSON 与 Markdown summary 同源完整性 guard，避免评审引用过期、串错或被手改坏的 local summary
+- 产品/QA 输入：保留并基于并行产品/QA agent 新增的 `harness/viral-manual-summary-integrity-product-brief.md` 与 `harness/viral-manual-summary-integrity-checklist.md`；本轮不把它们改写成 UI passed 证据
+- 已完成：新增 `scripts/check-viral-manual-summary-integrity.mjs`，CLI 为 `--results <local-json> --summary <local-md>`；只接受 repo 内且 git ignored 的 `harness/manual-test-results.local-viral-journey*.json` 与 `harness/manual-test-summary.local-viral-journey*.md`；先运行 `scripts/check-viral-journey-manual-evidence.mjs`，再解析 Run/Summary/Journeys 表，比对 branch、commit、overallStatus，以及七条 required journey 的 id/title/status/actual/evidenceCount/blocker/followUp
+- 已完成：guard 对 Markdown 全文扫描 raw evidence path/url/value/details、`cloud://`、本机路径、URL、token/cookie/session/authorization/bearer/password/private key/access/refresh token、手机号、openid/unionid 等敏感或原始证据内容；命中时只报类别和行号，不回显原文；同时拒绝 `passed by AE`、`AE passed`、`summary passed`、`readiness passed so UI passed`、`manual journey passed by checklist`、`DevTools UI passed by summary` 等误导语
+- 已完成：新增 `scripts/check-viral-manual-summary-integrity-preflight.mjs`，只扫描 `harness/manual-test-summary.local-viral-journey*.md` 并按同后缀寻找 `harness/manual-test-results.local-viral-journey*.json`；没有 summary 时输出 nothing checked 和 not UI passed evidence；summary 存在但结果 JSON 缺失或任一 pair guard 失败时返回失败
+- 已完成：`package.json` 新增 `check:viral-manual-summary-integrity`；`scripts/check-devtools-readiness.mjs` 纳入两支新脚本和两份 AE 文档，并运行 viral summary integrity preflight，文案明确只检查 ignored local JSON/summary pair，不证明 UI/真机/viral journey passed
+- 已完成：`scripts/create-manual-summary.mjs` 对 viral local result 路径改走 viral manual evidence checker，保持其他 manual result 仍走原 generic checker；`scripts/check-map-list-blocked-summary-preflight.mjs` 排除 `local-viral-journey*` summary，避免 map-list blocked guard 误扫 viral summary
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md`、`harness/feature_list.json`、`git log --oneline -5`、AE product brief/checklist 和相关脚本；`bash harness/init.sh`；`node --check scripts/check-viral-manual-summary-integrity.mjs`；`node --check scripts/check-viral-manual-summary-integrity-preflight.mjs`；`node scripts/check-viral-manual-summary-integrity-preflight.mjs`；生成 ignored local blocked draft `harness/manual-test-results.local-viral-journey-ae-integrity.json`；用 `scripts/create-manual-summary.mjs` 生成 `harness/manual-test-summary.local-viral-journey-ae-integrity.md`；主 guard 正向检查；preflight 正向检查；篡改 branch 的临时 bad summary 负向检查；`npm run check:viral-manual-summary-integrity`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：空 preflight 输出 `No local viral journey summary files found; nothing checked.` 和 `Preflight is not UI passed evidence...`；prepare 输出 `Checked viral journey manual evidence: harness/manual-test-results.local-viral-journey-ae-integrity.json (overallStatus=blocked)` 且说明不是 UI passed；summary generator 输出 `Manual summary draft created.`；主 guard 正向输出 `Viral manual journey summary integrity checks passed.` 以及 not-UI-passed/real-device/viral-journey disclaimer；preflight 正向输出检查 1 pair；负向 bad branch summary 失败并提示 `Summary Markdown Run branch does not match the source results JSON on line 7.`；readiness 输出 viral summary integrity preflight 通过、map-list blocked preflight 不再误扫 viral summary，并最终输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`
+- 更新过的文件或工件：`scripts/check-viral-manual-summary-integrity.mjs`，`scripts/check-viral-manual-summary-integrity-preflight.mjs`，`scripts/create-manual-summary.mjs`，`scripts/check-map-list-blocked-summary-preflight.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/viral-manual-summary-integrity-product-brief.md`，`harness/viral-manual-summary-integrity-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：保留的 `harness/manual-test-results.local-viral-journey-ae-integrity.json` 和 `harness/manual-test-summary.local-viral-journey-ae-integrity.md` 是 ignored local blocked draft/summary，用于 guard 验证和本地 preflight；不提交、不 staging，也不代表真实 DevTools UI、系统分享面板、朋友圈、payload、CloudBase、窄屏或真机 journey passed
+- 下一步最佳动作：在真实 WeChat DevTools 或真机完成七条 viral manual journey 后，把观察写入 ignored `harness/manual-test-results.local-viral-journey*.json`，用 `scripts/create-manual-summary.mjs` 生成 matching summary，并在评审引用前运行 `npm run check:viral-manual-summary-integrity` 或 `node scripts/check-viral-manual-summary-integrity-preflight.mjs`
+
+### Session 082ViralManualArtifactManifest
+
+- 日期：2026-06-17
+- 分支：`codex/iter-viral-manual-artifact-manifest`
+- 本轮目标：AF 组开发只读 viral manual artifact manifest guard，承接 AE 的 JSON/Markdown summary integrity，避免评审引用截图、录屏、payload/readback 附件时出现串错 journey、泄露 raw 值或把附件清单误写成 UI/真机通过
+- 产品/QA 输入：产品 agent 新增 `harness/viral-manual-artifact-manifest-product-brief.md`，定义 artifact manifest 是“附件安全引用清单”；QA agent 新增 `harness/viral-manual-artifact-manifest-checklist.md`，定义七条 journey 的 screenshot、recording、payload-sample、cloud-readback、device-observation、risk-state-note 必收/条件必收/可选规则和脱敏要求
+- 已完成：新增 `scripts/check-viral-manual-artifact-manifest.mjs`，CLI 为 `--results <local-json> --manifest <local-json>`；只接受 repo 内且 git ignored 的 `harness/manual-test-results.local-viral-journey*.json` 与 `harness/manual-artifact-manifest.local-viral-journey*.json`；先运行 viral manual evidence gate，再比对 branch、commit、overallStatus、七条 journey status、sourceEvidenceCount 和 required artifact slots
+- 已完成：guard 要求 manifest 使用 schema `viral-manual-artifact-manifest.v1`、exact 七条 journey、固定 required/conditional slots、`artifact:<journeyId>:<slot>` 脱敏引用、payload/cloud readback 只记录字段名、不记录原始值；同时拒绝 raw path/url/query/payload、`cloud://`、本机路径、token/cookie/session、openid/unionid、精确经纬度、手机号邮箱、敏感 key 和 `DevTools UI passed by manifest` 等误导语
+- 代码审查修复：独立 review 指出 raw manifest 只在 JSON.parse 后扫描会漏掉 duplicate key 覆盖的敏感文本、slot map 与 QA 清单不一致、坐标/CloudBase env/身份 key 漏挡、timeline payload 和 cloud-readback 字段过弱、blocked/failed source blocker/followUp 未对齐；已修复为先扫描 raw manifest file text、拒绝 duplicate JSON keys、按 required/conditional/optional slot 校验、补 coordinate/env/identity banned keys、timeline payload 要求 `title` 和 `imageUrl` 字段名、receiver cloud-readback 要求 action/source/depth/count 字段名，并要求 `sourceBlocker/sourceFollowUp` 或 `blocker/followUp` 匹配 source results
+- 二次代码审查修复：复审指出 source journey 为 passed 时 conditional slot 仍可写 blocked、`fieldsObserved` 中仍可填 coordinate/env/identity/credential 字段名；已改为 passed source 的 conditional slot 只能 `present` 或 `not_applicable`，并对 `fieldsObserved` 增加敏感字段名 denylist，同时保留 `title`、`imageUrl` 等允许的字段存在性记录
+- 三次代码审查修复：终审指出 `not_applicable` 仍可能绕过已触发的 conditional evidence、snake_case 身份/env aliases 漏挡；已从 source results 和 environment 推导 conditional slot 是否触发，CloudBase enabled/deployed 时 `cloud-readback` 必须 present，source 中已有可检查 payload 时 `payload-sample` 必须 present，并把 `avatar_url`、`publisher_avatar_url`、`env_id`、`nick_name` 等 canonical/snake_case 字段名纳入 object key 与 `fieldsObserved` denylist
+- 四次代码审查修复：最终复核指出 raw/cloud/file/event 的 snake_case/canonical aliases 仍可绕过 object key 和 `fieldsObserved` denylist；已把 `rawpayload`、`rawquery`、`clouduri`、`cloudfileid`、`fileid`、`eventid` 等 canonical forms 纳入统一敏感字段集合，并用临时 ignored fixture 验证 `raw_payload` object key 与 `cloud_file_id` fieldsObserved 均按预期失败；复审返回 `No Critical/Important findings` 和 `Ready yes`
+- 已完成：新增 `scripts/check-viral-manual-artifact-manifest-preflight.mjs`，扫描 ignored `harness/manual-artifact-manifest.local-viral-journey*.json` 并按同后缀寻找对应 viral results JSON；没有 manifest 时输出 nothing checked 和 not UI passed evidence；manifest 存在但结果缺失或任一 pair guard 失败时返回失败
+- 已完成：`package.json` 新增 `check:viral-manual-artifact-manifest`；`scripts/check-devtools-readiness.mjs` 纳入两支新脚本和两份 AF 文档，并运行 artifact manifest preflight；`.gitignore` 新增 `harness/manual-artifact-manifest.local*.json`，确保附件清单默认留在 ignored local evidence 区
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md`、`harness/feature_list.json`、`git log --oneline -5` 和相关 AE/AD 脚本；`bash harness/init.sh`；`node --check scripts/check-viral-manual-artifact-manifest.mjs`；`node --check scripts/check-viral-manual-artifact-manifest-preflight.mjs`；`node --check scripts/check-devtools-readiness.mjs`；生成 ignored local blocked fixture `harness/manual-test-results.local-viral-journey-af-artifacts.json` 和 `harness/manual-artifact-manifest.local-viral-journey-af-artifacts.json`；主 guard 正向检查；preflight 正向检查；`npm run check:viral-manual-artifact-manifest`；duplicate-key raw path、缺 risk-state-note、sensitive latitude key、source blocker mismatch、timeline payload 缺 title/imageUrl、weak receiver cloud readback fields、raw camelCase payload、sensitive fieldsObserved latitude/env_id、snake_case identity key、passed source journey conditional slot blocked、triggered CloudBase readback not_applicable、snake_case raw_payload object key、snake_case cloud_file_id fieldsObserved 十四组负向检查；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；`npm run check`；最终 `bash harness/init.sh`
+- 已记录证据：主 guard 正向输出 `Viral manual artifact manifest checks passed.` 以及 not-UI-passed/real-device disclaimer；preflight 正向检查 1 pair；npm script 正向通过；十四组负向均按预期失败并在复原后主 guard 再次通过；最终 ignored local fixture 已清理，不提交；最终 `npm run check` 和 `bash harness/init.sh` 均返回 0，但 readiness 仍报告 DevTools service port 9420 `connect_refused` / `service_port_config_disabled`，不是 UI passed
+- 更新过的文件或工件：`.gitignore`，`scripts/check-viral-manual-artifact-manifest.mjs`，`scripts/check-viral-manual-artifact-manifest-preflight.mjs`，`scripts/check-devtools-readiness.mjs`，`package.json`，`harness/viral-manual-artifact-manifest-product-brief.md`，`harness/viral-manual-artifact-manifest-checklist.md`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：AF 只验证附件 manifest 的字段、脱敏、journey 对齐和 notClaimed 口径；它不执行 DevTools/真机，不查看真实截图/录屏，不 inspect 系统分享或朋友圈 payload，不读 CloudBase 真实记录，也不证明 viral journey passed
+- 下一步最佳动作：真实 DevTools/真机完成七条 journey 后，先让 ignored results JSON 通过 `node --no-warnings scripts/check-viral-journey-manual-evidence.mjs <local-json>`，再生成 matching summary 并运行 `npm run check:viral-manual-summary-integrity`，最后填写 `harness/manual-artifact-manifest.local-viral-journey*.json` 并运行 `npm run check:viral-manual-artifact-manifest`
+
+### Session 083MapFocusLaunch
+
+- 日期：2026-06-22
+- 分支：`codex/iter-viral-manual-artifact-manifest`
+- 本轮目标：回应用户希望从分享详情切回首页，并在首页定位到“地铁口捡到蓝色门禁卡”的体验诉求
+- 已完成：`pages/map/map.js` 支持启动参数 `focusPostId`、`postId` 或 `id`，并支持 `showList=1`；首页加载本地帖子后会一次性把地图中心移动到目标任务、设置选中态，并在列表打开时高亮该任务；本地 ignored 的 `project.private.config.json` 已从分享详情启动模式改为 `pages/map/map?focusPostId=post_001&showList=1`
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/map/map.js`；`node scripts/check-json.mjs`；单独解析 `project.private.config.json`
+- 已记录证据：`bash harness/init.sh` 通过，输出 JSON 和 harness 检查成功；`node --check pages/map/map.js` 无语法错误；`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`project.private.config.json` 单独 JSON.parse 通过
+- 更新过的文件或工件：`pages/map/map.js`，`harness/feature_list.json`，`harness/claude-progress.md`；本地 ignored 配置 `project.private.config.json`
+- 已知风险或未解决问题：当前 Computer Use 一度无法重新抓取微信开发者工具窗口，尚未能用模拟器截图证明首页定位视觉效果；但该路径只依赖首页本地帖子列表和已有选中态逻辑，仍需用户在 DevTools 点“编译”或重开项目后目视确认
+- 下一步最佳动作：在 WeChat DevTools 里选择“首页定位：蓝色门禁卡”编译模式并点击“编译”；期望页面路径为 `pages/map/map`，列表展开且“地铁口捡到蓝色门禁卡”卡片高亮，点击右侧 `›` 可进入普通详情页
+
+### Session 084ShareReceiverFocusedHomeCta
+
+- 日期：2026-06-22
+- 分支：`codex/iter-viral-manual-artifact-manifest`
+- 本轮目标：修复用户点击分享页左上角小房子返回首页时不够明显且无法定位当前任务的问题，并探索更清晰的回首页查询入口
+- 根因：左上角小房子是微信原生入口，返回 root `pages/map/map` 时不会携带 `focusPostId`，同时 DevTools 仍会显示既有原生 `WAServiceMainContext timeout`；页面可渲染，但不能满足“回首页查询这条”的产品意图
+- 已完成：在分享接收引导卡里新增“想先看它在哪？”区块和 `回首页查这条` 按钮；按钮调用 `goHomeWithPost`，通过 `wx.reLaunch` 打开 `/pages/map/map?focusPostId=<当前任务>&showList=1`，失败时回退普通首页
+- 运行过的验证：`bash harness/init.sh`；先让 `node scripts/check-share-receiver-action.mjs` 因缺少 `goHomeWithPost` 按钮失败；补实现后同一检查通过；`node --check pages/detail/detail.js`；`node --check pages/map/map.js`；`node scripts/check-json.mjs`；`git diff --check`；`node --no-warnings scripts/check-devtools-readiness.mjs`；WeChat DevTools 真实点击 `回首页查这条`
+- 已记录证据：新静态检查覆盖 `bindtap="goHomeWithPost"`、按钮文案、`focusedMapUrl(postId)`、`wx.reLaunch` focused map URL 和样式类；DevTools 中分享页显示新按钮，点击后进入 `pages/map/map`，信息列表展开且可见/定位“地铁口捡到蓝色门禁卡”
+- 更新过的文件或工件：`pages/detail/detail.js`，`pages/detail/detail.wxml`，`pages/detail/detail.wxss`，`scripts/check-share-receiver-action.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：左上角微信原生小房子仍不可自定义，也不会带业务 query；本轮用更明显的业务 CTA 绕开该入口。DevTools 控制台仍有既有 `WAServiceMainContext timeout`，但本轮观察新按钮跳转和首页定位成功
+- 下一步最佳动作：继续在真机验证分享页新 CTA 的可见性、点击反馈和首页定位行为；必要时再考虑隐藏原生导航或改 custom navigation，但那会扩大改动范围
+
+### Session 085FocusedHomeDiagnosticsClear
+
+- 日期：2026-06-22
+- 分支：`codex/iter-viral-manual-artifact-manifest`
+- 本轮目标：修复用户从分享页点击 `回首页查这条` 后，首页列表已打开但“地图启动中”诊断面板仍盖在地图上的误报式体验
+- 根因：`pages/map/map.js` 的 focused launch 成功路径会打开 `showList=1` 并定位目标任务，但仍调用延迟 700ms 的 `hideDiagnosticsSoon()`；同时 `pages/map/map.wxml` 允许 `diagnosticVisible` 面板在列表打开时继续渲染，所以用户会看到一个像错误的历史启动诊断浮层
+- 已完成：focused launch 成功后改为立即 `hideDiagnostics()`；诊断面板渲染条件改为 `diagnosticVisible && !showList`，确保任务列表已打开时不会遮挡地图；`harness/check-map-feed.mjs` 新增静态回归断言覆盖这两点
+- 运行过的验证：`bash harness/init.sh`；先让 `node harness/check-map-feed.mjs` 因诊断面板仍覆盖列表失败；补实现后 `node harness/check-map-feed.mjs` 通过；`node --check pages/map/map.js`；`node --check harness/check-map-feed.mjs`；`node scripts/check-map-list-resilience.mjs`；`node scripts/check-share-receiver-action.mjs`；WeChat DevTools 中从分享页点击 `回首页查这条`
+- 已记录证据：DevTools 手动点击后进入 `pages/map/map`，信息列表展开，`地铁口捡到蓝色门禁卡` 卡片可见且无“地图启动中”黑色诊断浮层遮挡；控制台仍保留既有 DevTools `WAServiceMainContext timeout`，但页面可用且视觉遮挡已消失
+- 更新过的文件或工件：`pages/map/map.js`，`pages/map/map.wxml`，`harness/check-map-feed.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮只收敛“成功回首页后诊断浮层误遮挡”的问题，没有处理 DevTools 基础库偶发 `WAServiceMainContext timeout` 控制台日志；该日志此前已记录为 DevTools/native 层既有现象
+- 下一步最佳动作：继续真机验证 `回首页查这条` 后列表打开、目标任务定位和无诊断遮挡；若真机仍有 native timeout 日志，再单独按 DevTools/基础库兼容问题排查

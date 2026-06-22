@@ -13,8 +13,10 @@ const ADMINS_COLLECTION = 'admins';
 const REACTIONS_COLLECTION = 'post_reactions';
 const COMMENTS_COLLECTION = 'post_comments';
 const FEEDBACK_COLLECTION = 'feedback_items';
+const VIRAL_ATTRIBUTION_COLLECTION = 'viral_attribution_events';
 const MAX_VISIBLE_POSTS = 100;
-const MAX_IMAGE_COUNT = 6;
+const MAX_IMAGE_COUNT = 4;
+const MAX_IMAGE_SIZE_BYTES = 1536 * 1024;
 const MAX_IMAGE_URL_LENGTH = 500;
 const MAX_COMMENTS_PER_POST = 50;
 const MAX_COMMENT_LENGTH = 120;
@@ -27,6 +29,29 @@ const LOST_FOUND_INTENTS = ['lost', 'found'];
 const FEEDBACK_TYPES = ['suggestion', 'bug', 'content', 'other'];
 const EXPIRY_HOURS = [6, 24, 72];
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+const VIRAL_EVENT_TYPES = [
+  'share_detail_landing',
+  'share_detail_loaded',
+  'share_detail_blocked',
+  'share_confirm_success',
+  'share_comment_success',
+  'share_relay_intent',
+  'share_relay_success'
+];
+const VIRAL_ENTRY_SOURCES = ['share', 'timeline', 'receiver', 'comment', 'confirm'];
+const VIRAL_SHARE_CHANNELS = ['app_message', 'timeline'];
+const VIRAL_CONVERSION_ACTIONS = ['', 'confirm', 'comment'];
+const VIRAL_ACTION_RESULTS = ['success', 'blocked', 'failed'];
+const VIRAL_BLOCKED_REASONS = [
+  '',
+  'not_found',
+  'hidden',
+  'closed_post',
+  'risk_post',
+  'load_failed',
+  'duplicate_action'
+];
+const VIRAL_SHARE_DEPTHS = ['1', '2', '2_plus'];
 
 function ok(data = {}) {
   return { ok: true, data };
@@ -102,6 +127,16 @@ function cleanFeedbackType(value) {
     throw error;
   }
   return type;
+}
+
+function cleanEnum(value, allowed, fieldName, fallback = '') {
+  const text = String(value || fallback).trim();
+  if (!allowed.includes(text)) {
+    const error = new Error(`Invalid ${fieldName}`);
+    error.code = 'VALIDATION_FAILED';
+    throw error;
+  }
+  return text;
 }
 
 function cleanExpiryHours(value) {
@@ -478,6 +513,39 @@ async function listFeedback(event, openid, isAdmin) {
   return ok({ feedbacks, isAdmin });
 }
 
+function cleanViralAttributionEvent(input, openid) {
+  const eventTime = Number(input.event_time_ms) || Date.now();
+  return {
+    event_type: cleanEnum(input.event_type, VIRAL_EVENT_TYPES, 'event_type'),
+    event_time_ms: eventTime,
+    attribution_session_id: cleanString(input.attribution_session_id, 120, 'attribution_session_id', true),
+    post_id: cleanString(input.post_id, 80, 'post_id'),
+    post_category: cleanString(input.post_category, 32, 'post_category'),
+    post_status: cleanString(input.post_status, 24, 'post_status'),
+    from: cleanEnum(input.from, ['share'], 'from', 'share'),
+    entry_source: cleanEnum(input.entry_source, VIRAL_ENTRY_SOURCES, 'entry_source', 'share'),
+    share_channel: cleanEnum(input.share_channel, VIRAL_SHARE_CHANNELS, 'share_channel', 'app_message'),
+    share_id: cleanString(input.share_id, 80, 'share_id'),
+    parent_share_id: cleanString(input.parent_share_id, 80, 'parent_share_id'),
+    share_depth: cleanEnum(input.share_depth, VIRAL_SHARE_DEPTHS, 'share_depth', '1'),
+    conversion_action: cleanEnum(input.conversion_action, VIRAL_CONVERSION_ACTIONS, 'conversion_action'),
+    action_result: cleanEnum(input.action_result, VIRAL_ACTION_RESULTS, 'action_result', 'success'),
+    blocked_reason: cleanEnum(input.blocked_reason, VIRAL_BLOCKED_REASONS, 'blocked_reason'),
+    is_publisher: Boolean(input.is_publisher),
+    distance_bucket: cleanString(input.distance_bucket, 16, 'distance_bucket'),
+    app_version: cleanString(input.app_version, 24, 'app_version'),
+    user_id_hash: `u_hash_${hashId(openid).slice(0, 24)}`,
+    recorded_at_ms: Date.now()
+  };
+}
+
+async function recordViralAttribution(event, openid) {
+  const input = event.event || {};
+  const attributionEvent = cleanViralAttributionEvent(input, openid);
+  await db.collection(VIRAL_ATTRIBUTION_COLLECTION).add({ data: attributionEvent });
+  return ok({ recorded: true });
+}
+
 function prepareUpload(event, openid) {
   const ext = cleanUploadExtension(event.ext);
   const index = Math.max(0, Math.min(Number(event.index) || 0, MAX_IMAGE_COUNT - 1));
@@ -486,6 +554,7 @@ function prepareUpload(event, openid) {
   return ok({
     cloudPath: `posts/${ownerHash}/${Date.now()}_${index}_${nonce}.${ext}`,
     maxImageCount: MAX_IMAGE_COUNT,
+    maxImageSizeBytes: MAX_IMAGE_SIZE_BYTES,
     allowedExtensions: IMAGE_EXTENSIONS
   });
 }
@@ -526,6 +595,9 @@ exports.main = async (event = {}) => {
     }
     if (event.action === 'listFeedback') {
       return listFeedback(event, OPENID, admin);
+    }
+    if (event.action === 'recordViralAttribution') {
+      return recordViralAttribution(event, OPENID);
     }
     if (event.action === 'prepareUpload') {
       return prepareUpload(event, OPENID);

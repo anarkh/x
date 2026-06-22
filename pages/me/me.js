@@ -2,7 +2,8 @@ import config from '../../utils/config.js';
 import { getCurrentUser, isAdmin, loginAsAdmin, loginAsUser, updateUserProfile } from '../../utils/auth.js';
 import { listMyReactions, listPosts } from '../../utils/store.js';
 import { syncTabBar } from '../../utils/tab-bar.js';
-import { buildActivities, decoratePost, isOpenPost } from '../../utils/post-presenter.js';
+import { decoratePost } from '../../utils/post-presenter.js';
+import { buildMeState } from './me-state.js';
 
 const app = getApp();
 const BEIDOU_NAMES = ['天枢', '天璇', '天玑', '天权', '玉衡', '开阳', '摇光'];
@@ -45,6 +46,13 @@ Page({
     activityCount: 0,
     myPostsText: '还没有发布过任务',
     activitiesText: '还没有参与记录',
+    nextAction: {
+      title: '登录后管理你的附近动态',
+      note: '发布、确认和反馈都会记录在这里。',
+      buttonText: '去登录',
+      action: 'login'
+    },
+    recentActivities: [],
     adminCheckText: ''
   },
 
@@ -57,12 +65,10 @@ Page({
     const user = getCurrentUser();
     app.globalData.user = user;
     const posts = (await listPosts()).map(decoratePost);
-    const myPosts = posts.filter((post) => post.isMine || post.publisherId === user.id);
     const reactions = listMyReactions();
-    const activities = buildActivities(posts, reactions);
-    const openMyPosts = myPosts.filter(isOpenPost);
     const isCurrentUserAdmin = isAdmin(user);
     const profileNeedsSetup = !user.isGuest && !user.profileCompleted;
+    const meState = buildMeState({ user, posts, reactions, profileNeedsSetup });
 
     this.setData({
       user,
@@ -73,16 +79,7 @@ Page({
       avatarText: avatarText(user),
       displayName: user.isGuest ? this.data.displayName : user.nickname,
       showAdminLogin: this.data.showAdminLogin && !isCurrentUserAdmin,
-      myPostCount: myPosts.length,
-      activityCount: activities.length,
-      myPostsText: myPosts.length ? `${myPosts.length} 条已发布内容` : '还没有发布过任务',
-      activitiesText: activities.length ? `${activities.length} 条确认、过时或举报记录` : '还没有参与记录',
-      stats: [
-        { label: '我发布', value: myPosts.length },
-        { label: '处理中', value: openMyPosts.length },
-        { label: '已关闭', value: myPosts.filter((post) => post.status === 'resolved').length },
-        { label: '参与', value: reactions.length }
-      ]
+      ...meState
     });
   },
 
@@ -171,6 +168,7 @@ Page({
       const check = result.check || {};
       const detail = [
         check.reason ? `状态: ${check.reason}` : '',
+        check.nextStep ? `处理: ${check.nextStep}` : '',
         check.missingCollection ? '请先配置管理员集合' : ''
       ].filter(Boolean).join('\n');
       this.setData({ adminCheckText: detail });
@@ -206,6 +204,31 @@ Page({
 
   goActivities() {
     wx.navigateTo({ url: '/pages/activities/activities' });
+  },
+
+  goPublish() {
+    wx.switchTab({ url: '/pages/publish/publish' });
+  },
+
+  goMap() {
+    wx.switchTab({ url: '/pages/map/map' });
+  },
+
+  handleNextAction() {
+    const action = this.data.nextAction.action;
+    if (action === 'login') {
+      this.loginUser();
+    } else if (action === 'profile') {
+      wx.showToast({ title: '点击头像或名称完善', icon: 'none' });
+    } else if (action === 'myPosts') {
+      this.goMyPosts();
+    } else if (action === 'activities') {
+      this.goActivities();
+    } else if (action === 'publish') {
+      this.goPublish();
+    } else {
+      this.goMap();
+    }
   },
 
   openDetail(event) {

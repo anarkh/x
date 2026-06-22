@@ -7,6 +7,7 @@
 <view wx:elif="{{post}}" class="page stack">
   <view class="panel hero stack">
     <view class="hero-grid"></view>
+    <view class="hero-kicker">附近任务</view>
     <view class="row between">
       <view class="row hero-tags">
         <text class="tag">{{post.categoryText}}</text>
@@ -29,41 +30,238 @@
         bindtap="previewImage"
       />
     </view>
-    <view class="muted">{{post.placeName}} · {{post.distanceText}} · {{post.createdText}}</view>
+    <view class="publisher-meta-row">
+      <view class="publisher-profile">
+        <image
+          wx:if="{{post.publisherAvatarUrl}}"
+          class="publisher-avatar"
+          src="{{post.publisherAvatarUrl}}"
+          mode="aspectFill"
+        />
+        <view wx:else class="publisher-avatar publisher-avatar-fallback">{{post.publisherInitial}}</view>
+        <text class="publisher-name">{{post.publisherName}}</text>
+      </view>
+      <view class="muted detail-meta">{{post.placeName}} · {{post.distanceText}} · {{post.createdText}}</view>
+    </view>
   </view>
 
-  <view wx:if="{{showPublishSuccess}}" class="panel publish-success">
-    <view>
-      <view class="success-title">已发布到{{appInfo.shortName}}</view>
-      <view class="muted">转发给附近的人，能更快获得确认、更新或关闭。</view>
+  <view wx:if="{{shareReceiverGuide}}" class="panel share-receiver {{shareReceiverGuide.tone}}">
+    <view class="share-receiver-head">
+      <view class="share-receiver-kicker">{{shareReceiverGuide.kicker}}</view>
+      <view class="section-title">{{shareReceiverGuide.title}}</view>
+      <view class="share-receiver-summary">{{shareReceiverGuide.summary}}</view>
     </view>
-    <view class="row success-actions">
+    <view class="share-receiver-rows">
+      <view wx:for="{{shareReceiverGuide.rows}}" wx:key="label" class="share-receiver-row">
+        <text class="share-receiver-label">{{item.label}}</text>
+        <text class="share-receiver-value">{{item.value}}</text>
+      </view>
+    </view>
+    <view class="share-receiver-note">{{shareReceiverGuide.note}}</view>
+    <view wx:if="{{shareReceiverActionStrip && !receiverConversionPrompt}}" class="share-receiver-actions {{shareReceiverActionStrip.tone}}">
+      <view class="share-receiver-action-copy">
+        <view class="share-receiver-action-title">{{shareReceiverActionStrip.title}}</view>
+        <view class="share-receiver-action-body">{{shareReceiverActionStrip.body}}</view>
+      </view>
+      <view class="share-receiver-action-row">
+        <button class="share-receiver-action-button share-receiver-action-confirm {{shareReceiverActionStrip.confirmDisabled ? 'disabled-action' : ''}}" disabled="{{shareReceiverActionStrip.confirmDisabled}}" data-action="confirm" bindtap="react">{{shareReceiverActionStrip.confirmText}}</button>
+        <button class="ghost-button share-receiver-action-button share-receiver-action-comment" bindtap="openCommentDialog">{{shareReceiverActionStrip.commentText}}</button>
+      </view>
+      <view class="share-receiver-map-return">
+        <view class="share-receiver-map-copy">
+          <view class="share-receiver-map-title">想先看它在哪？</view>
+          <view class="share-receiver-map-body">回到首页会定位这条任务，并展开附近列表。</view>
+        </view>
+        <button class="share-receiver-map-button" bindtap="goHomeWithPost">回首页查这条</button>
+      </view>
+      <view class="share-receiver-action-note">{{shareReceiverActionStrip.note}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{receiverConversionPrompt}}" class="panel receiver-conversion {{receiverConversionPrompt.tone}}">
+    <view class="receiver-conversion-head">
+      <view class="receiver-conversion-kicker">{{receiverConversionPrompt.kicker}}</view>
+      <view class="receiver-conversion-title">{{receiverConversionPrompt.title}}</view>
+      <view class="receiver-conversion-body">{{receiverConversionPrompt.body}}</view>
+    </view>
+    <view wx:if="{{receiverConversionPrompt.targetRows && receiverConversionPrompt.targetRows.length}}" class="receiver-conversion-targets">
+      <view wx:for="{{receiverConversionPrompt.targetRows}}" wx:key="label" class="receiver-conversion-target-row">
+        <text class="receiver-conversion-target-label">{{item.label}}</text>
+        <text class="receiver-conversion-target-value">{{item.value}}</text>
+      </view>
+    </view>
+    <view wx:if="{{receiverConversionPrompt.relayChannels && receiverConversionPrompt.relayChannels.length}}" class="receiver-conversion-relay-channels">
+      <text class="receiver-conversion-relay-title">适合转给</text>
+      <view class="receiver-conversion-relay-list">
+        <view wx:for="{{receiverConversionPrompt.relayChannels}}" wx:key="label" class="receiver-conversion-relay-chip">
+          <text class="receiver-conversion-relay-label">{{item.label}}</text>
+          <text class="receiver-conversion-relay-hint">{{item.hint}}</text>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{receiverConversionPrompt.shareReason}}" class="receiver-conversion-share-reason">
+      <text class="receiver-conversion-share-label">{{receiverConversionPrompt.shareReason.label}}</text>
+      <text class="receiver-conversion-share-text">{{receiverConversionPrompt.shareReason.text}}</text>
+    </view>
+    <view class="receiver-conversion-actions">
+      <button
+        wx:if="{{receiverConversionPrompt.shouldRelay}}"
+        class="share-button receiver-conversion-button"
+        open-type="share"
+        data-share-context="receiverConversion"
+      >{{receiverConversionPrompt.buttonText}}</button>
+      <button wx:else class="ghost-button receiver-conversion-button receiver-conversion-safe" disabled>{{receiverConversionPrompt.buttonText}}</button>
+      <view class="receiver-conversion-note">{{receiverConversionPrompt.note}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{showPublishSuccess && publishSpreadPlan}}" class="panel publish-spread {{publishSpreadPlan.tone}}">
+    <view class="spread-head">
+      <view class="spread-kicker">已发布到{{appInfo.shortName}}</view>
+      <view class="spread-title">{{publishSpreadPlan.title}}</view>
+      <view class="spread-body">{{publishSpreadPlan.body}}</view>
+    </view>
+
+    <view class="spread-steps">
+      <view class="spread-step">
+        <text class="spread-index">1</text>
+        <view class="spread-copy">
+          <view class="spread-label">先转给</view>
+          <view class="spread-text">{{publishSpreadPlan.audience}}</view>
+        </view>
+      </view>
+      <view class="spread-step">
+        <text class="spread-index">2</text>
+        <view class="spread-copy">
+          <view class="spread-label">想得到</view>
+          <view class="spread-text">{{publishSpreadPlan.signalGoal}}</view>
+        </view>
+      </view>
+      <view class="spread-step">
+        <text class="spread-index">3</text>
+        <view class="spread-copy">
+          <view class="spread-label">稍后回访</view>
+          <view class="spread-text">{{publishSpreadPlan.followUp}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="spread-notes">
+      <view>{{publishSpreadPlan.imageHint}}</view>
+      <view>{{publishSpreadPlan.commentHint}}</view>
+    </view>
+
+    <view class="spread-actions">
+      <button wx:if="{{publishSpreadPlan.shouldEncourageSpread}}" class="share-button spread-share-button" open-type="share">{{publishSpreadPlan.actionText}}</button>
+      <button wx:else class="ghost-button spread-map-button" bindtap="goHome">{{publishSpreadPlan.actionText}}</button>
+      <view class="spread-action-note">{{publishSpreadPlan.sharePrompt}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{!showPublishSuccess && !shareReceiverGuide && !receiverConversionPrompt && !actionRelayPrompt && !commentRelayPrompt && shareMessage}}" class="panel share-panel stack">
+    <view class="row between share-head">
+      <view class="share-head-copy">
+        <view class="share-kicker">转发给会帮忙的人</view>
+        <view class="section-title">{{shareMessage.heading}}</view>
+        <view class="muted">{{shareMessage.summary}}</view>
+      </view>
       <button class="share-button" open-type="share">转发</button>
     </view>
+    <view class="share-guide">
+      <view wx:for="{{shareMessage.rows}}" wx:key="label" class="share-guide-row">
+        <text class="share-guide-label">{{item.label}}</text>
+        <text class="share-guide-value">{{item.value}}</text>
+      </view>
+    </view>
+    <view class="share-note">{{shareMessage.note}}</view>
   </view>
 
-  <view wx:if="{{post.canReact}}" class="trust-actions">
-    <button class="trust-button trust-confirm {{post.confirmedByMe ? 'disabled-action' : ''}}" disabled="{{post.confirmedByMe}}" data-action="confirm" bindtap="react">
-      <text>{{post.confirmedByMe ? '已确认' : '确认'}}</text>
-      <text class="action-count">{{post.confirmations}}</text>
-    </button>
-    <button class="trust-button trust-stale {{post.staledByMe ? 'disabled-action' : ''}}" disabled="{{post.staledByMe}}" data-action="stale" bindtap="react">
-      <text>{{post.staledByMe ? '已过时' : '过时'}}</text>
-      <text class="action-count">{{post.staleCount}}</text>
-    </button>
-    <button class="trust-button trust-report {{post.reportedByMe ? 'disabled-action' : ''}}" disabled="{{post.reportedByMe}}" data-action="report" bindtap="react">
-      <text>{{post.reportedByMe ? '已举报' : '举报'}}</text>
-      <text class="action-count">{{post.reportCount}}</text>
-    </button>
-  </view>
-  <view wx:else class="trust-summary">
-    <text>确认 {{post.confirmations}}</text>
-    <text>过时 {{post.staleCount}}</text>
-    <text>举报 {{post.reportCount}}</text>
+  <view wx:if="{{trustInsight}}" class="trust-panel stack">
+    <view class="trust-insight {{trustInsight.tone}}">
+      <view class="trust-eyebrow">信任判断</view>
+      <view class="trust-insight-title">{{trustInsight.title}}</view>
+      <view class="trust-insight-body">{{trustInsight.body}}</view>
+    </view>
+    <view class="trust-signal-grid">
+      <view wx:for="{{trustInsight.signals}}" wx:key="key" class="trust-signal {{item.tone}}">
+        <view class="trust-signal-value">{{item.value}}</view>
+        <view class="trust-signal-label">{{item.label}}</view>
+        <view class="trust-signal-note">{{item.note}}</view>
+      </view>
+    </view>
+    <view class="trust-hint">{{trustInsight.hint}}</view>
+
+    <view wx:if="{{post.canReact}}" class="trust-actions">
+      <button class="trust-button trust-confirm {{post.confirmedByMe ? 'disabled-action' : ''}}" disabled="{{post.confirmedByMe}}" data-action="confirm" bindtap="react">
+        <text>{{post.confirmedByMe ? '已确认' : '确认'}}</text>
+        <text class="action-count">{{post.confirmations}}</text>
+      </button>
+      <button class="trust-button trust-stale {{post.staledByMe ? 'disabled-action' : ''}}" disabled="{{post.staledByMe}}" data-action="stale" bindtap="react">
+        <text>{{post.staledByMe ? '已过时' : '过时'}}</text>
+        <text class="action-count">{{post.staleCount}}</text>
+      </button>
+      <button class="trust-button trust-report {{post.reportedByMe ? 'disabled-action' : ''}}" disabled="{{post.reportedByMe}}" data-action="report" bindtap="react">
+        <text>{{post.reportedByMe ? '已举报' : '举报'}}</text>
+        <text class="action-count">{{post.reportCount}}</text>
+      </button>
+    </view>
+    <view wx:else class="trust-summary">
+      <text>确认 {{post.confirmations}}</text>
+      <text>过时 {{post.staleCount}}</text>
+      <text>举报 {{post.reportCount}}</text>
+    </view>
   </view>
 
   <view wx:if="{{post.canShowResolve}}" class="resolve-row">
     <button class="primary-button resolve-button" bindtap="resolve">{{post.resolveText}}</button>
+  </view>
+
+  <view wx:if="{{actionRelayPrompt}}" class="panel comment-relay action-relay {{actionRelayPrompt.tone}}">
+    <view class="comment-relay-head">
+      <view class="comment-relay-kicker">{{actionRelayPrompt.kicker}}</view>
+      <view class="section-title">{{actionRelayPrompt.title}}</view>
+      <view class="comment-relay-summary">{{actionRelayPrompt.summary}}</view>
+    </view>
+    <view class="comment-relay-rows">
+      <view wx:for="{{actionRelayPrompt.rows}}" wx:key="label" class="comment-relay-row">
+        <text class="comment-relay-label">{{item.label}}</text>
+        <text class="comment-relay-value">{{item.value}}</text>
+      </view>
+    </view>
+    <view class="comment-relay-actions">
+      <button
+        wx:if="{{actionRelayPrompt.shouldEncourageRelay}}"
+        class="share-button comment-relay-button"
+        open-type="share"
+        data-share-context="actionRelay"
+      >{{actionRelayPrompt.actionText}}</button>
+      <button wx:else class="ghost-button comment-relay-button comment-relay-safe" disabled="{{true}}">{{actionRelayPrompt.actionText}}</button>
+      <view class="comment-relay-note">{{actionRelayPrompt.note}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{commentRelayPrompt}}" class="panel comment-relay {{commentRelayPrompt.tone}}">
+    <view class="comment-relay-head">
+      <view class="comment-relay-kicker">{{commentRelayPrompt.kicker}}</view>
+      <view class="section-title">{{commentRelayPrompt.title}}</view>
+      <view class="comment-relay-summary">{{commentRelayPrompt.summary}}</view>
+    </view>
+    <view class="comment-relay-rows">
+      <view wx:for="{{commentRelayPrompt.rows}}" wx:key="label" class="comment-relay-row">
+        <text class="comment-relay-label">{{item.label}}</text>
+        <text class="comment-relay-value">{{item.value}}</text>
+      </view>
+    </view>
+    <view class="comment-relay-actions">
+      <button
+        wx:if="{{commentRelayPrompt.shouldEncourageRelay}}"
+        class="share-button comment-relay-button"
+        open-type="share"
+        data-share-context="commentRelay"
+      >{{commentRelayPrompt.actionText}}</button>
+      <button wx:else class="ghost-button comment-relay-button comment-relay-safe" disabled="{{true}}">{{commentRelayPrompt.actionText}}</button>
+      <view class="comment-relay-note">{{commentRelayPrompt.note}}</view>
+    </view>
   </view>
 
   <view class="panel comments-panel stack">
@@ -72,6 +270,7 @@
         <view class="section-title">评论</view>
         <view class="muted">{{comments.length}} 条线索</view>
       </view>
+      <button wx:if="{{post.canComment}}" class="ghost-button comment-head-button" bindtap="openCommentDialog">{{isGuest ? '登录评论' : '写评论'}}</button>
     </view>
     <view wx:if="{{!post.canComment}}" class="comment-locked">任务已关闭或过期，评论已暂停</view>
 

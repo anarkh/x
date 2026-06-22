@@ -11,15 +11,15 @@
   ],
   "window": {
     "navigationBarTitleText": "街区任务",
-    "navigationBarBackgroundColor": "#17231F",
+    "navigationBarBackgroundColor": "#173B33",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#EEF2EF"
+    "backgroundColor": "#F4F1EA"
   },
   "tabBar": {
     "custom": true,
-    "color": "#66736D",
+    "color": "#697970",
     "selectedColor": "#1F6658",
-    "backgroundColor": "#F8FAF7",
+    "backgroundColor": "#FFFEFA",
     "borderStyle": "white",
     "list": [
       {

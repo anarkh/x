@@ -1,4 +1,4 @@
-<view class="map-page">
+<view class="map-page {{showList ? 'list-open' : ''}}">
   <map
     id="taskMap"
     class="task-map"
@@ -6,22 +6,35 @@
     longitude="{{center.longitude}}"
     scale="15"
     markers="{{markers}}"
-    show-location
+    show-location="{{showLocation}}"
     bindmarkertap="onMarkerTap"
     bindcallouttap="onMarkerTap"
     bindregionchange="onRegionChange"
     bindtap="onMapTap"
   />
 
-  <view class="map-tool-row">
-    <button class="map-tool-button clear-tool-button" aria-label="返回当前位置" bindtap="locateCurrent">
-      <image class="map-tool-icon locate-icon" src="/assets/icons/map-locate.png" mode="aspectFit" />
-    </button>
-    <button class="map-tool-button discover-tool-button" aria-label="找一找附近内容" bindtap="discoverNearby">
-      <image class="map-tool-icon search-icon" src="/assets/icons/map-search.png" mode="aspectFit" />
-    </button>
-  </view>
-  <button class="list-fab" aria-label="打开列表" bindtap="showList">{{visiblePosts.length}}</button>
+  <cover-view wx:if="{{!showList}}" class="map-tool-row">
+    <cover-view class="map-tool-button clear-tool-button" aria-label="返回当前位置" bindtap="locateCurrent">
+      <cover-image class="map-tool-icon locate-icon" src="/assets/icons/map-locate.png" mode="aspectFit" />
+    </cover-view>
+    <cover-view class="map-tool-button discover-tool-button" aria-label="找一找附近内容" bindtap="discoverNearby">
+      <cover-image class="map-tool-icon search-icon" src="/assets/icons/map-search.png" mode="aspectFit" />
+    </cover-view>
+  </cover-view>
+
+  <cover-view wx:if="{{!showList}}" class="list-fab" bindtap="showList">
+    <cover-view class="list-fab-line">列表 {{visiblePosts.length}}</cover-view>
+  </cover-view>
+
+  <cover-view wx:if="{{diagnosticVisible && !showList}}" class="diagnostic-panel">
+    <cover-view class="diagnostic-title">{{diagnosticTitle}}</cover-view>
+    <cover-view class="diagnostic-status">{{bootStatus}}</cover-view>
+    <cover-view wx:for="{{diagnosticLines}}" wx:key="index" class="diagnostic-line">{{item}}</cover-view>
+    <cover-view class="diagnostic-actions">
+      <cover-view class="diagnostic-action primary" bindtap="retryFromDiagnostics">重试</cover-view>
+      <cover-view class="diagnostic-action" bindtap="hideDiagnostics">隐藏</cover-view>
+    </cover-view>
+  </cover-view>
 
   <block wx:if="{{selectedPost}}">
     <view wx:if="{{!showList}}" class="selected-card panel">
@@ -48,11 +61,17 @@
   <view wx:if="{{showList}}" class="list-drawer open">
     <view class="drawer-grip"></view>
     <view class="row between drawer-head">
-      <view>
+      <view class="drawer-title-block">
         <view class="section-title">信息列表</view>
-        <view class="muted">当前屏幕 {{viewportPostCount}} 条 · {{activeCategoryText}}</view>
+        <view class="muted">{{activeCategoryText}} · 按发布时间排序</view>
       </view>
-      <button class="ghost-button" bindtap="hideList">收起</button>
+      <view class="drawer-head-actions">
+        <view class="drawer-counter">
+          <text class="drawer-counter-value">{{viewportPostCount}}</text>
+          <text class="drawer-counter-label">附近</text>
+        </view>
+        <button class="ghost-button" bindtap="hideList">收起</button>
+      </view>
     </view>
 
     <scroll-view class="filter-bar" scroll-x enable-flex>
@@ -69,34 +88,35 @@
 
     <scroll-view class="post-list" scroll-y>
       <view wx:if="{{!visiblePosts.length}}" class="empty-panel panel">
-        <view class="empty-title">当前屏幕没有这类信息</view>
-        <view class="muted">移动地图、缩小比例，或点“找一找”跳到附近内容。</view>
+        <view class="empty-title">附近没有这类信息</view>
+        <view class="muted">换个分类，或点“找一找”跳到附近内容。</view>
       </view>
 
-      <view wx:for="{{visiblePosts}}" wx:key="id" class="post-card panel" data-id="{{item.id}}" bindtap="focusPost">
+      <view wx:for="{{visiblePosts}}" wx:key="id" class="post-card panel {{item.isSelected ? 'selected' : ''}}" data-id="{{item.id}}" bindtap="focusPost">
         <view class="post-content">
           <view class="post-main {{item.coverImage ? 'with-thumb' : ''}}">
             <image wx:if="{{item.coverImage}}" class="post-thumb" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" />
             <view class="post-text">
-              <view class="post-title">{{item.title}}</view>
-              <view class="post-meta">{{item.placeName}} · {{item.createdText}}</view>
+              <view class="post-title-row">
+                <text class="post-title">{{item.title}}</text>
+                <view class="post-inline-tags">
+                  <text class="post-inline-tag">{{item.categoryText}}</text>
+                  <text wx:if="{{item.intentText}}" class="post-inline-tag neutral">{{item.intentText}}</text>
+                  <text wx:if="{{item.status !== 'active'}}" class="post-inline-tag {{item.status === 'stale' ? 'warn' : ''}} {{item.status === 'resolved' ? 'done' : ''}} {{item.status === 'expired' ? 'neutral' : ''}}">{{item.statusText}}</text>
+                </view>
+              </view>
+              <view class="post-summary">{{item.body}}</view>
             </view>
             <button class="mark-button" aria-label="查看详情" data-id="{{item.id}}" catchtap="openDetail">
-              <view class="mark-arrow"></view>
+              <text class="mark-chevron">›</text>
             </button>
           </view>
-          <view class="row between card-top">
-            <view class="row card-tags">
-              <text class="tag">{{item.categoryText}}</text>
-              <text wx:if="{{item.intentText}}" class="tag neutral">{{item.intentText}}</text>
-              <text wx:if="{{item.status !== 'active'}}" class="tag {{item.status === 'stale' ? 'warn' : ''}} {{item.status === 'resolved' ? 'done' : ''}} {{item.status === 'expired' ? 'neutral' : ''}}">{{item.statusText}}</text>
+          <view class="post-footer">
+            <view class="post-counts">
+              <text>确认：{{item.confirmations}}</text>
+              <text>过时：{{item.staleCount}}</text>
             </view>
-            <text class="muted">{{item.distanceText}}</text>
-          </view>
-          <view class="row between signals">
-            <text>{{item.confirmationText}}</text>
-            <text>过时 {{item.staleCount}}</text>
-            <text>{{item.expiryText}}</text>
+            <view class="post-footer-meta">{{item.createdText}} · {{item.distanceText}}</view>
           </view>
         </view>
       </view>

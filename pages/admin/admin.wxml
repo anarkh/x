@@ -107,6 +107,17 @@
     <view class="section-title admin-title">{{item.title}}</view>
     <view class="admin-body">{{item.body}}</view>
 
+    <view class="review-panel">
+      <view class="review-line">
+        <text class="review-label">处理原因</text>
+        <text class="review-text">{{item.riskReasonText}}</text>
+      </view>
+      <view class="review-line">
+        <text class="review-label">建议动作</text>
+        <text class="review-text strong">{{item.suggestedActionText}}</text>
+      </view>
+    </view>
+
     <view class="meta-grid">
       <view>
         <view class="meta-label">地点</view>
@@ -143,8 +154,24 @@
 
     <view class="admin-actions">
       <button class="ghost-button" data-id="{{item.id}}" bindtap="openDetail">查看详情</button>
-      <button wx:if="{{item.canResolve}}" class="resolve-button" data-id="{{item.id}}" bindtap="resolve">关闭</button>
-      <button wx:if="{{item.canHide}}" class="hide-button" data-id="{{item.id}}" bindtap="hide">隐藏</button>
+      <button
+        wx:if="{{item.canResolve}}"
+        class="resolve-button {{item.isBusy ? 'busy' : ''}}"
+        data-id="{{item.id}}"
+        disabled="{{item.isBusy}}"
+        bindtap="resolve"
+      >
+        {{item.isBusy ? '处理中' : '关闭任务'}}
+      </button>
+      <button
+        wx:if="{{item.canHide}}"
+        class="hide-button {{item.isBusy ? 'busy' : ''}}"
+        data-id="{{item.id}}"
+        disabled="{{item.isBusy}}"
+        bindtap="hide"
+      >
+        {{item.isBusy ? '处理中' : '隐藏内容'}}
+      </button>
     </view>
   </view>
 </view>

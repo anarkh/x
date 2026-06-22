@@ -19,7 +19,7 @@ The app has no fixed service area. Users can browse and publish tasks from any c
 - Local duplicate prevention for repeated trust actions on the same post.
 - Local login, with an admin-only management tab controlled by the local admin code in `utils/config.js`.
 - Management console for search, risk filtering, reported/stale/hidden review, user feedback, and hide/close actions.
-- CloudBase-backed posts, reactions, comments, and feedback when `utils/config.js` cloud settings are enabled, with local mock storage fallback for development.
+- CloudBase-backed posts, reactions, comments, feedback, and viral attribution events when `utils/config.js` cloud settings are enabled, with local mock storage fallback for development.
 
 ## Run Locally
 
@@ -27,7 +27,9 @@ The app has no fixed service area. Users can browse and publish tasks from any c
 2. Use `project.config.json`; the placeholder appid is `touristappid`.
 3. Run `npm run check:json` for a basic config sanity check.
 
-For local-only development, the app falls back to `wx` local storage. For shared user data, deploy the `posts` cloud function and create the `posts`, `post_reactions`, `post_comments`, `feedback_items`, and `admins` collections in CloudBase.
+For local-only development, the app falls back to `wx` local storage. For shared user data, deploy the `posts` cloud function and create the `posts`, `post_reactions`, `post_comments`, `feedback_items`, `viral_attribution_events`, and `admins` collections in CloudBase.
+
+Posts with images require CloudBase Storage. The publish flow compresses selected images, accepts up to 4 images under 1.5MB each, uploads them to CloudBase Storage, and saves only `cloud://` file IDs. If the cloud upload or cloud post save is unavailable, image posts fail explicitly instead of falling back to local-only image paths.
 
 ## Product Scope
 

@@ -118,9 +118,37 @@ function saveCloudUser(previous, role, openid) {
 }
 
 function adminCheckInfo(data = {}, fallbackReason = '') {
+  const reason = data.reason || fallbackReason;
   return {
-    reason: data.reason || fallbackReason,
-    missingCollection: data.reason === '管理员配置不可用'
+    reason,
+    nextStep: data.nextStep || '',
+    missingCollection: reason === '管理员配置不可用',
+    needsFunctionDeploy: Boolean(data.needsFunctionDeploy)
+  };
+}
+
+export function formatAdminRoleError(error) {
+  const rawMessage = String(error && (error.errMsg || error.message || error) || '');
+  if (rawMessage.indexOf('wx-server-sdk') >= 0) {
+    return {
+      reason: 'getMyRole 云函数依赖未安装',
+      nextStep: '在微信开发者工具中右键 cloudfunctions/getMyRole，选择“上传并部署：云端安装依赖”后重试。',
+      needsFunctionDeploy: true
+    };
+  }
+  if (
+    rawMessage.indexOf('function not found') >= 0
+    || rawMessage.indexOf('FunctionName') >= 0
+    || rawMessage.indexOf('ResourceNotFound') >= 0
+  ) {
+    return {
+      reason: 'getMyRole 云函数未部署或环境不匹配',
+      nextStep: '确认云开发环境后，重新上传部署 getMyRole 云函数。'
+    };
+  }
+  return {
+    reason: '管理员校验云函数暂不可用',
+    nextStep: '检查云开发环境、getMyRole 云函数部署状态和 admins 集合后重试。'
   };
 }
 
@@ -142,10 +170,11 @@ export async function refreshAdminRole() {
     });
   } catch (error) {
     const user = saveCloudUser(previous, 'user');
+    const check = adminCheckInfo(formatAdminRoleError(error));
     return {
       ok: false,
-      message: '管理员校验失败',
-      check: adminCheckInfo({}, error.errMsg || error.message || '管理员校验失败'),
+      message: check.reason || '管理员校验失败',
+      check,
       user
     };
   }

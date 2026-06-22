@@ -2,6 +2,7 @@ import mockPosts from './mock-posts.js';
 import config from './config.js';
 import { distanceMeters } from './geo.js';
 import { getCurrentUser, isAdmin } from './auth.js';
+import { addDiagnostic } from './diagnostics.js';
 
 const STORAGE_KEY = 'posts';
 const REACTIONS_STORAGE_KEY = 'post_reactions';
@@ -64,7 +65,14 @@ function removeCachedPost(id) {
 }
 
 function shouldUseCloud() {
-  return Boolean(config.cloud && config.cloud.enabled && config.cloud.envId && wx.cloud);
+  let cloudReady = true;
+  try {
+    const app = getApp();
+    cloudReady = !app || !app.globalData || app.globalData.cloudReady !== false;
+  } catch (error) {
+    cloudReady = true;
+  }
+  return Boolean(config.cloud && config.cloud.enabled && config.cloud.envId && wx.cloud && cloudReady);
 }
 
 function isCloudFallbackError(error) {
@@ -72,10 +80,13 @@ function isCloudFallbackError(error) {
   const errCode = Number(error && error.errCode);
   return error
     && (error.code === 'MISSING_COLLECTION'
+      || error.code === 'NOT_FOUND'
       || (!error.code && [-501000, -504002, -404011].indexOf(errCode) >= 0)
+      || (!error.code && errCode === 41002)
       || (!error.code && message.indexOf('callFunction') >= 0)
       || (!error.code && message.indexOf('cloud function') >= 0)
       || (!error.code && message.indexOf('云函数') >= 0)
+      || message.indexOf('appid missing') >= 0
       || message.indexOf('FunctionName') >= 0
       || message.indexOf('function not found') >= 0
       || message.indexOf('ResourceNotFound') >= 0);
@@ -89,6 +100,11 @@ function cloudError(code, message) {
   const error = new Error(message || 'Cloud post operation failed');
   error.code = code || 'CLOUD_POSTS_FAILED';
   return error;
+}
+
+function shouldRequireCloudPost(input = {}) {
+  const imageUrls = Array.isArray(input.imageUrls) ? input.imageUrls : [];
+  return Boolean(input.requireCloud || imageUrls.some((url) => String(url || '').indexOf('cloud://') === 0));
 }
 
 async function callPostsFunction(action, data = {}) {
@@ -118,6 +134,10 @@ function seedPosts() {
 function savePosts(posts) {
   wx.setStorageSync(STORAGE_KEY, posts);
   rememberPosts(posts, { includeHidden: true });
+}
+
+function localPostById(id) {
+  return seedPosts().find((post) => post.id === id) || null;
 }
 
 function updateLocalPost(id, data) {
@@ -168,6 +188,10 @@ async function fetchPosts(options = {}) {
 }
 
 async function loadPosts(options = {}) {
+  if (options.localOnly) {
+    return seedPosts();
+  }
+
   if (!options.force) {
     const cached = cachedPosts(options);
     if (cached) {
@@ -185,29 +209,32 @@ async function loadPosts(options = {}) {
     })
     .catch((error) => {
       postsLoadPromise = null;
-      if (isCloudFallbackError(error)) {
-        return rememberPosts(seedPosts(), { includeHidden: true });
-      }
-      throw error;
+      addDiagnostic('store.loadPosts', error);
+      return rememberPosts(seedPosts(), { includeHidden: true });
     });
   return postsLoadPromise;
 }
 
 async function findPost(id) {
+  const postId = String(id || '').trim();
+  if (!postId) {
+    return null;
+  }
+  const localPost = localPostById(postId);
   if (!shouldUseCloud()) {
-    return seedPosts().find((post) => post.id === id);
+    return localPost;
   }
   const cached = cachedPosts({ includeHidden: true }) || cachedPosts();
-  const cachedPost = cached ? cached.find((post) => post.id === id) : null;
+  const cachedPost = cached ? cached.find((post) => post.id === postId) : null;
   if (cachedPost) {
     return cachedPost;
   }
   try {
-    const data = await callPostsFunction('get', { id });
-    return normalizePost(data.post);
+    const data = await callPostsFunction('get', { id: postId });
+    return normalizePost(data.post) || localPost;
   } catch (error) {
     if (isCloudFallbackError(error)) {
-      return seedPosts().find((post) => post.id === id);
+      return localPost;
     }
     throw error;
   }
@@ -314,8 +341,8 @@ export async function listAllPosts(center = config.defaultCenter) {
   return posts.slice(0, config.maxVisiblePosts);
 }
 
-export async function listPosts(center = config.defaultCenter) {
-  const posts = await sortedDerivedPosts(center);
+export async function listPosts(center = config.defaultCenter, options = {}) {
+  const posts = await sortedDerivedPosts(center, options);
   return posts
     .filter((post) => post.status !== 'hidden')
     .slice(0, config.maxVisiblePosts);
@@ -348,6 +375,9 @@ export async function createPost(input) {
     } catch (error) {
       if (!isCloudFallbackError(error)) {
         throw error;
+      }
+      if (shouldRequireCloudPost(input)) {
+        throw cloudError('CLOUD_REQUIRED', '图片需要保存到云端，请稍后再试');
       }
     }
   }
