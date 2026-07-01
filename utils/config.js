@@ -1,3 +1,5 @@
+export const LONG_TERM_EXPIRY_HOURS = 24 * 365 * 10;
+
 const config = {
   defaultCenter: {
     latitude: 39.96685,
@@ -61,10 +63,12 @@ const config = {
       placePlaceholder: '例如：社区广场东侧'
     }
   },
+  longTermExpiryHours: LONG_TERM_EXPIRY_HOURS,
   expiryOptions: [
-    { value: 6, label: '6小时' },
-    { value: 24, label: '1天' },
-    { value: 72, label: '3天' }
+    { value: 168, label: '1周' },
+    { value: 720, label: '1月' },
+    { value: LONG_TERM_EXPIRY_HOURS, label: '长期', type: 'long_term' },
+    { value: 'custom', label: '自定义' }
   ]
 };
 

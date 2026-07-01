@@ -25,13 +25,21 @@ function locationActionText(locationStatus) {
   return '确认位置';
 }
 
+function hasExpiry(form) {
+  if (Number(form.expiresAt) > Date.now()) {
+    return true;
+  }
+  return Number(form.expiryHours) > 0;
+}
+
 function missingActionText(missingItem, locationStatus) {
   const actionMap = {
     登录: '去登录',
     标题: '补标题',
     详情: '补详情',
     分类: '选分类',
-    失物方向: '选失物方向'
+    失物方向: '选失物方向',
+    有效期: '选有效期'
   };
   if (missingItem === '当前位置') {
     if (locationStatus === 'locating') {
@@ -93,6 +101,7 @@ export function buildPublishState(options = {}) {
   const categoryDone = present(form.category)
     && (form.category !== 'lost_found' || present(form.intent));
   const locationDone = hasLocation && locationStatus === 'ready';
+  const expiryDone = hasExpiry(form);
 
   const items = [
     {
@@ -114,6 +123,12 @@ export function buildPublishState(options = {}) {
       done: categoryDone
     },
     {
+      key: 'expiry',
+      label: '有效期',
+      value: expiryDone ? '已设置' : '待选择',
+      done: expiryDone
+    },
+    {
       key: 'location',
       label: '位置',
       value: locationValue(locationStatus, hasLocation),
@@ -133,6 +148,9 @@ export function buildPublishState(options = {}) {
   }
   if (!categoryDone) {
     missing.push(form.category === 'lost_found' ? '失物方向' : '分类');
+  }
+  if (!expiryDone) {
+    missing.push('有效期');
   }
   if (!locationDone) {
     missing.push('当前位置');

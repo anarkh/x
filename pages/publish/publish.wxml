@@ -127,6 +127,21 @@
             {{item.label}}
           </button>
         </view>
+        <view wx:if="{{isCustomExpiry}}" class="custom-expiry">
+          <view class="custom-expiry-head">
+            <view class="custom-expiry-title">截止时间</view>
+            <view class="custom-expiry-text">{{customExpiryText}}</view>
+          </view>
+          <view class="custom-expiry-controls">
+            <picker mode="date" value="{{customExpiryDate}}" start="{{customExpiryStartDate}}" bindchange="onCustomExpiryDateChange">
+              <view class="custom-expiry-picker">{{customExpiryDate}}</view>
+            </picker>
+            <picker mode="time" value="{{customExpiryTime}}" bindchange="onCustomExpiryTimeChange">
+              <view class="custom-expiry-picker">{{customExpiryTime}}</view>
+            </picker>
+          </view>
+          <view wx:if="{{customExpiryError}}" class="custom-expiry-error">{{customExpiryError}}</view>
+        </view>
       </view>
     </view>
   </view>

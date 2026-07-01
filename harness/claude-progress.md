@@ -1249,3 +1249,52 @@
 - 更新过的文件或工件：`pages/detail/detail.wxml`，`scripts/check-share-receiver-action.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：本轮通过静态结构和 helper 行为验证覆盖过期态；尚未用真实过期云端数据或真机分享链接做视觉验收
 - 下一步最佳动作：用一条真实 expired 分享链接打开详情页，确认 `已过期任务` 引导卡下方显示 `回首页查这条`，点击后回首页并展开附近列表
+
+### Session 090PublishExpiryOptions
+
+- 日期：2026-06-23
+- 工作区：`/Users/bytedance/.codex/worktrees/e329/x`；AGENTS.md 里的历史根路径是 `/Users/bytedance/git/x`，本轮按当前 Codex worktree 执行；当前为 detached HEAD `9d2327a`
+- 本轮目标：按用户要求把发布任务有效期从 `6小时/1天/3天` 改成 `1天/1周/1个月`，并增加自定义时间
+- 已完成：`utils/config.js` 的有效期预设改为 `1天`、`1周`、`1个月`、`自定义`；发布页默认有效期改为 `1天`；选择自定义后显示日期和时间 picker，展示具体截止时间；自定义时间需在未来 30 分钟到 30 天内，非法时会显示提示并阻止发布准备度通过；发布准备清单新增“有效期”项；本地 `utils/store.js` 与 `cloudfunctions/posts/index.js` 同步接受 `[24,168,720]` 预设小时和精确 `expiresAt` 自定义截止时间
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md`、`harness/feature_list.json`；`git log --oneline -5`；`bash harness/init.sh`；`node --check pages/publish/publish.js`；`node --check pages/publish/publish-state.js`；`node --check utils/store.js`；`node --check cloudfunctions/posts/index.js`；`node --no-warnings scripts/check-publish-flow.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`node --no-warnings scripts/check-performance-guards.mjs`；`git diff --check`；WeChat DevTools 本地 `wcc` 全量编译 WXML；WeChat DevTools 本地 `wcsc -lc` 全量编译 WXSS；`npm run check`；最终再次 `bash harness/init.sh`
+- 已记录证据：`node --check` 四条均无语法错误；`scripts/check-publish-flow.mjs` 输出 `Publish flow checks passed.` 并断言新四个有效期选项、自定义有效期 readiness 和 `5/5` 准备度；readiness 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；JSON 检查输出 `Checked 11 JSON files.`；harness 输出 `Harness OK: 6 features checked.`；性能 guard 输出 `Performance guard checks passed.`；`git diff --check` 无输出；`wcc` 和 `wcsc -lc` 退出码均为 0；`npm run check` 与 `bash harness/init.sh` 均通过
+- 更新过的文件或工件：`utils/config.js`，`pages/publish/publish.js`，`pages/publish/publish.wxml`，`pages/publish/publish.wxss`，`pages/publish/publish-state.js`，`utils/store.js`，`cloudfunctions/posts/index.js`，`scripts/check-publish-flow.mjs`，`scripts/check-performance-guards.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：本轮没有执行真实 WeChat DevTools/真机交互验收；readiness 仍报告 DevTools service port 9420 `connect_refused` 且配置显示 Service Port disabled，这不是 UI passed evidence。仍需实际操作自定义日期/时间 picker、提交本地/云端发布、检查详情页有效期展示；云端路径需要部署更新后的 `posts` 云函数后才会接受新有效期白名单和自定义 `expiresAt`
+- 下一步最佳动作：在 WeChat DevTools 或真机打开发布 tab，分别点 `1天/1周/1个月/自定义`，选择一个合法自定义截止时间并发布，确认详情页显示对应剩余时间；部署 `posts` 云函数后再验证云端发布
+
+### Session 091PublishCustomExpiryNoMax
+
+- 日期：2026-06-23
+- 工作区：`/Users/bytedance/.codex/worktrees/e329/x`；当前为 detached HEAD `9d2327a`
+- 本轮目标：按用户反馈移除自定义有效期最大 30 天限制
+- 已完成：发布页自定义日期 picker 移除 `end` 限制；前端 `customExpiryError` 只校验自定义时间至少晚于当前 30 分钟；`utils/store.js` 和 `cloudfunctions/posts/index.js` 同步移除最大 30 天校验，仅保留下限校验；`scripts/check-publish-flow.mjs` 新增 45 天自定义有效期仍可发布的断言
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/publish/publish.js`；`node --check utils/store.js`；`node --check cloudfunctions/posts/index.js`；`node --no-warnings scripts/check-publish-flow.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；WeChat DevTools 本地 `wcc` 全量编译 WXML；WeChat DevTools 本地 `wcsc -lc` 全量编译 WXSS；`npm run check`；最终再次 `bash harness/init.sh`
+- 已记录证据：三条 `node --check` 均无语法错误；发布流程检查输出 `Publish flow checks passed.`，并覆盖 45 天自定义有效期没有 30 天上限；readiness 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；JSON 检查输出 `Checked 11 JSON files.`；harness 输出 `Harness OK: 6 features checked.`；`git diff --check` 无输出；`wcc`/`wcsc -lc` 均退出 0；`npm run check` 和最终 `bash harness/init.sh` 均通过
+- 更新过的文件或工件：`pages/publish/publish.js`，`pages/publish/publish.wxml`，`utils/store.js`，`cloudfunctions/posts/index.js`，`scripts/check-publish-flow.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在 WeChat DevTools/真机中实际打开 date picker 选择超过 30 天的日期并发布；云端路径仍需要部署更新后的 `posts` 云函数后才会接受新规则
+- 下一步最佳动作：在 DevTools 发布页选择超过 30 天的自定义日期确认 UI 不再限制；部署 `posts` 云函数后再验证云端发布同样接受超过 30 天的自定义有效期
+
+### Session 092PublishExpiryLongTermPreset
+
+- 日期：2026-06-23
+- 工作区：`/Users/bytedance/.codex/worktrees/e329/x`；当前为 detached HEAD `9d2327a`
+- 本轮目标：按用户最新反馈把发布有效期预设改成 `1周 / 1月 / 长期 / 自定义`
+- 已完成：`utils/config.js` 的有效期预设改为 `1周`、`1月`、`长期`、`自定义`，发布页默认选中 `1周`；长期预设使用 `expiryType: long_term` 标记并在详情、个人发布、活动和管理展示中显示为 `长期有效`，避免展示成很大的天数；本地 `utils/store.js` 与 `cloudfunctions/posts/index.js` 同步接受 `1周/1月/长期` 预设和不设最大日期的自定义 `expiresAt`
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/publish/publish.js`；`node --check utils/config.js`；`node --check utils/store.js`；`node --check utils/format.js`；`node --check cloudfunctions/posts/index.js`；`node --no-warnings scripts/check-publish-flow.mjs`；`node --no-warnings scripts/check-candidate-flow.mjs`；`node --no-warnings scripts/check-performance-guards.mjs`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`node scripts/check-json.mjs`；`node harness/check-harness.mjs`；`git diff --check`；WeChat DevTools 本地 `wcc` 全量编译 WXML；WeChat DevTools 本地 `wcsc -lc` 全量编译 WXSS；最终 `npm run check`；最终再次 `bash harness/init.sh`
+- 已记录证据：`scripts/check-publish-flow.mjs` 断言有效期选项为 `1周/1月/长期/自定义`、长期展示为 `长期有效`、自定义 45 天仍可发布；候选流和性能 guard 均通过；readiness 输出 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；JSON 检查输出 `Checked 11 JSON files.`；harness 输出 `Harness OK: 6 features checked.`；`git diff --check` 无输出；`wcc`/`wcsc -lc` 均退出 0；`npm run check` 和最终 `bash harness/init.sh` 均通过
+- 更新过的文件或工件：`utils/config.js`，`pages/publish/publish.js`，`pages/publish/publish.wxml`，`pages/publish/publish.wxss`，`pages/publish/publish-state.js`，`utils/store.js`，`utils/format.js`，`utils/post-presenter.js`，`pages/detail/detail.js`，`pages/admin/admin-review.js`，`cloudfunctions/posts/index.js`，`scripts/check-publish-flow.mjs`，`scripts/check-candidate-flow.mjs`，`scripts/check-performance-guards.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在真实 WeChat DevTools/真机中手动点击四个有效期选项和发布成功流；readiness 仍报告 DevTools service port 9420 阻塞，这不是 UI passed evidence。云端路径需要部署更新后的 `posts` 云函数后才会接受新的长期预设和自定义规则
+- 下一步最佳动作：在 WeChat DevTools 或真机打开发布页，确认四个有效期按钮、长期详情文案和超过 30 天的自定义日期均符合预期；部署 `posts` 云函数后再验证云端发布
+
+### Session 093PublishDefaultLongTermImpact
+
+- 日期：2026-06-23
+- 工作区：`/Users/bytedance/.codex/worktrees/e329/x`；当前为 detached HEAD `9d2327a`
+- 本轮目标：按用户要求把发布有效期默认选择改为 `长期`，并评估修改有效期对既有功能的影响
+- 已完成：发布页默认表单和默认选中态都改为从 `config.expiryOptions` 中查找 `type === 'long_term'` 的选项，因此默认选中 `长期`，重置表单后也保持 `长期`；`scripts/check-publish-flow.mjs` 增加静态守卫，要求默认值来自长期选项、默认 `expiryHours` 使用长期小时数并保留 `expiryType: long_term`
+- 功能影响结论：有效期变化会影响任务何时自动变成 `expired`，进而影响列表排序/状态展示、评论、确认、分享接收侧风险提示等所有依赖 `expiresAt > Date.now()` 的功能。默认改为长期后，新任务默认会长期保持 active、可评论、可确认、可在普通列表展示；用户主动选择 `1周`、`1月` 或 `自定义` 时仍按对应截止时间过期；关闭、过时、举报和隐藏逻辑不依赖默认值，仍按原逻辑生效
+- 运行过的验证：`bash harness/init.sh`；`node --check pages/publish/publish.js`；`node --check scripts/check-publish-flow.mjs`；`node --no-warnings scripts/check-publish-flow.mjs`；`npm run check`；最终再次 `bash harness/init.sh`；`git diff --check`
+- 已记录证据：发布流专项输出 `Publish flow checks passed.`；`npm run check` 通过并输出 JSON/harness/readiness 全部通过；最终 harness 输出 `Harness init complete.`；`git diff --check` 无输出
+- 更新过的文件或工件：`pages/publish/publish.js`，`scripts/check-publish-flow.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
+- 已知风险或未解决问题：尚未在真实 WeChat DevTools/真机中手动确认发布页初始高亮为 `长期`；DevTools service port 9420 仍阻塞，readiness 不能替代 UI passed evidence。云端路径仍需部署更新后的 `posts` 云函数
+- 下一步最佳动作：在 DevTools UI 手动打开当前 worktree，确认发布页初始有效期高亮 `长期`，发布后详情页显示 `长期有效`

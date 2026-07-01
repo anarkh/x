@@ -210,7 +210,7 @@ await createPost({
   category: 'help_needed',
   latitude: center.latitude,
   longitude: center.longitude,
-  expiryHours: 6,
+  expiryHours: 168,
   imageUrls: []
 });
 const localAfterCloudCreate = await listPostsAfterCloudWrite(center, { localOnly: true });

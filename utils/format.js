@@ -148,10 +148,13 @@ export function formatTrustInsight(post = {}, commentCount = 0) {
   };
 }
 
-export function formatTimeLeft(expiresAt) {
+export function formatTimeLeft(expiresAt, expiryType = '') {
   const ms = expiresAt - Date.now();
   if (ms <= 0) {
     return '已过期';
+  }
+  if (expiryType === 'long_term') {
+    return '长期有效';
   }
   const hours = Math.ceil(ms / (60 * 60 * 1000));
   if (hours < 24) {
