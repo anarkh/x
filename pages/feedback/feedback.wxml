@@ -2,7 +2,6 @@
   <view class="page-head">
     <view class="head-mark">馈</view>
     <view class="title">反馈建议</view>
-    <view class="muted">问题、建议、想要的功能，都可以在这里告诉我们。</view>
   </view>
 
   <view class="panel form-card stack">

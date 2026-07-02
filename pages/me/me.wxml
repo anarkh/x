@@ -55,7 +55,6 @@
   <view class="panel next-panel">
     <view class="next-copy">
       <view class="section-title">{{nextAction.title}}</view>
-      <view class="muted">{{nextAction.note}}</view>
     </view>
     <button class="next-action-button" bindtap="handleNextAction">{{nextAction.buttonText}}</button>
   </view>
@@ -64,7 +63,6 @@
     <view class="section-head">
       <view>
         <view class="section-title">最近动态</view>
-        <view class="muted">你刚参与过的附近任务</view>
       </view>
       <view class="mini-link" bindtap="goActivities">全部</view>
     </view>

@@ -91,17 +91,17 @@
       "followUp": "Run this smoke journey manually after DevTools or real-device access is available; record tested device width, post ids, whether cards had images, and any screenshot or recording artifact only if it actually exists."
     },
     {
-      "id": "publish-readiness-location-retry",
-      "title": "发布准备度与定位失败重试",
+      "id": "publish-state-location-retry",
+      "title": "发布状态与定位失败重试",
       "status": "blocked",
       "steps": [
         "Open the publish tab in WeChat DevTools.",
         "Fill the minimum required title, body, category, and expiry fields.",
-        "Trigger current-location confirmation from the readiness action.",
+        "Trigger current-location confirmation from the location block or bottom action.",
         "Deny, timeout, or otherwise fail location once, then retry and allow location."
       ],
       "expected": [
-        "The readiness checklist identifies location as the remaining blocker.",
+        "The bottom action identifies location as the remaining blocker.",
         "A failed location attempt shows retry-oriented copy and does not submit the post.",
         "After retry succeeds, the primary action changes to publish."
       ],

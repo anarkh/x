@@ -67,37 +67,41 @@ function trustInsight(overrides = {}, commentCount = 0) {
 {
   const result = trustInsight({ confirmations: 5, lastConfirmedAt: Date.now() - 60 * 1000 });
   assert.equal(result.title, '有确认信号');
-  assert.match(result.hint, /现场|评论|判断/);
+  assert.match(result.body, /确认信号/);
+  assert.equal(result.signals.find((signal) => signal.key === 'confirm').value, 5);
 }
 
 {
   const result = trustInsight({ confirmations: 1, reportCount: 2 });
   assert.equal(result.title, '存在多次举报');
-  assert.match(`${result.body}${result.hint}`, /谨慎|不要直接行动|管理员/);
+  assert.match(result.body, /谨慎/);
+  assert.equal(result.signals.find((signal) => signal.key === 'report').value, 2);
 }
 
 {
   const result = trustInsight({ confirmations: 3, staleCount: 3 });
   assert.equal(result.title, '可能已经过时');
-  assert.match(`${result.body}${result.hint}`, /不再准确|最新情况|补充/);
+  assert.match(result.body, /不再准确/);
+  assert.equal(result.signals.find((signal) => signal.key === 'stale').value, 3);
 }
 
 {
   const result = trustInsight({}, 4);
   assert.equal(result.title, '先看评论线索');
-  assert.match(`${result.body}${result.hint}`, /先看|提问|补充/);
+  assert.match(result.body, /先看/);
+  assert.equal(result.signals.find((signal) => signal.key === 'comment').value, 4);
 }
 
 {
   const result = trustInsight({ status: 'resolved', confirmations: 3 }, 2);
   assert.equal(result.title, '任务已关闭');
-  assert.match(`${result.body}${result.hint}`, /历史线索|不需要继续确认/);
+  assert.match(result.body, /历史线索/);
 }
 
 {
   const result = trustInsight({ status: 'expired', confirmations: 3 }, 2);
   assert.equal(result.title, '任务已过期');
-  assert.match(`${result.body}${result.hint}`, /历史线索|不再接收确认/);
+  assert.match(result.body, /历史线索/);
 }
 
 console.log('Candidate flow checks passed.');

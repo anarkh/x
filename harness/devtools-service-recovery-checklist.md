@@ -177,7 +177,7 @@ listenEvidence: 9420 无监听，nc/curl 为 connection refused
 recoveryAttempted: UI 正常退出未成功；CLI quit 返回 timeout；attempt-open 20s timeout
 actualResult: DevTools 服务端口仍不可连接，未能确认当前项目 ready
 rollbackOrStopPoint: 未强制杀进程，保持 blocked，等待有 UI 权限执行者处理
-manualJourneyImpact: DevTools 编译、地图首屏、发布准备度、详情信任区和真机预览均未执行
+manualJourneyImpact: DevTools 编译、地图首屏、发布状态、详情信任区和真机预览均未执行
 nextAction: 人工重新开启服务端口或换机验证，再重跑 check-devtools-smoke-access
 evidenceLocation: 本地附件 S-recovery-01，原始日志不提交
 ```
@@ -196,9 +196,9 @@ evidenceLocation: 本地附件 S-recovery-01，原始日志不提交
   - 通过标准：详情页展示同一任务标题、正文、状态、发布者信息、TrustInsight、信任动作和评论入口；不出现“任务不存在”。
   - 失败记录：入口方式、任务别名、post id 摘要和详情页实际状态。
 
-- [ ] 发布准备度和定位恢复路径。
+- [ ] 发布状态和定位恢复路径。
   - 进入发布页，至少覆盖游客态或登录态一种；点击当前位置确认，覆盖允许、拒绝或失败重试中的一种真实分支。
-  - 通过标准：准备度文案、底部主按钮、定位中 / 失败 / 重试状态随真实权限变化；失败不清空已填内容。
+  - 通过标准：定位块文案、底部主按钮、定位中 / 失败 / 重试状态随真实权限变化；失败不清空已填内容。
   - 失败记录：权限初始状态、点击步骤、toast / 文案、是否卡住 loading。
 
 - [ ] 详情信任动作和评论入口。

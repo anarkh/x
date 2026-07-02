@@ -129,6 +129,21 @@ const readinessDocs = [
   'harness/viral-manual-artifact-manifest-checklist.md'
 ];
 
+const serviceSimplificationDocs = [
+  ...readinessDocs,
+  'harness/devtools-smoke-product-brief.md',
+  'harness/devtools-smoke-checklist.md',
+  'harness/devtools-service-recovery-checklist.md',
+  'harness/devtools-recovery-report-design-note.md',
+  'harness/manual-runbook-checklist.md',
+  'harness/manual-preflight-alignment-checklist.md',
+  'harness/hardening-product-brief.md',
+  'harness/hardening-design-checklist.md',
+  'harness/manual-test-results.example.json',
+  'harness/sanitized-summary-checklist.md',
+  'DESIGN_SYSTEM.md'
+];
+
 function readProjectFile(relativePath) {
   return readFileSync(join(rootDir, relativePath), 'utf8');
 }
@@ -199,7 +214,94 @@ function runCheck(scriptPath, label, options = {}) {
   );
 }
 
+function runServiceSimplificationCheck() {
+  const publishWxml = readProjectFile('pages/publish/publish.wxml');
+  const publishWxss = readProjectFile('pages/publish/publish.wxss');
+  const mapJs = readProjectFile('pages/map/map.js');
+  const mapWxml = readProjectFile('pages/map/map.wxml');
+  const mapWxss = readProjectFile('pages/map/map.wxss');
+  const adminJs = readProjectFile('pages/admin/admin.js');
+  const detailWxml = readProjectFile('pages/detail/detail.wxml');
+  const detailWxss = readProjectFile('pages/detail/detail.wxss');
+  const adminWxml = readProjectFile('pages/admin/admin.wxml');
+  const adminWxss = readProjectFile('pages/admin/admin.wxss');
+  const feedbackWxml = readProjectFile('pages/feedback/feedback.wxml');
+  const meWxml = readProjectFile('pages/me/me.wxml');
+  const myPostsWxml = readProjectFile('pages/my-posts/my-posts.wxml');
+  const activitiesWxml = readProjectFile('pages/activities/activities.wxml');
+  const serviceSimplificationDocText = serviceSimplificationDocs
+    .map((relativePath) => readProjectFile(relativePath))
+    .join('\n');
+  const combined = [
+    publishWxml,
+    publishWxss,
+    mapJs,
+    mapWxml,
+    mapWxss,
+    adminJs,
+    detailWxml,
+    detailWxss,
+    adminWxml,
+    adminWxss,
+    feedbackWxml,
+    meWxml,
+    myPostsWxml,
+    activitiesWxml,
+    serviceSimplificationDocText
+  ].join('\n');
+
+  const removedDisplayPatterns = [
+    ['publish readiness card', /\bpublish-ready\b|\bready-grid\b/],
+    ['publish section notes', /\bform-section-note\b/],
+    ['map drawer duplicate counter', /\bdrawer-counter\b|按发布时间排序/],
+    ['publish spread step list', /\bspread-steps\b|\bspread-step\b|\bspread-notes\b/],
+    ['ordinary share guide rows', /\bshare-guide\b|\bshare-note\b/],
+    ['receiver guide rows', /\bshare-receiver-rows\b|\bshare-receiver-note\b/],
+    ['relay prompt detail rows', /\bcomment-relay-rows\b|\bcomment-relay-row\b/],
+    ['trust secondary notes', /\btrust-signal-note\b|\btrust-hint\b/],
+    ['admin duplicate count header', /仅管理员可见|feedback-count\b|来自“我的”页反馈入口|按举报和过时风险排序/],
+    ['feedback/list explanatory headings', /问题、建议、想要的功能|当前账号发布过的附近任务|你确认、标记过时或举报过的附近任务/],
+    ['empty-state explanatory copy', /可以从身边的失物|在详情页确认有效|用户提交后会显示在这里|换个关键词/],
+    ['profile secondary action copy', /\{\{nextAction\.note\}\}|你刚参与过的附近任务/],
+    ['map removed count state', /activeCategoryText|viewportPostCount/],
+    ['admin removed feedback count state', /stats:\s*\{[^}]*\bfeedback\b|feedback:\s*feedbacks\.length|feedback:\s*this\.data\.feedbacks\.length/],
+    ['stale publish readiness docs', /PublishReadiness|发布准备度|准备度清单|准备度文案|发布准备”模块|准备度计数|准备项两列网格|publish-readiness|readiness checklist card|readiness action checklist/]
+  ];
+
+  for (const [label, pattern] of removedDisplayPatterns) {
+    assert.doesNotMatch(combined, pattern, `Simplified UI should not reintroduce ${label}.`);
+  }
+
+  const requiredFunctionalPatterns = [
+    ['publish bottom action', publishWxml, /class="bottom-action publish-action"[\s\S]*bindtap="submit"/],
+    ['publish location confirmation', publishWxml, /bindtap="confirmLocation"/],
+    ['map list filters', mapWxml, /wx:for="\{\{categoryFilters\}\}"[\s\S]*bindtap="changeCategory"/],
+    ['map detail entry', mapWxml, /catchtap="openDetail"/],
+    ['share receiver focused home CTA', detailWxml, /bindtap="goHomeWithPost"[\s\S]*回首页查这条/],
+    ['receiver conversion share CTA', detailWxml, /data-share-context="receiverConversion"/],
+    ['post-publish share CTA', detailWxml, /publishSpreadPlan\.shouldEncourageSpread[\s\S]*open-type="share"/],
+    ['ordinary share CTA', detailWxml, /shareMessage[\s\S]*open-type="share"/],
+    ['trust actions', detailWxml, /data-action="confirm"[\s\S]*data-action="stale"[\s\S]*data-action="report"/],
+    ['comment entry', detailWxml, /bindtap="openCommentDialog"/],
+    ['admin refresh', adminWxml, /bindtap="refresh"/],
+    ['admin search and filters', adminWxml, /bindinput="onSearchInput"[\s\S]*bindtap="changeFilter"/],
+    ['admin moderation actions', adminWxml, /bindtap="openDetail"[\s\S]*bindtap="resolve"[\s\S]*bindtap="hide"/],
+    ['feedback submit', feedbackWxml, /bindtap="submitFeedback"/],
+    ['profile next action', meWxml, /bindtap="handleNextAction"/],
+    ['profile feedback entry', meWxml, /bindtap="goFeedback"/],
+    ['my posts empty action and detail open', myPostsWxml, /bindtap="goPublish"[\s\S]*bindtap="openDetail"/],
+    ['activities empty action and detail open', activitiesWxml, /bindtap="goHome"[\s\S]*bindtap="openDetail"/]
+  ];
+
+  for (const [label, text, pattern] of requiredFunctionalPatterns) {
+    assert.match(text, pattern, `Simplification should keep ${label}.`);
+  }
+
+  console.log('Service simplification checks passed.');
+}
+
 runCheck('scripts/check-publish-flow.mjs', 'publish flow model check');
+runServiceSimplificationCheck();
 runCheck('scripts/check-publish-spread.mjs', 'post-publish spread plan check');
 runCheck('scripts/check-comment-relay.mjs', 'comment relay prompt check');
 runCheck('scripts/check-action-relay.mjs', 'action relay prompt check');

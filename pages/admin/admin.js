@@ -40,8 +40,7 @@ Page({
       stale: 0,
       resolved: 0,
       reported: 0,
-      hidden: 0,
-      feedback: 0
+      hidden: 0
     }
   },
 
@@ -82,10 +81,7 @@ Page({
       visiblePosts: reviewState.visiblePosts,
       feedbacks,
       feedbackError,
-      stats: {
-        ...reviewState.stats,
-        feedback: feedbacks.length
-      },
+      stats: reviewState.stats,
       filterOptions: reviewState.filterOptions
     });
   },
@@ -100,10 +96,7 @@ Page({
       posts: reviewState.posts,
       visiblePosts: reviewState.visiblePosts,
       filterOptions: reviewState.filterOptions,
-      stats: {
-        ...reviewState.stats,
-        feedback: this.data.feedbacks.length
-      }
+      stats: reviewState.stats
     });
   },
 

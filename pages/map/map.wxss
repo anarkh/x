@@ -452,32 +452,6 @@
   gap: 12rpx;
 }
 
-.drawer-counter {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 82rpx;
-  height: 64rpx;
-  border-radius: 14rpx;
-  background: #eaf4ef;
-}
-
-.drawer-counter-value {
-  color: #1b5f52;
-  font-size: 30rpx;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.drawer-counter-label {
-  margin-top: 4rpx;
-  color: #697970;
-  font-size: 18rpx;
-  font-weight: 800;
-  line-height: 1;
-}
-
 .drawer-head .ghost-button {
   height: 64rpx;
   padding: 0 20rpx;

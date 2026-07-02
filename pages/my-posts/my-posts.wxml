@@ -1,7 +1,6 @@
 <view class="page list-page stack">
   <view class="page-head">
     <view class="title">我的发布</view>
-    <view class="muted">当前账号发布过的附近任务。</view>
   </view>
 
   <view class="panel stat-panel">
@@ -13,7 +12,6 @@
 
   <view wx:if="{{!posts.length}}" class="panel empty-panel">
     <view class="empty-title">还没有发布过任务</view>
-    <view class="muted">可以从身边的失物、路况、求助或打卡开始。</view>
     <button class="secondary-button empty-action" bindtap="goPublish">去发布</button>
   </view>
 

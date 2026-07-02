@@ -2,6 +2,8 @@
 
 日期：2026-06-13
 
+说明：这是历史候选分支报告，不是当前发布页手测清单；当前 UI 已移除单独的发布准备度清单卡片，发布状态由定位块和底部主按钮承载。
+
 分支：`codex/iter-candidate-publish-trust`
 
 基础：`codex/iter-publish-flow` HEAD `2187007`

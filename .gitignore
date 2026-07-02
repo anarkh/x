@@ -9,6 +9,7 @@ project.private.config.json
 # Local agent/tooling state
 .agents/
 .claude/
+.understand-anything/
 skills-lock.json
 
 # Runtime logs

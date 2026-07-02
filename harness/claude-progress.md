@@ -7,8 +7,8 @@
 - 标准初始化入口：`bash harness/init.sh`
 - 标准基础验证：`npm run check:json`，`node harness/check-harness.mjs`
 - 当前最高优先级未完成功能：`map-feed-001`
-- 当前正在实现的用户请求：AB 组 DevTools service-port config forensics，为 9420 blocker 增加只读配置层取证，确认 Service Port UI/config 是否 disabled、端口是否匹配，以及配置结果不能替代真实 UI evidence
-- 当前 blocker：AB 轮只读配置取证显示 DevTools 配置摘要中 `security.enableServicePort=false` 且 `security.port=9420`，同时端口仍无 listener、IPv4/IPv6 均 `ECONNREFUSED`；这说明下一步应由用户在 WeChat DevTools UI 中人工确认并开启 Settings -> Security Settings -> Service Port，真实朋友圈菜单、系统分享面板、payload、CloudBase attribution、窄屏和真机转化仍未产生 passed evidence
+- 当前正在实现的用户请求：服务优化，在不影响功能的前提下简化所有操作和非必要展示；每次修改后 3 个子 agent 审阅，两票通过才算通过
+- 当前 blocker：静态门禁已通过；WeChat DevTools service port 9420 仍不可连接，因此真实 DevTools/真机视觉和点击验收尚未执行
 
 ## 会话记录
 
@@ -1298,3 +1298,39 @@
 - 更新过的文件或工件：`pages/publish/publish.js`，`scripts/check-publish-flow.mjs`，`harness/feature_list.json`，`harness/claude-progress.md`
 - 已知风险或未解决问题：尚未在真实 WeChat DevTools/真机中手动确认发布页初始高亮为 `长期`；DevTools service port 9420 仍阻塞，readiness 不能替代 UI passed evidence。云端路径仍需部署更新后的 `posts` 云函数
 - 下一步最佳动作：在 DevTools UI 手动打开当前 worktree，确认发布页初始有效期高亮 `长期`，发布后详情页显示 `长期有效`
+### Session 094UploadPackageSize
+
+- 日期：2026-06-25
+- 分支：`main`
+- 本轮目标：修复用户反馈 WeChat DevTools 上传报错 `Error: 系统错误，错误码：80051, source size 48278KB exceed max limit 2MB`
+- 根因：原始项目 checkout `/Users/bytedance/git/x` 中存在未跟踪的 `.understand-anything/` 本地分析产物目录，体积约 49MB；`project.config.json` 的 `miniprogramRoot` 为 `./` 且 `packOptions.ignore` 为空，DevTools 上传源码包时容易把该目录和其他本地工具目录一起纳入上传扫描，和报错中的 `48278KB` 高度吻合
+- 已完成：`.gitignore` 新增 `.understand-anything/`；`project.config.json` 的 `packOptions.ignore` 新增 `.git`、`.agents`、`.claude`、`.github`、`.understand-anything`、`harness`、`scripts`、`log` 目录，避免本地工具、harness、脚本和 git 元数据进入小程序上传包；未删除任何本地产物，未改动小程序运行代码
+- 运行过的验证：使用 bundled Node PATH 运行 `node scripts/check-json.mjs`、`node harness/check-harness.mjs`、`git diff --check`、按 `packOptions.ignore` 估算上传源码体积、最终 `bash harness/init.sh`
+- 已记录证据：`node scripts/check-json.mjs` 输出 `Checked 11 JSON files.`；`node harness/check-harness.mjs` 输出 `Harness OK: 6 features checked.`；`git diff --check` 无输出；体积估算输出 `Approx packed source after packOptions.ignore: 579KB across 92 files`；最终 `bash harness/init.sh` 完整跑通并输出 `Harness init complete.`
+- 已知风险或未解决问题：尚未由 WeChat DevTools 实际重新上传/预览验证；如果 DevTools 仍使用旧缓存，建议清理编译缓存或重新打开 `/Users/bytedance/git/x` 后再上传
+- 下一步最佳动作：在 WeChat DevTools 中重新上传或预览当前项目，确认不再出现 `source size ... exceed max limit 2MB`
+
+### Session 095ServiceSimplification
+
+- 日期：2026-07-02
+- 分支：`main`
+- 本轮目标：按用户 goal 做服务优化，在不影响功能的前提下简化所有操作和非必要展示；每次修改后启动 3 个子 agent 审阅，至少 2 票 PASS 才算通过
+- 已完成：移除发布页单独准备度卡片和表单说明，保留定位块与底部主按钮状态；简化地图列表头部，移除重复分类说明和附近计数；简化详情页分享接收、发布后扩散、普通分享、TrustInsight、动作接力和评论接力中的辅助说明行；简化管理台、反馈页、我的发布、动态和个人页的重复副标题、空态提示和反馈计数；删除地图页已不展示的 `activeCategoryText`/`viewportPostCount` 状态和管理页已不展示的 `stats.feedback`
+- 已完成：同步收窄发布状态和 TrustInsight 的数据/检查，移除已删除展示依赖的 `readiness.items`、`readiness.completionText`、`trustInsight.hint` 和 signal note 断言；`scripts/check-devtools-readiness.mjs` 内联 service simplification guard，覆盖活跃 readiness/smoke/runbook 文档和相关页面 JS/WXML/WXSS，防止重新引入旧准备度卡片、旧说明块、旧计数状态或未跟踪检查脚本依赖
+- 已完成：更新活跃设计/手测/readiness 文档，把当前发布验收口径统一为“发布状态、定位块、底部主按钮”；历史候选报告保留历史事实但明确标注不是当前发布页手测清单
+- 运行过的验证：`pwd`；读取 `harness/claude-progress.md`、`harness/feature_list.json`、`git log --oneline -5`；使用 bundled Node PATH 运行 `bash harness/init.sh`；`node --check pages/map/map.js`、`node --check pages/admin/admin.js`、`node --check pages/publish/publish-state.js`、`node --check scripts/check-devtools-readiness.mjs`、`node --check scripts/check-publish-flow.mjs`、`node --check scripts/check-candidate-flow.mjs`、`node --check utils/format.js`；`node --no-warnings scripts/check-devtools-readiness.mjs`；`npm run check`；`git diff --check`；旧展示/旧文档术语定向 `rg`
+- 已记录证据：`npm run check` 输出 `Checked 11 JSON files.`、`Harness OK: 6 features checked.`、`Service simplification checks passed.` 和最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；`bash harness/init.sh` 输出 `Harness init complete.`；`git diff --check` 无输出；最终复审 Franklin、Ptolemy、Ramanujan 三票 PASS，无 Critical/Important findings，满足“两票通过”规则
+- 已知风险或未解决问题：没有执行真实 WeChat DevTools/真机视觉和点击验收；readiness 仍报告 9420 service port blocked / connection refused，这只能说明环境入口阻塞，不能写作 UI passed evidence。复审提出若后续继续极限清理，可再移除未渲染的 `nextAction.note` 和部分详情 helper 的旧字段，但它们不影响当前用户功能或可见展示
+- 下一步最佳动作：在 WeChat DevTools service port 恢复后，用发布、地图列表、详情信任动作/评论/分享、管理处置、反馈提交、个人页下一步做一次真实 UI smoke，并把结果记录为 passed/failed/blocked/not_covered
+
+### Session 096PullAndPublishPageStyle
+
+- 日期：2026-07-02
+- 分支：`main`
+- 本轮目标：按用户要求拉取最新代码，并根据截图优化发布页样式，减少“卡片套卡片”的层级感，修正底部状态标题/禁用按钮颜色问题
+- 已完成：`git fetch origin` 后用 `git pull --ff-only --autostash origin main` 快进到 `a69d464`；保留远端默认长期/自定义有效期发布逻辑，同时解决 autostash 与本地服务简化改动在 `harness/claude-progress.md`、`pages/publish/publish-state.js`、`scripts/check-publish-flow.mjs` 的冲突
+- 已完成：发布页表单容器去掉全局 `panel` 叠层，改为单一轻量表单面板；`form-section` 改为透明分区和分隔线，去掉内层卡片边框/背景；底部 `publish-action` 状态标题颜色改为品牌深绿，禁用主按钮改成不透明浅绿底和更高对比文字
+- 运行过的验证：`node --check pages/publish/publish-state.js`；`node --check scripts/check-publish-flow.mjs`；`node --no-warnings scripts/check-publish-flow.mjs`；`npm run check`；`bash harness/init.sh`；`git diff --check`；`git diff --cached --check`
+- 已记录证据：发布流专项输出 `Publish flow checks passed.`；`npm run check` 输出 `Checked 11 JSON files.`、`Harness OK: 6 features checked.`、`Service simplification checks passed.` 和最终 `DevTools readiness checks passed. Static gates passed; DevTools and real-device visual acceptance are still required.`；`bash harness/init.sh` 输出 `Harness init complete.`；两条 diff whitespace 检查均无输出
+- 已知风险或未解决问题：没有执行真实 WeChat DevTools/真机视觉验收；readiness 仍报告 9420 service port blocked / connection refused。`git pull --autostash` 因冲突保留了 `stash@{0}` 作为备份，当前改动已应用到工作区并解决冲突，未删除该备份
+- 下一步最佳动作：在 DevTools 手动打开发布页，确认截图中的表单层级已经变为单层面板、底部“还差标题/补标题”状态颜色对比正常，并实际点选 `长期/自定义` 有效期回归发布流程

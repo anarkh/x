@@ -48,9 +48,7 @@ Page({
     center: app.globalData.center,
     categoryFilters: categoryOptions.map((item) => ({ ...item, count: 0 })),
     activeCategory: 'all',
-    activeCategoryText: '全部',
     openPostCount: 0,
-    viewportPostCount: 0,
     mapRegion: null,
     selectedPost: null,
     posts: [],
@@ -255,7 +253,6 @@ Page({
       ...item,
       count: item.value === 'all' ? viewportPosts.length : categoryCounts[item.value] || 0
     }));
-    const activeFilter = categoryFilters.find((item) => item.value === activeCategory);
     const selectedPostCandidate = options.clearSelection
       ? null
       : this.pendingSelectedPost
@@ -274,9 +271,7 @@ Page({
       nearbyPreviewPosts: buildNearbyPreviewPosts(baseVisiblePosts, selectedPostId),
       categoryFilters,
       activeCategory,
-      activeCategoryText: activeFilter ? activeFilter.label : '全部',
       openPostCount,
-      viewportPostCount: viewportPosts.length,
       mapRegion,
       selectedPost,
       markers: visiblePosts.map(markerFromPost)

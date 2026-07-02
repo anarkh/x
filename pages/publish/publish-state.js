@@ -2,16 +2,6 @@ function present(value) {
   return Boolean(String(value || '').trim());
 }
 
-function locationValue(locationStatus, hasLocation) {
-  if (locationStatus === 'locating') {
-    return '确认中';
-  }
-  if (locationStatus === 'failed') {
-    return '待重试';
-  }
-  return hasLocation ? '已确认' : '待确认';
-}
-
 function locationActionText(locationStatus) {
   if (locationStatus === 'ready') {
     return '重新确认';
@@ -103,39 +93,6 @@ export function buildPublishState(options = {}) {
   const locationDone = hasLocation && locationStatus === 'ready';
   const expiryDone = hasExpiry(form);
 
-  const items = [
-    {
-      key: 'account',
-      label: '身份',
-      value: isGuest ? '未登录' : '已登录',
-      done: !isGuest
-    },
-    {
-      key: 'content',
-      label: '内容',
-      value: contentDone ? '已补全' : '待填写',
-      done: contentDone
-    },
-    {
-      key: 'category',
-      label: '分类',
-      value: categoryDone ? '已选择' : '待选择',
-      done: categoryDone
-    },
-    {
-      key: 'expiry',
-      label: '有效期',
-      value: expiryDone ? '已设置' : '待选择',
-      done: expiryDone
-    },
-    {
-      key: 'location',
-      label: '位置',
-      value: locationValue(locationStatus, hasLocation),
-      done: locationDone
-    }
-  ];
-
   const missing = [];
   if (isGuest) {
     missing.push('登录');
@@ -156,12 +113,10 @@ export function buildPublishState(options = {}) {
     missing.push('当前位置');
   }
 
-  const doneCount = items.filter((item) => item.done).length;
   const ready = missing.length === 0 && !submitting;
   const onlyNeedsLocation = missing.length === 1 && missing[0] === '当前位置';
   const canConfirmLocation = onlyNeedsLocation && locationStatus !== 'locating';
   const actionDisabled = submitting || (!isGuest && missing.length > 0 && !canConfirmLocation);
-  const completionText = `${doneCount}/${items.length}`;
   const nextLocationActionText = locationActionText(locationStatus);
   const primaryAction = primaryActionForState({
     submitting,
@@ -173,7 +128,6 @@ export function buildPublishState(options = {}) {
 
   if (submitting) {
     return {
-      items,
       missing,
       ready: false,
       actionDisabled: true,
@@ -181,14 +135,12 @@ export function buildPublishState(options = {}) {
       buttonText: '发布中',
       title: '正在发布',
       note: '正在保存图片和任务信息',
-      completionText,
       locationActionText: nextLocationActionText
     };
   }
 
   if (isGuest) {
     return {
-      items,
       missing,
       ready: false,
       actionDisabled: false,
@@ -196,7 +148,6 @@ export function buildPublishState(options = {}) {
       buttonText: '去登录',
       title: '登录后可发布',
       note: '登录后会记录发布者，方便管理自己的任务',
-      completionText,
       locationActionText: nextLocationActionText
     };
   }
@@ -204,7 +155,6 @@ export function buildPublishState(options = {}) {
   if (!ready) {
     const locationCopy = onlyNeedsLocation ? missingLocationCopy(locationStatus) : null;
     return {
-      items,
       missing,
       ready: false,
       actionDisabled,
@@ -212,13 +162,11 @@ export function buildPublishState(options = {}) {
       buttonText: missingActionText(missing[0], locationStatus),
       title: locationCopy ? locationCopy.title : `还差${missing[0]}`,
       note: locationCopy ? locationCopy.note : `补全${missing.join('、')}后再发布`,
-      completionText,
       locationActionText: nextLocationActionText
     };
   }
 
   return {
-    items,
     missing,
     ready: true,
     actionDisabled: false,
@@ -228,7 +176,6 @@ export function buildPublishState(options = {}) {
     note: imageCount > 0
       ? `当前位置已确认，含${imageCount}张图片`
       : '当前位置已确认，可直接发布',
-    completionText,
     locationActionText: nextLocationActionText
   };
 }

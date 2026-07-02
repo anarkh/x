@@ -56,14 +56,14 @@ const guestState = state({ isGuest: true });
 assert.equal(guestState.buttonText, '去登录');
 assert.equal(guestState.actionDisabled, false);
 assert.equal(guestState.primaryAction, 'login');
-assert.equal(guestState.items.find((item) => item.key === 'account').done, false);
+assert.match(guestState.title, /登录/);
 
 const emptyState = state();
 assert.equal(emptyState.buttonText, '补标题');
 assert.equal(emptyState.actionDisabled, true);
 assert.equal(emptyState.primaryAction, 'fill');
 assert.equal(emptyState.missing[0], '标题');
-assert.equal(emptyState.items.find((item) => item.key === 'content').done, false);
+assert.match(emptyState.note, /标题|详情|当前位置/);
 
 const locatingState = state({
   locationStatus: 'locating',
@@ -78,7 +78,7 @@ assert.equal(locatingState.actionDisabled, true);
 assert.equal(locatingState.buttonText, '确认位置中');
 assert.equal(locatingState.title, '正在确认位置');
 assert.equal(locatingState.primaryAction, 'waitLocation');
-assert.equal(locatingState.items.find((item) => item.key === 'location').value, '确认中');
+assert.equal(locatingState.locationActionText, '确认中');
 
 const needsLocationState = state({
   form: {
@@ -108,7 +108,7 @@ assert.equal(failedLocationState.buttonText, '重试定位');
 assert.equal(failedLocationState.title, '位置未确认');
 assert.equal(failedLocationState.primaryAction, 'confirmLocation');
 assert.match(failedLocationState.note, /授权|重试/);
-assert.equal(failedLocationState.items.find((item) => item.key === 'location').value, '待重试');
+assert.equal(failedLocationState.locationActionText, '重试定位');
 
 const lostFoundState = state({
   hasLocation: true,
@@ -138,7 +138,7 @@ const missingExpiryState = state({
 assert.equal(missingExpiryState.ready, false);
 assert.deepEqual(missingExpiryState.missing, ['有效期']);
 assert.equal(missingExpiryState.buttonText, '选有效期');
-assert.equal(missingExpiryState.items.find((item) => item.key === 'expiry').done, false);
+assert.equal(missingExpiryState.primaryAction, 'fill');
 
 const readyLostFoundState = state({
   hasLocation: true,
@@ -169,7 +169,6 @@ assert.equal(readyState.ready, true);
 assert.equal(readyState.actionDisabled, false);
 assert.equal(readyState.buttonText, '发布');
 assert.equal(readyState.title, '可以发布到附近');
-assert.equal(readyState.completionText, '5/5');
 assert.equal(readyState.primaryAction, 'publish');
 assert.match(readyState.note, /2张图片/);
 
@@ -185,7 +184,7 @@ const customExpiryState = state({
   }
 });
 assert.equal(customExpiryState.ready, true);
-assert.equal(customExpiryState.items.find((item) => item.key === 'expiry').value, '已设置');
+assert.equal(customExpiryState.primaryAction, 'publish');
 
 const longCustomExpiryState = state({
   hasLocation: true,

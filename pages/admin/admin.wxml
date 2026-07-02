@@ -2,7 +2,6 @@
   <view class="admin-head">
     <view class="head-rule"></view>
     <view class="title">管理控制台</view>
-    <view class="muted">仅管理员可见 · {{stats.needsReview}} 条待处理 · {{stats.feedback}} 条反馈</view>
   </view>
 
   <view class="summary-grid">
@@ -28,14 +27,11 @@
     <view class="section-head row between">
       <view>
         <view class="section-title">用户反馈</view>
-        <view class="muted">来自“我的”页反馈入口</view>
       </view>
-      <text class="feedback-count">{{feedbacks.length}}</text>
     </view>
 
     <view wx:if="{{!feedbacks.length && !feedbackError}}" class="panel empty-panel">
       <view class="empty-title">还没有用户反馈</view>
-      <view class="muted">用户提交后会显示在这里。</view>
     </view>
 
     <view wx:if="{{feedbackError}}" class="panel empty-panel">
@@ -83,14 +79,12 @@
   <view class="queue-head row between">
     <view>
       <view class="section-title">处置队列</view>
-      <view class="muted">按举报和过时风险排序</view>
     </view>
     <button class="ghost-button" bindtap="refresh">刷新</button>
   </view>
 
   <view wx:if="{{!visiblePosts.length}}" class="panel empty-panel">
     <view class="empty-title">没有匹配内容</view>
-    <view class="muted">换个关键词，或切换到“全部”查看完整列表。</view>
   </view>
 
   <view wx:for="{{visiblePosts}}" wx:key="id" class="panel admin-card">

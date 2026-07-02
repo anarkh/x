@@ -137,7 +137,7 @@ guard 必须拒绝这些通过或恢复声明：
 它不能替代以下验证：
 
 - WeChat DevTools 中真实打开项目、编译并观察页面。
-- 地图列表、marker/detail 链路、发布准备度、详情 TrustInsight 等用户旅程 smoke。
+- 地图列表、marker/detail 链路、发布状态、详情 TrustInsight 等用户旅程 smoke。
 - 真机定位授权、图片上传、safe area、键盘遮挡和云端路径验证。
 
 最终结论应保持为：本报告可降低交接误读风险，但不能把 AH dry-run 草稿当作真实 DevTools UI smoke 通过证据。
