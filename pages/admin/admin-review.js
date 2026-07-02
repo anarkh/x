@@ -157,7 +157,7 @@ export function decorateAdminPost(post, options = {}) {
     statusTone: statusTone(post.status),
     publisher,
     createdText: formatCreatedAt(post.createdAt),
-    expiryText: post.status === 'resolved' ? '已关闭' : formatTimeLeft(post.expiresAt),
+    expiryText: post.status === 'resolved' ? '已关闭' : formatTimeLeft(post.expiresAt, post.expiryType),
     confirmationText: formatConfirmationText(post.confirmations, post.lastConfirmedAt),
     riskReasonText: riskReasonText(post),
     suggestedActionText: suggestedActionText(post),

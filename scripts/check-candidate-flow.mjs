@@ -9,7 +9,7 @@ const filledForm = {
   category: 'check_in',
   intent: '',
   placeName: '',
-  expiryHours: 24
+  expiryHours: 168
 };
 
 function publishState(overrides = {}) {

@@ -62,7 +62,7 @@ function decorateDetailPost(raw) {
     intentText: intentLabel(raw.intent),
     statusText: statusLabel(raw.status),
     createdText: formatCreatedAt(raw.createdAt),
-    expiryText: raw.status === 'resolved' ? '已关闭' : formatTimeLeft(raw.expiresAt),
+    expiryText: raw.status === 'resolved' ? '已关闭' : formatTimeLeft(raw.expiresAt, raw.expiryType),
     distanceText: `${raw.distance}m`,
     publisherName,
     publisherAvatarUrl: raw.publisherAvatarUrl || '',

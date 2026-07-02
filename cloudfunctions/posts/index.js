@@ -27,7 +27,10 @@ const CLOSED_STATUSES = ['hidden', 'resolved'];
 const CATEGORIES = ['check_in', 'lost_found', 'street_update', 'help_needed'];
 const LOST_FOUND_INTENTS = ['lost', 'found'];
 const FEEDBACK_TYPES = ['suggestion', 'bug', 'content', 'other'];
-const EXPIRY_HOURS = [6, 24, 72];
+const LONG_TERM_EXPIRY_HOURS = 24 * 365 * 10;
+const EXPIRY_HOURS = [168, 720, LONG_TERM_EXPIRY_HOURS];
+const HOUR_MS = 60 * 60 * 1000;
+const CUSTOM_EXPIRY_MIN_OFFSET_MS = 30 * 60 * 1000;
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const VIRAL_EVENT_TYPES = [
   'share_detail_landing',
@@ -147,6 +150,27 @@ function cleanExpiryHours(value) {
     throw error;
   }
   return hours;
+}
+
+function cleanExpiresAt(input, now) {
+  const expiresAt = Number(input.expiresAt);
+  if (Number.isFinite(expiresAt) && expiresAt > 0) {
+    if (expiresAt < now + CUSTOM_EXPIRY_MIN_OFFSET_MS) {
+      const error = new Error('Invalid expiry');
+      error.code = 'VALIDATION_FAILED';
+      throw error;
+    }
+    return Math.floor(expiresAt);
+  }
+  return now + cleanExpiryHours(input.expiryHours) * HOUR_MS;
+}
+
+function cleanExpiryType(input) {
+  const expiresAt = Number(input.expiresAt);
+  if (Number.isFinite(expiresAt) && expiresAt > 0) {
+    return '';
+  }
+  return Number(input.expiryHours) === LONG_TERM_EXPIRY_HOURS ? 'long_term' : '';
 }
 
 function cleanCoordinate(value, min, max, fieldName) {
@@ -289,7 +313,6 @@ async function createPost(event, openid, isAdmin) {
   const input = event.input || {};
   const now = Date.now();
   const category = cleanCategory(input.category);
-  const expiryHours = cleanExpiryHours(input.expiryHours);
   const post = {
     id: `post_${now}_${hashId(`${openid}:${now}:${Math.random()}`).slice(0, 8)}`,
     markerId: await nextMarkerId(),
@@ -307,7 +330,8 @@ async function createPost(event, openid, isAdmin) {
     staleCount: 0,
     reportCount: 0,
     createdAt: now,
-    expiresAt: now + expiryHours * 60 * 60 * 1000,
+    expiresAt: cleanExpiresAt(input, now),
+    expiryType: cleanExpiryType(input),
     publisherId: openid,
     publisher: cleanString(input.publisher, 32, 'publisher') || '匿名用户',
     publisherAvatarUrl: cleanString(input.publisherAvatarUrl, 500, 'publisherAvatarUrl'),

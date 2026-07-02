@@ -11,6 +11,8 @@ const CLOSED_STATUSES = ['hidden', 'resolved'];
 const POSTS_CACHE_TTL_MS = 8000;
 const MAX_COMMENTS_PER_POST = 50;
 const MAX_COMMENT_LENGTH = 120;
+const HOUR_MS = 60 * 60 * 1000;
+const CUSTOM_EXPIRY_MIN_OFFSET_MS = 30 * 60 * 1000;
 const SHARE_DEMO_MIN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SHARE_DEMO_CREATED_OFFSET_MS = 42 * 60 * 1000;
 const SHARE_DEMO_CONFIRMED_OFFSET_MS = 18 * 60 * 1000;
@@ -355,6 +357,33 @@ function validationError(message) {
   return error;
 }
 
+function resolveExpiresAt(input, now) {
+  const expiresAt = Number(input.expiresAt);
+  if (Number.isFinite(expiresAt) && expiresAt > 0) {
+    if (expiresAt < now + CUSTOM_EXPIRY_MIN_OFFSET_MS) {
+      throw validationError('自定义有效期需至少晚于当前30分钟');
+    }
+    return Math.floor(expiresAt);
+  }
+
+  const expiryHours = Number(input.expiryHours);
+  const allowedHours = config.expiryOptions
+    .map((option) => Number(option.value))
+    .filter(Number.isFinite);
+  if (allowedHours.indexOf(expiryHours) < 0) {
+    throw validationError('请选择有效期');
+  }
+  return now + expiryHours * HOUR_MS;
+}
+
+function resolveExpiryType(input) {
+  const expiresAt = Number(input.expiresAt);
+  if (Number.isFinite(expiresAt) && expiresAt > 0) {
+    return '';
+  }
+  return Number(input.expiryHours) === config.longTermExpiryHours ? 'long_term' : '';
+}
+
 function postClosedError() {
   const error = new Error('当前任务已关闭，暂不能评论');
   error.code = 'POST_CLOSED';
@@ -494,7 +523,8 @@ export async function createPost(input) {
     staleCount: 0,
     reportCount: 0,
     createdAt: now,
-    expiresAt: now + Number(input.expiryHours) * 60 * 60 * 1000,
+    expiresAt: resolveExpiresAt(input, now),
+    expiryType: resolveExpiryType(input),
     publisherId: user.id,
     publisher: String(input.publisher || user.nickname || '匿名用户').trim(),
     publisherAvatarUrl: user.avatarUrl || '',

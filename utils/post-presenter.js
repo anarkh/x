@@ -66,7 +66,7 @@ export function decoratePost(post) {
     statusText: statusLabel(post.status),
     confirmationText: formatConfirmationText(post.confirmations, post.lastConfirmedAt),
     createdText: formatCreatedAt(post.createdAt),
-    expiryText: post.status === 'resolved' ? '已关闭' : formatTimeLeft(post.expiresAt)
+    expiryText: post.status === 'resolved' ? '已关闭' : formatTimeLeft(post.expiresAt, post.expiryType)
   };
 }
 

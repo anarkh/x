@@ -10,10 +10,19 @@ const MAX_IMAGE_SIZE_TEXT = '1.5MB';
 const IMAGE_COMPRESS_QUALITY = 70;
 const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const CLOUD_FILE_ID_PREFIX = 'cloud://';
+const CUSTOM_EXPIRY_VALUE = 'custom';
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const CUSTOM_EXPIRY_MIN_OFFSET_MS = 30 * 60 * 1000;
 const LOCATION_IDLE_SUMMARY = '发布前确认一次当前位置，附近的人会按这个位置看到任务。';
 const LOCATION_LOCATING_SUMMARY = '正在确认当前位置，请停留在当前页面。';
 const LOCATION_READY_SUMMARY = '已确认当前位置，需要更换时可重新确认。';
 const LOCATION_FAILED_SUMMARY = '还没拿到当前位置，请检查微信定位授权，或点重试定位。';
+const DEFAULT_EXPIRY_INDEX = Math.max(
+  config.expiryOptions.findIndex((option) => option.type === 'long_term'),
+  0
+);
+const DEFAULT_EXPIRY_OPTION = config.expiryOptions[DEFAULT_EXPIRY_INDEX];
 
 function defaultForm() {
   return {
@@ -22,8 +31,71 @@ function defaultForm() {
     category: config.categories[0].value,
     intent: '',
     placeName: '',
-    expiryHours: config.expiryOptions[1].value
+    expiryHours: DEFAULT_EXPIRY_OPTION.value,
+    expiresAt: 0,
+    expiryType: DEFAULT_EXPIRY_OPTION.type || ''
   };
+}
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function formatDateValue(timestamp) {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function formatTimeValue(timestamp) {
+  const date = new Date(timestamp);
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+function formatCustomExpiryText(timestamp) {
+  const date = new Date(timestamp);
+  return `截止 ${date.getMonth() + 1}月${date.getDate()}日 ${formatTimeValue(timestamp)}`;
+}
+
+function defaultCustomExpiryTimestamp(now = Date.now()) {
+  return now + DAY_MS;
+}
+
+function customExpiryError(timestamp, now = Date.now()) {
+  if (!Number.isFinite(timestamp) || timestamp < now + CUSTOM_EXPIRY_MIN_OFFSET_MS) {
+    return '自定义时间需至少晚于当前30分钟';
+  }
+  return '';
+}
+
+function customExpiryBounds(now = Date.now()) {
+  return {
+    customExpiryStartDate: formatDateValue(now)
+  };
+}
+
+function buildCustomExpiryState(timestamp = defaultCustomExpiryTimestamp()) {
+  const safeTimestamp = Number.isFinite(Number(timestamp))
+    ? Number(timestamp)
+    : defaultCustomExpiryTimestamp();
+  return {
+    customExpiryTimestamp: safeTimestamp,
+    customExpiryDate: formatDateValue(safeTimestamp),
+    customExpiryTime: formatTimeValue(safeTimestamp),
+    customExpiryText: formatCustomExpiryText(safeTimestamp),
+    customExpiryError: customExpiryError(safeTimestamp),
+    ...customExpiryBounds()
+  };
+}
+
+function parseCustomExpiryTimestamp(dateValue, timeValue) {
+  const dateMatch = String(dateValue || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const timeMatch = String(timeValue || '').match(/^(\d{2}):(\d{2})$/);
+  if (!dateMatch || !timeMatch) {
+    return 0;
+  }
+  const [, year, month, day] = dateMatch.map(Number);
+  const [, hour, minute] = timeMatch.map(Number);
+  return new Date(year, month - 1, day, hour, minute, 0, 0).getTime();
 }
 
 function shouldUseCloudStorage() {
@@ -133,7 +205,9 @@ Page({
     lostFoundIntents: config.lostFoundIntents,
     activeGuide: config.publishGuides[config.categories[0].value],
     categoryIndex: 0,
-    expiryIndex: 1,
+    expiryIndex: DEFAULT_EXPIRY_INDEX,
+    isCustomExpiry: false,
+    ...buildCustomExpiryState(),
     intentIndex: -1,
     isGuest: true,
     submitting: false,
@@ -215,7 +289,9 @@ Page({
     this.setPublishData({
       activeGuide: config.publishGuides[config.categories[0].value],
       categoryIndex: 0,
-      expiryIndex: 1,
+      expiryIndex: DEFAULT_EXPIRY_INDEX,
+      isCustomExpiry: false,
+      ...buildCustomExpiryState(),
       intentIndex: -1,
       imageItems: [],
       canAddImage: true,
@@ -424,14 +500,51 @@ Page({
   },
 
   applyExpiryIndex(index) {
+    const option = this.data.expiryOptions[index];
+    const isCustomExpiry = option.value === CUSTOM_EXPIRY_VALUE;
+    const customState = buildCustomExpiryState(this.data.customExpiryTimestamp);
     const form = {
       ...this.data.form,
-      expiryHours: this.data.expiryOptions[index].value
+      expiryHours: isCustomExpiry ? 0 : option.value,
+      expiryType: option.type === 'long_term' ? 'long_term' : '',
+      // Custom expiry stores an exact deadline; presets keep the old hour-based path.
+      expiresAt: isCustomExpiry && !customState.customExpiryError
+        ? customState.customExpiryTimestamp
+        : 0
     };
     this.setPublishData({
       expiryIndex: index,
+      isCustomExpiry,
+      ...customState,
       form
     });
+  },
+
+  applyCustomExpiry(timestamp) {
+    const customState = buildCustomExpiryState(timestamp);
+    const form = {
+      ...this.data.form,
+      expiryHours: 0,
+      expiryType: '',
+      expiresAt: customState.customExpiryError ? 0 : customState.customExpiryTimestamp
+    };
+    this.setPublishData({
+      ...customState,
+      form
+    });
+    if (customState.customExpiryError) {
+      wx.showToast({ title: customState.customExpiryError, icon: 'none' });
+    }
+  },
+
+  onCustomExpiryDateChange(event) {
+    const timestamp = parseCustomExpiryTimestamp(event.detail.value, this.data.customExpiryTime);
+    this.applyCustomExpiry(timestamp);
+  },
+
+  onCustomExpiryTimeChange(event) {
+    const timestamp = parseCustomExpiryTimestamp(this.data.customExpiryDate, event.detail.value);
+    this.applyCustomExpiry(timestamp);
   },
 
   async confirmLocation() {

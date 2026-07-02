@@ -1,6 +1,35 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
+import config from '../utils/config.js';
+import { formatTimeLeft } from '../utils/format.js';
 import { buildPublishState } from '../pages/publish/publish-state.js';
+
+assert.deepEqual(config.expiryOptions, [
+  { value: 168, label: '1周' },
+  { value: 720, label: '1月' },
+  { value: config.longTermExpiryHours, label: '长期', type: 'long_term' },
+  { value: 'custom', label: '自定义' }
+]);
+assert.equal(config.expiryOptions.findIndex((option) => option.type === 'long_term'), 2);
+
+const publishJs = readFileSync(new URL('../pages/publish/publish.js', import.meta.url), 'utf8');
+assert.ok(
+  publishJs.includes("config.expiryOptions.findIndex((option) => option.type === 'long_term')"),
+  'publish page should derive its default expiry from the long-term option'
+);
+assert.ok(
+  publishJs.includes('expiryHours: DEFAULT_EXPIRY_OPTION.value'),
+  'publish default form should use the long-term expiry value'
+);
+assert.ok(
+  publishJs.includes("expiryType: DEFAULT_EXPIRY_OPTION.type || ''"),
+  'publish default form should keep the long-term display marker'
+);
+assert.ok(
+  publishJs.includes('expiryIndex: DEFAULT_EXPIRY_INDEX'),
+  'publish page should select the long-term option by default'
+);
 
 const baseForm = {
   title: '',
@@ -8,7 +37,8 @@ const baseForm = {
   category: 'check_in',
   intent: '',
   placeName: '',
-  expiryHours: 24
+  expiryHours: config.longTermExpiryHours,
+  expiryType: 'long_term'
 };
 
 function state(overrides = {}) {
@@ -94,6 +124,22 @@ assert.deepEqual(lostFoundState.missing, ['失物方向']);
 assert.equal(lostFoundState.buttonText, '选失物方向');
 assert.equal(lostFoundState.primaryAction, 'fill');
 
+const missingExpiryState = state({
+  hasLocation: true,
+  locationStatus: 'ready',
+  form: {
+    title: '社区花园今天很适合拍照',
+    body: '下午光线很好，人也不多。',
+    category: 'check_in',
+    expiryHours: 0,
+    expiresAt: 0
+  }
+});
+assert.equal(missingExpiryState.ready, false);
+assert.deepEqual(missingExpiryState.missing, ['有效期']);
+assert.equal(missingExpiryState.buttonText, '选有效期');
+assert.equal(missingExpiryState.items.find((item) => item.key === 'expiry').done, false);
+
 const readyLostFoundState = state({
   hasLocation: true,
   locationStatus: 'ready',
@@ -123,8 +169,39 @@ assert.equal(readyState.ready, true);
 assert.equal(readyState.actionDisabled, false);
 assert.equal(readyState.buttonText, '发布');
 assert.equal(readyState.title, '可以发布到附近');
-assert.equal(readyState.completionText, '4/4');
+assert.equal(readyState.completionText, '5/5');
 assert.equal(readyState.primaryAction, 'publish');
 assert.match(readyState.note, /2张图片/);
+
+const customExpiryState = state({
+  hasLocation: true,
+  locationStatus: 'ready',
+  form: {
+    title: '社区花园今天很适合拍照',
+    body: '下午光线很好，人也不多。',
+    category: 'check_in',
+    expiryHours: 0,
+    expiresAt: Date.now() + 2 * 60 * 60 * 1000
+  }
+});
+assert.equal(customExpiryState.ready, true);
+assert.equal(customExpiryState.items.find((item) => item.key === 'expiry').value, '已设置');
+
+const longCustomExpiryState = state({
+  hasLocation: true,
+  locationStatus: 'ready',
+  form: {
+    title: '社区花园长期约拍点',
+    body: '周末傍晚光线一直不错，可以慢慢约时间。',
+    category: 'check_in',
+    expiryHours: 0,
+    expiresAt: Date.now() + 45 * 24 * 60 * 60 * 1000
+  }
+});
+assert.equal(longCustomExpiryState.ready, true, 'custom expiry should not have a 30-day maximum.');
+assert.equal(
+  formatTimeLeft(Date.now() + config.longTermExpiryHours * 60 * 60 * 1000, 'long_term'),
+  '长期有效'
+);
 
 console.log('Publish flow checks passed.');
