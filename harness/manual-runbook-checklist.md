@@ -72,7 +72,7 @@
 
 - [ ] 按核心旅程逐项手测，并同步填写 `harness/manual-test-results.local.json`。
   - `map-to-detail`：地图页渲染、marker 或列表进入正确详情、返回后仍可操作。
-  - `publish-readiness-location-retry`：发布准备度、定位拒绝或失败、重试、允许后的主动作变化。
+  - `publish-state-location-retry`：发布状态、定位拒绝或失败、重试、允许后的主动作变化。
   - `publish-success-to-detail`：填齐表单、发布只创建一次、成功跳转新任务详情、返回地图可见。
   - `detail-trust-insight-comments`：详情 TrustInsight、确认或 stale/report、重复操作限制、评论入口和重进详情。
   - `image-cloud-paths`：图片上传、失败提示、保存引用形态、清缓存或跨用户可见性。

@@ -19,12 +19,13 @@ function insight(overrides = {}, commentCount = 0) {
   }, commentCount);
 }
 
-function assertSignalNotesAreShort(result) {
+function assertVisibleSignals(result) {
+  assert.equal(result.signals.length, 4);
   for (const signal of result.signals) {
-    assert(
-      signal.note.length <= 6,
-      `${signal.key} note is too long for the four-metric row: ${signal.note}`
-    );
+    assert.ok(signal.key);
+    assert.ok(signal.label);
+    assert.equal(typeof signal.value, 'number');
+    assert.ok(signal.tone);
   }
 }
 
@@ -34,8 +35,7 @@ function assertSignalNotesAreShort(result) {
   assert.equal(result.title, '有确认信号');
   assert.match(result.body, /4次确认信号/);
   assert.doesNotMatch(result.title, /有效|可信|可靠/);
-  assert.match(`${result.body}${result.hint}`, /现场|评论/);
-  assertSignalNotesAreShort(result);
+  assertVisibleSignals(result);
 }
 
 {
@@ -44,7 +44,7 @@ function assertSignalNotesAreShort(result) {
   assert.equal(result.title, '存在多次举报');
   assert.match(result.body, /2次举报/);
   assert.doesNotMatch(result.title, /确认/);
-  assertSignalNotesAreShort(result);
+  assertVisibleSignals(result);
 }
 
 {
@@ -53,7 +53,7 @@ function assertSignalNotesAreShort(result) {
   assert.equal(result.title, '可能已经过时');
   assert.match(result.body, /3次过时反馈/);
   assert.doesNotMatch(result.title, /确认/);
-  assertSignalNotesAreShort(result);
+  assertVisibleSignals(result);
 }
 
 {
@@ -61,7 +61,7 @@ function assertSignalNotesAreShort(result) {
   assert.equal(result.tone, 'done');
   assert.equal(result.title, '任务已关闭');
   assert.match(result.body, /历史线索/);
-  assertSignalNotesAreShort(result);
+  assertVisibleSignals(result);
 }
 
 {
@@ -69,7 +69,7 @@ function assertSignalNotesAreShort(result) {
   assert.equal(result.tone, 'neutral');
   assert.equal(result.title, '任务已过期');
   assert.match(result.body, /2条历史线索/);
-  assertSignalNotesAreShort(result);
+  assertVisibleSignals(result);
 }
 
 {
@@ -77,8 +77,7 @@ function assertSignalNotesAreShort(result) {
   assert.equal(result.tone, 'neutral');
   assert.equal(result.title, '先看评论线索');
   assert.match(result.body, /5条评论/);
-  assert.match(result.hint, /提问|补充/);
-  assertSignalNotesAreShort(result);
+  assertVisibleSignals(result);
 }
 
 console.log('Trust insight checks passed.');

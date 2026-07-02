@@ -57,14 +57,6 @@
   min-width: 0;
 }
 
-.feedback-count {
-  flex-shrink: 0;
-  color: #1b5f52;
-  font-size: 34rpx;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
 .feedback-admin-card {
   padding: 24rpx;
   background: #fffefa;

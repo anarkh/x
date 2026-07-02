@@ -63,13 +63,8 @@
     <view class="row between drawer-head">
       <view class="drawer-title-block">
         <view class="section-title">信息列表</view>
-        <view class="muted">{{activeCategoryText}} · 按发布时间排序</view>
       </view>
       <view class="drawer-head-actions">
-        <view class="drawer-counter">
-          <text class="drawer-counter-value">{{viewportPostCount}}</text>
-          <text class="drawer-counter-label">附近</text>
-        </view>
         <button class="ghost-button" bindtap="hideList">收起</button>
       </view>
     </view>

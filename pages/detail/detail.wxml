@@ -51,13 +51,6 @@
       <view class="section-title">{{shareReceiverGuide.title}}</view>
       <view class="share-receiver-summary">{{shareReceiverGuide.summary}}</view>
     </view>
-    <view class="share-receiver-rows">
-      <view wx:for="{{shareReceiverGuide.rows}}" wx:key="label" class="share-receiver-row">
-        <text class="share-receiver-label">{{item.label}}</text>
-        <text class="share-receiver-value">{{item.value}}</text>
-      </view>
-    </view>
-    <view class="share-receiver-note">{{shareReceiverGuide.note}}</view>
     <view wx:if="{{!receiverConversionPrompt}}" class="share-receiver-map-return">
       <view class="share-receiver-map-copy">
         <view class="share-receiver-map-title">想先回首页？</view>
@@ -122,35 +115,6 @@
       <view class="spread-body">{{publishSpreadPlan.body}}</view>
     </view>
 
-    <view class="spread-steps">
-      <view class="spread-step">
-        <text class="spread-index">1</text>
-        <view class="spread-copy">
-          <view class="spread-label">先转给</view>
-          <view class="spread-text">{{publishSpreadPlan.audience}}</view>
-        </view>
-      </view>
-      <view class="spread-step">
-        <text class="spread-index">2</text>
-        <view class="spread-copy">
-          <view class="spread-label">想得到</view>
-          <view class="spread-text">{{publishSpreadPlan.signalGoal}}</view>
-        </view>
-      </view>
-      <view class="spread-step">
-        <text class="spread-index">3</text>
-        <view class="spread-copy">
-          <view class="spread-label">稍后回访</view>
-          <view class="spread-text">{{publishSpreadPlan.followUp}}</view>
-        </view>
-      </view>
-    </view>
-
-    <view class="spread-notes">
-      <view>{{publishSpreadPlan.imageHint}}</view>
-      <view>{{publishSpreadPlan.commentHint}}</view>
-    </view>
-
     <view class="spread-actions">
       <button wx:if="{{publishSpreadPlan.shouldEncourageSpread}}" class="share-button spread-share-button" open-type="share">{{publishSpreadPlan.actionText}}</button>
       <button wx:else class="ghost-button spread-map-button" bindtap="goHome">{{publishSpreadPlan.actionText}}</button>
@@ -167,13 +131,6 @@
       </view>
       <button class="share-button" open-type="share">转发</button>
     </view>
-    <view class="share-guide">
-      <view wx:for="{{shareMessage.rows}}" wx:key="label" class="share-guide-row">
-        <text class="share-guide-label">{{item.label}}</text>
-        <text class="share-guide-value">{{item.value}}</text>
-      </view>
-    </view>
-    <view class="share-note">{{shareMessage.note}}</view>
   </view>
 
   <view wx:if="{{trustInsight}}" class="trust-panel stack">
@@ -186,10 +143,8 @@
       <view wx:for="{{trustInsight.signals}}" wx:key="key" class="trust-signal {{item.tone}}">
         <view class="trust-signal-value">{{item.value}}</view>
         <view class="trust-signal-label">{{item.label}}</view>
-        <view class="trust-signal-note">{{item.note}}</view>
       </view>
     </view>
-    <view class="trust-hint">{{trustInsight.hint}}</view>
 
     <view wx:if="{{post.canReact}}" class="trust-actions">
       <button class="trust-button trust-confirm {{post.confirmedByMe || busyAction ? 'disabled-action' : ''}}" loading="{{busyAction === 'confirm'}}" disabled="{{post.confirmedByMe || busyAction}}" data-action="confirm" bindtap="react">
@@ -222,12 +177,6 @@
       <view class="section-title">{{actionRelayPrompt.title}}</view>
       <view class="comment-relay-summary">{{actionRelayPrompt.summary}}</view>
     </view>
-    <view class="comment-relay-rows">
-      <view wx:for="{{actionRelayPrompt.rows}}" wx:key="label" class="comment-relay-row">
-        <text class="comment-relay-label">{{item.label}}</text>
-        <text class="comment-relay-value">{{item.value}}</text>
-      </view>
-    </view>
     <view class="comment-relay-actions">
       <button
         wx:if="{{actionRelayPrompt.shouldEncourageRelay}}"
@@ -245,12 +194,6 @@
       <view class="comment-relay-kicker">{{commentRelayPrompt.kicker}}</view>
       <view class="section-title">{{commentRelayPrompt.title}}</view>
       <view class="comment-relay-summary">{{commentRelayPrompt.summary}}</view>
-    </view>
-    <view class="comment-relay-rows">
-      <view wx:for="{{commentRelayPrompt.rows}}" wx:key="label" class="comment-relay-row">
-        <text class="comment-relay-label">{{item.label}}</text>
-        <text class="comment-relay-value">{{item.value}}</text>
-      </view>
     </view>
     <view class="comment-relay-actions">
       <button

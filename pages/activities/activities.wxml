@@ -1,7 +1,6 @@
 <view class="page list-page stack">
   <view class="page-head">
     <view class="title">参与记录</view>
-    <view class="muted">你确认、标记过时或举报过的附近任务。</view>
   </view>
 
   <view class="panel stat-panel">
@@ -13,7 +12,6 @@
 
   <view wx:if="{{!activities.length}}" class="panel empty-panel">
     <view class="empty-title">还没有参与记录</view>
-    <view class="muted">在详情页确认有效、标记过时或举报后会出现在这里。</view>
     <button class="secondary-button empty-action" bindtap="goHome">去地图看看</button>
   </view>
 

@@ -55,12 +55,11 @@ The project currently has no frontend build step and no mini program npm depende
 ## Component Patterns
 
 - `BottomAction`: fixed above the custom tab bar, opaque, with one short title, one helper line, and one primary action. Use it for page-level submit actions so primary buttons do not hide behind the tab bar.
-- `FormSection`: grouped form area with a section title, helper note, and related fields. Use it instead of one long undifferentiated form card.
+- `FormSection`: grouped form area with a section title and related fields. Helper notes are optional and should be omitted when field labels and placeholders already explain the task.
 - `CategoryOption`: two-column direct-choice buttons for small option sets such as task categories. Prefer this over a picker when the choices are few and user-facing.
-- `DrawerCounter`: compact number block in bottom drawers to make counts scannable without adding another sentence.
 - `SignalPill`: small metric tile for repeated task-card signals such as confirmation count, stale count, and remaining time.
-- `PublishReadiness`: compact checklist near the top of the publish form. It should show identity, content, category, and location completion so the fixed submit action can explain or trigger the next required step.
 - `LocationCheck`: explicit location confirmation block in the publish form. Use it when location is required for correctness; show idle, loading, ready, and failed states without moving the submit button, and make retry language non-technical.
+- Publish readiness should be expressed through `LocationCheck` and the fixed `BottomAction`; avoid adding a separate checklist when the bottom action can name the next required step.
 - `TrustInsight`: detail-page section placed before trust actions. Summarize confirmations, stale reports, reports, and comment count into one cautious status sentence, then show compact segmented metrics and the next sensible action. Use it to explain the counts without implying absolute trust.
 - `MapListEntry`: keep the collapsed map list entry as a compact top-right `cover-view` button with the label and count on one centered text line, such as "列表 6". Do not split the label and count into separate baseline-sensitive nodes, and do not use a bottom dock for this entry.
 - `MapToolRow`: location and discover controls sit together at the lower-right of the map above the custom tab bar. Keep them as `cover-view` controls with solid backgrounds, and keep selected task cards above this tool row so icons remain tappable.
